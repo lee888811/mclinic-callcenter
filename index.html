@@ -586,11 +586,11 @@ td:first-child{text-align:left;padding-left:13px}
 
       <!-- 카드 목록 -->
       <div id="notes-list" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>    </div>
+    </div>
 
     <!-- ═══ 노트 편집 모달 ═══ -->
-    <div class="modal" id="modal-note">
-      <div class="modal-box" style="width:1100px;max-width:99vw;max-height:96vh;display:flex;flex-direction:column">
+    <div class="modal" id="modal-note" style="z-index:700">
+      <div class="mbox" style="width:1100px;max-width:99vw;max-height:96vh;display:flex;flex-direction:column">
         <!-- 헤더 -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0">
           <span style="font-size:15px;font-weight:800;color:var(--text)" id="note-modal-lbl">✚ 새 항목</span>
@@ -641,6 +641,9 @@ td:first-child{text-align:left;padding-left:13px}
             <span style="font-size:10px;color:#94a3b8;margin-left:6px">셀 클릭 편집 · Tab 다음 셀 · Enter 다음 행</span>
           </div>
           <div id="nm-grid" style="flex:1;overflow:auto;min-height:0"></div>
+          <!-- st 없는 기존 항목용 텍스트 편집 영역 -->
+          <textarea id="nm-content-fallback" rows="10" placeholder="내용을 입력하세요..."
+            style="display:none;width:100%;flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);font-size:12px;line-height:1.8;background:var(--s2);color:var(--text);resize:none;box-sizing:border-box;font-family:'Noto Sans KR',sans-serif"></textarea>
         </div>
 
         <!-- 이미지 첨부 -->
@@ -663,8 +666,8 @@ td:first-child{text-align:left;padding-left:13px}
     </div>
 
     <!-- ═══ 노트 상세 보기 모달 ═══ -->
-    <div class="modal" id="modal-note-view">
-      <div class="modal-box" style="width:960px;max-width:99vw;max-height:95vh;overflow-y:auto">
+    <div class="modal" id="modal-note-view" style="z-index:600">
+      <div class="mbox" style="width:960px;max-width:99vw;max-height:95vh;overflow-y:auto">
         <div class="ch2" style="margin-bottom:10px">
           <div style="flex:1;min-width:0">
             <div id="nv-title" style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:5px;word-break:break-all"></div>
@@ -981,6 +984,8 @@ td:first-child{text-align:left;padding-left:13px}
 </div>
 
 <div class="modal" id="modal-call">
+  <div style="display:flex;gap:12px;align-items:flex-start;max-width:98vw;max-height:95vh">
+    <!-- 콜 입력 폼 -->
   <div class="mbox" style="width:460px">
     <div class="mt" id="modal-call-title">📋 상담 기록</div>
 
@@ -1129,6 +1134,13 @@ td:first-child{text-align:left;padding-left:13px}
       <button class="btn btn-p" onclick="confirmCall()">✅ 저장</button>
     </div>
   </div>
+    <!-- 수가표 패널 (오른쪽) -->
+    <div style="width:300px;flex-shrink:0;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:var(--text)">📒 수가표·병원정보</div>
+      <input id="modal-note-search" class="minp" placeholder="🔍 검색..." style="font-size:12px;padding:6px 10px;margin-bottom:10px" oninput="renderModalNotes(this.value)">
+      <div id="modal-notes-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1238,7 +1250,7 @@ td:first-child{text-align:left;padding-left:13px}
 
 <!-- 인센티브 성공 상세 모달 -->
 <div class="modal" id="modal-inc-detail">
-  <div class="modal-box" style="max-width:480px">
+  <div class="mbox" style="max-width:480px">
     <div class="mh">
       <span id="inc-detail-title">📋 예약 성공 상세</span>
       <button class="mcl" onclick="closeModal('modal-inc-detail')">✕</button>
@@ -2312,6 +2324,7 @@ function openCallModal(sid){
   renderChatChannelFields({});
   renderModalProcGrid();
   toggleSubFields();
+  renderModalNotes('');
   document.getElementById('modal-call').classList.add('open');
 }
 
@@ -4128,7 +4141,7 @@ ${procLines}`:''}
       <button class="btn btn-g" onclick="exportClosingCSV('${ds}')">📥 엑셀 내보내기</button>
     </div>`;
 
-  setTimeout(()=>drawReportCanvas(`${branch.name}점 · ${dateStr}`, brSum, chData, topProcs), 50);
+  setTimeout(()=>drawReportCanvas(`${branch.name}점 · ${dateStr}`, brSum, chatChData, topProcs), 50);
 }
 
 function drawReportCanvas(dateStr, sum, chData, topProcs){
@@ -4610,6 +4623,25 @@ function confirmChangePw(){
   toast('🔑 비밀번호가 변경되었습니다');
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2500);}
+
+function showConfirmToast(msg, onConfirm){
+  let el=document.getElementById('confirm-toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='confirm-toast';
+    el.style.cssText='position:fixed;bottom:70px;right:20px;z-index:9999;background:#1e293b;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:all .2s';
+    document.body.appendChild(el);
+  }
+  el.innerHTML=`<span>${msg}</span>
+    <button onclick="document.getElementById('confirm-toast').style.display='none'" style="background:#475569;color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px">취소</button>
+    <button id="confirm-toast-ok" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700">삭제</button>`;
+  el.style.display='flex';
+  document.getElementById('confirm-toast-ok').onclick=()=>{
+    el.style.display='none';
+    onConfirm();
+  };
+  setTimeout(()=>{if(el)el.style.display='none';}, 5000);
+}
 function exportCSV(){
   const rows=[['날짜','시간','직원','지점','유형','차수','환자구분','당일','취소','카톡','네이버','챗봇','미예약','예약성공','시술','메모']];
   Object.entries(S.calls).sort().forEach(([,calls])=>{
@@ -10398,6 +10430,35 @@ async function startAiReformat(){
 }
 
 // ─── 렌더링 ─────────────────────────────────────────────────
+function renderModalNotes(q){
+  q=(q||'').toLowerCase().trim();
+  const words=q?q.split(/\s+/).filter(Boolean):[];
+  const el=document.getElementById('modal-notes-list');
+  if(!el)return;
+  let list=_notes.filter(n=>{
+    if(!words.length)return true;
+    const hay=(n.title+' '+n.content+' '+n.branch+' '+n.category+' '+(n.sheet||'')).toLowerCase();
+    return words.every(w=>hay.includes(w));
+  }).slice(0,30);
+  if(!list.length){
+    el.innerHTML=`<div style="color:var(--text3);text-align:center;padding:20px;font-size:11px">${q?'검색 결과 없음':'항목 없음'}</div>`;
+    return;
+  }
+  const N_CAT_C2={'수가표':'#2563eb','병원정보':'#059669','카톡이벤트':'#d97706','공지사항':'#7c3aed','이벤트':'#db2777','시술설명':'#0891b2'};
+  el.innerHTML=list.map(n=>{
+    const cc=N_CAT_C2[n.category]||'#94a3b8';
+    const prev=n.content.replace(/\n/g,' ').slice(0,80);
+    return `<div onclick="viewNote('${n.id}')" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+        <span style="font-size:9px;font-weight:700;background:${cc}22;color:${cc};padding:1px 6px;border-radius:8px">${n.category}</span>
+        <span style="font-size:9px;color:var(--text3)">${n.branch}</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${escHtml(n.title)}</div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.4">${escHtml(prev)}${n.content.length>80?'…':''}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderNotes(){
   const q=(document.getElementById('nq')?.value||'').toLowerCase().trim();
   const brF=document.getElementById('nf-branch')?.value||'';
@@ -10549,8 +10610,19 @@ function viewNote(nid){
   contentEl.style.display='block';
   contentEl.innerHTML=structuredHtml;
   if(rawEl){rawEl.style.display='none';rawEl.textContent=n.content;}
-  document.getElementById('nv-edit-btn').onclick=()=>{closeModal('modal-note-view');openNoteModal(nid);};
-  document.getElementById('nv-del-btn').onclick=()=>{closeModal('modal-note-view');delNote(nid);};
+  document.getElementById('nv-edit-btn').onclick=()=>{
+    const _nid=nid;
+    closeModal('modal-note-view');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>openNoteModal(_nid)));
+  };
+  document.getElementById('nv-del-btn').onclick=()=>{
+    const _nid=nid;
+    closeModal('modal-note-view');
+    requestAnimationFrame(()=>{
+      delNote(_nid);
+      renderModalNotes(document.getElementById('modal-note-search')?.value||'');
+    });
+  };
   // 탭 표시 여부
   const hasAiHtml=true; // structured 렌더링은 항상 사용 가능
   const tabEl=document.getElementById('nv-tabs');
@@ -10874,18 +10946,34 @@ function openNoteModal(nid) {
   const schema = GRID_SCHEMA[cat] || GRID_SCHEMA_DEFAULT;
   _gridSchema = schema;
 
+  const gridEl = document.getElementById('nm-grid');
+  const fallbackEl = document.getElementById('nm-content-fallback');
+
   if (n?.st) {
     let st;
     try { st = typeof n.st === 'string' ? JSON.parse(n.st) : n.st; } catch(e) { st = null; }
     _gridData = stToGridRows(st, cat);
+    if(gridEl) gridEl.style.display='';
+    if(fallbackEl){ fallbackEl.style.display='none'; fallbackEl.value=''; }
+  } else if (n?.content) {
+    // st 없는 기존 항목 → 텍스트 편집
+    _gridData = [];
+    if(gridEl) gridEl.style.display='none';
+    if(fallbackEl){ fallbackEl.style.display=''; fallbackEl.value=n.content; }
   } else {
     _gridData = [];
+    if(gridEl) gridEl.style.display='';
+    if(fallbackEl){ fallbackEl.style.display='none'; fallbackEl.value=''; }
   }
 
   // 카테고리 변경 시 그리드 스키마 재설정
   document.getElementById('nm-cat').onchange = function() {
     _gridSchema = GRID_SCHEMA[this.value] || GRID_SCHEMA_DEFAULT;
     _gridData = [];
+    const gridEl = document.getElementById('nm-grid');
+    const fallbackEl = document.getElementById('nm-content-fallback');
+    if(gridEl) gridEl.style.display='';
+    if(fallbackEl){ fallbackEl.style.display='none'; fallbackEl.value=''; }
     renderGrid();
     updateGridLabel(this.value);
   };
@@ -10952,10 +11040,19 @@ function noteSave() {
   if (!title) { toast('⚠️ 제목을 입력하세요'); return; }
 
   const cat = document.getElementById('nm-cat').value;
+  const fallbackEl = document.getElementById('nm-content-fallback');
+  const useFallback = fallbackEl && fallbackEl.style.display !== 'none';
 
-  // 그리드 → st + content(검색용 텍스트)
-  const st = gridRowsToSt(_gridData, cat);
-  const content = gridRowsToContent(_gridData, cat);
+  let st, content;
+  if (useFallback) {
+    // 텍스트 모드 - st 없이 content만 저장
+    content = fallbackEl.value;
+    st = null;
+  } else {
+    // 그리드 모드
+    st = gridRowsToSt(_gridData, cat);
+    content = gridRowsToContent(_gridData, cat);
+  }
 
   const data = {
     branch: document.getElementById('nm-branch').value,
@@ -10964,7 +11061,7 @@ function noteSave() {
     sheet: document.getElementById('nm-sheet').value.trim() || '직접입력',
     source: '직접입력',
     title, content,
-    st: JSON.stringify(st),
+    st: st ? JSON.stringify(st) : null,
     images: [..._noteImgs],
     html: '',
   };
@@ -10981,6 +11078,7 @@ function noteSave() {
   syncNotesPush();
   closeModal('modal-note');
   renderNotes();
+  renderModalNotes(document.getElementById('modal-note-search')?.value||'');
   toast(_noteEditId ? '✅ 수정됨' : '✅ 추가됨');
   _noteEditId = null; _noteImgs = [];
 }
@@ -10995,9 +11093,13 @@ function gridRowsToContent(rows, cat) {
 
 function delNote(nid){
   const n=_notes.find(x=>x.id===nid);
-  if(!n||!confirm('"'+n.title+'"\n\n삭제하시겠습니까?'))return;
-  _notes=_notes.filter(x=>x.id!==nid);
-  saveNotesLocal();syncNotesPush();renderNotes();toast('🗑 삭제됨');
+  if(!n)return;
+  showConfirmToast(`🗑 "${n.title.slice(0,20)}${n.title.length>20?'…':''}" 삭제할까요?`, ()=>{
+    _notes=_notes.filter(x=>x.id!==nid);
+    saveNotesLocal();syncNotesPush();renderNotes();
+    renderModalNotes(document.getElementById('modal-note-search')?.value||'');
+    toast('🗑 삭제됨');
+  });
 }
 
 function notesExport(){
