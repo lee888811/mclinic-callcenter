@@ -2470,8 +2470,9 @@ function openCallModal(sid){
   renderChatChannelFields({});
   renderModalProcGrid();
   toggleSubFields();
-  renderModalNotes('');
   document.getElementById('modal-call').classList.add('open');
+  // _notes 로드 완료 후 렌더링
+  setTimeout(()=>renderModalNotes(''), 100);
 }
 
 function openEditModal(cid, sid, ds){
@@ -3021,14 +3022,16 @@ function renderStaffMgmt(){
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 14px">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:50%;background:${sclr(s.id)};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${s.name[0]}</div>
-          <input value="${s.name}" style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:13px;font-weight:600;width:90px;background:var(--s2);color:var(--text);font-family:'Noto Sans KR',sans-serif"
-            onchange="S.staff.find(x=>x.id==='${s.id}').name=this.value;autoSave();renderSidebar()">
+          <div style="width:34px;height:34px;border-radius:50%;background:${sclr(s.id)};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${(s.name||'?')[0]}</div>
+          <input id="sname-${s.id}" value="${escHtml(s.name)}"
+            style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:13px;font-weight:600;width:90px;background:var(--s2);color:var(--text);font-family:'Noto Sans KR',sans-serif"
+            oninput="staffFieldChange('${s.id}')">
         </div>
       </td>
       <td style="padding:10px 14px">
-        <select style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;background:var(--s2);color:var(--text);font-family:'Noto Sans KR',sans-serif"
-          onchange="S.staff.find(x=>x.id==='${s.id}').role=this.value;autoSave()">
+        <select id="srole-${s.id}"
+          style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;background:var(--s2);color:var(--text);font-family:'Noto Sans KR',sans-serif"
+          onchange="staffFieldChange('${s.id}')">
           ${S.roles.map(r=>`<option ${s.role===r?'selected':''}>${r}</option>`).join('')}
         </select>
       </td>
@@ -3041,6 +3044,8 @@ function renderStaffMgmt(){
         </div>
       </td>
       <td style="padding:10px 14px;text-align:center">
+        <button id="ssave-${s.id}" onclick="saveStaffRow('${s.id}')"
+          style="display:none;background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px">💾 저장</button>
         <button onclick="delST('${s.id}')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>
       </td>
     </tr>`).join('');
@@ -3053,7 +3058,7 @@ function renderStaffMgmt(){
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">이름</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">직책</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">비밀번호</th>
-            <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">삭제</th>
+            <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">저장/삭제</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -3299,6 +3304,29 @@ function confirmEditRole(i){
   autoSave();
   renderStaffMgmt();
   toast('✅ 직책명 변경됨: '+old+' → '+val);
+}
+
+function staffFieldChange(sid){
+  // 변경 감지 → 저장 버튼 표시
+  const btn=document.getElementById('ssave-'+sid);
+  if(btn) btn.style.display='inline-block';
+}
+
+function saveStaffRow(sid){
+  const nameEl=document.getElementById('sname-'+sid);
+  const roleEl=document.getElementById('srole-'+sid);
+  const s=S.staff.find(x=>x.id===sid);
+  if(!s) return;
+  if(nameEl) s.name=nameEl.value.trim()||s.name;
+  if(roleEl) s.role=roleEl.value;
+  // 강제 서버 저장
+  autoSave();
+  syncPush(true);
+  renderSidebar();
+  // 저장 버튼 숨기기
+  const btn=document.getElementById('ssave-'+sid);
+  if(btn) btn.style.display='none';
+  toast(`✅ ${s.name} 저장됨`);
 }
 
 function setStaffPw(sid, pw){
@@ -10904,11 +10932,21 @@ function renderModalNotes(q){
   const words=q?q.split(/\s+/).filter(Boolean):[];
   const el=document.getElementById('modal-notes-list');
   if(!el)return;
-  // 제목 없는 항목 제외
+
+  // _notes가 아직 비어있으면 로딩 표시
+  if(!_notes||!_notes.length){
+    el.innerHTML=`<div style="color:var(--text3);text-align:center;padding:30px 10px;font-size:12px">
+      <div style="font-size:20px;margin-bottom:6px">⏳</div>데이터 로딩 중...</div>`;
+    setTimeout(()=>renderModalNotes(q), 800);
+    return;
+  }
+
+  // 제목 있는 항목만, 빈 항목 완전 제외
   let list=_notes.filter(n=>{
+    if(!n||!n.id) return false;
     if(!n.title||!n.title.trim()) return false;
-    if(!words.length)return true;
-    const hay=(n.title+' '+n.content+' '+n.branch+' '+n.category+' '+(n.sheet||'')).toLowerCase();
+    if(!words.length) return true;
+    const hay=(n.title+' '+(n.content||'')+' '+(n.branch||'')+' '+(n.category||'')+' '+(n.sheet||'')).toLowerCase();
     return words.every(w=>hay.includes(w));
   }).slice(0,40);
 
@@ -10925,11 +10963,11 @@ function renderModalNotes(q){
   el.innerHTML=list.map(n=>{
     const cc=N_CAT_C2[n.category]||'#94a3b8';
     const prev=(n.content||'').replace(/\n/g,' ').slice(0,70);
-    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      <div onclick="viewNote('${n.id}')" style="padding:10px 12px;cursor:pointer;background:var(--s1)" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background='var(--s1)'">
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:2px">
+      <div onclick="viewNote('${n.id}')" style="padding:10px 12px;cursor:pointer" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap">
-          <span style="font-size:9px;font-weight:800;background:${cc}18;color:${cc};padding:2px 7px;border-radius:8px;border:1px solid ${cc}33">${n.category}</span>
-          <span style="font-size:9px;color:var(--text3);background:var(--s2);padding:2px 6px;border-radius:6px">${n.branch}</span>
+          <span style="font-size:9px;font-weight:800;background:${cc}18;color:${cc};padding:2px 7px;border-radius:8px;border:1px solid ${cc}33">${escHtml(n.category||'')}</span>
+          <span style="font-size:9px;color:var(--text3);background:var(--s2);padding:2px 6px;border-radius:6px">${escHtml(n.branch||'')}</span>
           ${n.updatedAt?`<span style="font-size:9px;color:var(--text3);margin-left:auto">📅 ${n.updatedAt}</span>`:''}
         </div>
         <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-all;margin-bottom:3px">${escHtml(n.title)}</div>
