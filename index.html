@@ -446,10 +446,13 @@ td:first-child{text-align:left;padding-left:13px}
     <!-- ⑥ 시술 관리 -->
     <div class="page" id="page-procs">
       <div class="ph">
-        <div><div class="pt">💉 시술 관리</div><div class="ps">시술 항목 추가·삭제</div></div>
-        <div class="pbtns"><button class="btn btn-p btn-sm" onclick="openAddProc()">＋ 시술 추가</button></div>
+        <div><div class="pt">💉 시술 관리</div><div class="ps">시술 항목 추가·삭제 · 하위 카테고리 관리</div></div>
+        <div class="pbtns">
+          <button class="btn btn-g btn-sm" onclick="openProcBulkUpload()">📋 일괄 업로드</button>
+          <button class="btn btn-p btn-sm" onclick="openAddProc()">＋ 시술 추가</button>
+        </div>
       </div>
-      <div class="proc-mgmt-grid" id="proc-mgmt-grid"></div>
+      <div id="proc-mgmt-grid"></div>
     </div>
 
     <!-- ⑦ 인센티브 -->
@@ -853,11 +856,23 @@ td:first-child{text-align:left;padding-left:13px}
             </div>
           </div>
         </div>
-        <div id="dp-proc-filter" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-          <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">시술 선택</span>
-          <button onclick="dpSelectAll()" id="dp-all-btn"
-            style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
-          <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        <div id="dp-proc-filter" style="margin-bottom:6px;padding:10px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+          <!-- 상위 시술 선택 -->
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">시술 선택</span>
+            <button onclick="dpSelectAll()" id="dp-all-btn"
+              style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
+            <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+          </div>
+          <!-- 하위 카테고리 선택 (상위 선택 시 표시) -->
+          <div id="dp-sub-filter" style="display:none;padding-top:6px;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+              <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">하위 카테고리</span>
+              <button onclick="dpSubSelectAll()" id="dp-sub-all-btn"
+                style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer">전체</button>
+              <div id="dp-sub-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+            </div>
+          </div>
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
           <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">지점 선택</span>
@@ -946,12 +961,25 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
 
       <!-- 5. 지점별 시술 집중 분석 -->
-      <div class="card">
+      <div class="card" style="margin-bottom:14px">
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl" style="margin:0">🔬 지점별 시술 집중 분석</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap" id="trend-br-filter"></div>
         </div>
         <div id="trend-proc-br-chart"></div>
+      </div>
+
+      <!-- 6. 지점별 신환/구환 분석 -->
+      <div class="card">
+        <div class="ch2" style="margin-bottom:12px">
+          <span class="slbl" style="margin:0">👥 지점별 신환·구환 분석</span>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+            <button class="period-btn act" id="ptb-3m" onclick="setPtTypePeriod(3,this)">3개월</button>
+            <button class="period-btn" id="ptb-6m" onclick="setPtTypePeriod(6,this)">6개월</button>
+            <button class="period-btn" id="ptb-12m" onclick="setPtTypePeriod(12,this)">12개월</button>
+          </div>
+        </div>
+        <div id="pttype-branch-chart"></div>
       </div>
     </div>
 
@@ -1007,6 +1035,65 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="ml">시술명 *</div><input class="minp" id="proc-name" placeholder="예: 필러" onkeydown="if(event.key==='Enter')confirmAddProc()">
     <div class="ml">카테고리</div><input class="minp" id="proc-cat" placeholder="예: 리프팅" onkeydown="if(event.key==='Enter')confirmAddProc()">
     <div class="mbtns"><button class="btn btn-g" onclick="closeModal('modal-proc')">취소</button><button class="btn btn-p" onclick="confirmAddProc()">추가</button></div>
+  </div>
+</div>
+
+<!-- Modal: 하위 카테고리 추가 -->
+<div class="modal" id="modal-sub" style="z-index:700">
+  <div class="mbox" style="max-width:400px">
+    <div class="mt">➕ 하위 카테고리 추가</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;padding:8px 10px;background:var(--s2);border-radius:8px">
+      상위 시술: <strong id="sub-proc-name" style="color:var(--accent)"></strong>
+    </div>
+    <div class="ml">아이콘 (이모지, 선택)</div>
+    <input class="minp" id="sub-icon" placeholder="예: 💫" maxlength="4">
+    <div class="ml">하위 항목명 *</div>
+    <input class="minp" id="sub-name" placeholder="예: 미간보톡스" onkeydown="if(event.key==='Enter')confirmAddSub()">
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-sub')">취소</button>
+      <button class="btn btn-p" onclick="confirmAddSub()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 시술 일괄 업로드 -->
+<div class="modal" id="modal-proc-bulk" style="z-index:700">
+  <div class="mbox" style="width:580px;max-width:99vw">
+    <div class="mt">📋 시술 일괄 업로드 (CSV)</div>
+
+    <!-- 1단계: 양식 다운로드 -->
+    <div style="background:var(--s2);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">📥 1단계 — 양식 다운로드</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.7">
+        CSV 양식을 다운받아 엑셀에서 작성 후 저장하세요.<br>
+        컬럼: <code style="background:var(--s1);padding:1px 5px;border-radius:4px">아이콘, 시술명, 카테고리, 하위항목1, 하위항목2, 하위항목3, ...</code>
+      </div>
+      <button onclick="downloadProcTemplate()" style="padding:6px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📥 양식 CSV 다운로드</button>
+    </div>
+
+    <!-- 2단계: 파일 업로드 -->
+    <div style="background:var(--s2);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📤 2단계 — CSV 파일 업로드</div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--border2);border-radius:9px;padding:20px;cursor:pointer;font-size:13px;color:var(--text3)"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <span style="font-size:24px">📂</span>
+        <span id="proc-csv-filename">CSV 파일을 클릭하거나 드래그해서 올려주세요</span>
+        <input type="file" id="proc-csv-file" accept=".csv" style="display:none" onchange="procCsvLoad(this)">
+      </label>
+    </div>
+
+    <!-- 미리보기 -->
+    <div id="proc-bulk-preview" style="margin-bottom:12px"></div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="proc-bulk-replace"> 기존 시술 전체 교체 (체크 안하면 추가)
+      </label>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-proc-bulk')">취소</button>
+      <button class="btn btn-p" style="background:#059669" id="proc-bulk-apply-btn" disabled onclick="procBulkConfirm()">✅ 적용</button>
+    </div>
   </div>
 </div>
 
@@ -2408,6 +2495,7 @@ let _callType='in',_callDegree=3,_callBid=null,_callPttype='신환',_callMedium=
 let _outPurpose='예약안내', _outResult='통화성공';
 const _procSel={};
 let _editCallId=null, _editCallDate=null;
+let _editProcId=null;
 const _incDetailMap={}; // 인센티브 상세 모달용 콜 데이터 임시 저장
 
 function setMedium(m){
@@ -3387,16 +3475,202 @@ function addST(){
 // ═══════════════════════════════════
 // PROCEDURE MANAGEMENT
 // ═══════════════════════════════════
-function renderProcMgmt(){
-  document.getElementById('proc-mgmt-grid').innerHTML=
-    S.procedures.map(p=>`<div class="proc-mgmt-item">
-      <span style="font-size:18px">${p.icon}</span>
-      <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
-      <span style="font-size:10px;color:var(--text3);margin-right:4px">${p.cat||''}</span>
-      <button class="pmi-del" onclick="delProc('${p.id}')">✕</button>
-    </div>`).join('')+
-    `<div class="addc" style="min-height:50px" onclick="openAddProc()"><span style="font-size:18px">+</span><span>시술 추가</span></div>`;
+function openProcBulkUpload(){
+  const fi=document.getElementById('proc-csv-file');
+  if(fi) fi.value='';
+  const fn=document.getElementById('proc-csv-filename');
+  if(fn) fn.textContent='CSV 파일을 클릭하거나 드래그해서 올려주세요';
+  document.getElementById('proc-bulk-preview').innerHTML='';
+  document.getElementById('proc-bulk-replace').checked=false;
+  const applyBtn=document.getElementById('proc-bulk-apply-btn');
+  if(applyBtn) applyBtn.disabled=true;
+  _procBulkParsed=[];
+  document.getElementById('modal-proc-bulk').classList.add('open');
 }
+
+function downloadProcTemplate(){
+  const header='아이콘,시술명,카테고리,하위항목1,하위항목2,하위항목3,하위항목4,하위항목5';
+  const examples=[
+    '💉,보톡스,보톡스,미간보톡스,이마보톡스,사각턱보톡스,눈가보톡스,목보톡스',
+    '💊,필러,필러,코필러,입술필러,볼필러,,',
+    '✨,리프팅,리프팅,울쎄라,써마지,인모드,,',
+  ];
+  const csv=[header,...examples].join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='시술_업로드_양식.csv';
+  a.click();
+  toast('📥 양식 다운로드 완료');
+}
+
+let _procBulkParsed=[];
+
+function procCsvLoad(input){
+  const file=input.files[0];
+  if(!file) return;
+  const fn=document.getElementById('proc-csv-filename');
+  if(fn) fn.textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let text=e.target.result;
+    if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+    _procBulkParsed=parseProcCsv(text);
+    renderProcBulkPreview();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function parseProcCsv(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(!lines.length) return [];
+  const dataLines=(lines[0].includes('시술명')||lines[0].includes('아이콘'))?lines.slice(1):lines;
+  const result=[];
+  for(const line of dataLines){
+    if(!line.trim()) continue;
+    const cols=parseCsvLine(line);
+    const icon=(cols[0]||'').trim();
+    const name=(cols[1]||'').trim();
+    const cat=(cols[2]||'').trim();
+    if(!name) continue;
+    const subs=[];
+    for(let i=3;i<cols.length;i++){
+      const s=(cols[i]||'').trim();
+      if(s) subs.push({icon:'',name:s});
+    }
+    result.push({id:'p'+uid(),icon:icon||'💉',name,cat,subs});
+  }
+  return result;
+}
+
+function parseCsvLine(line){
+  const cols=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){cols.push(cur);cur='';}
+    else cur+=c;
+  }
+  cols.push(cur);
+  return cols;
+}
+
+function renderProcBulkPreview(){
+  const el=document.getElementById('proc-bulk-preview');
+  const applyBtn=document.getElementById('proc-bulk-apply-btn');
+  if(!_procBulkParsed.length){
+    el.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">⚠️ 파싱된 항목 없음 — CSV 형식을 확인해주세요</div>';
+    if(applyBtn) applyBtn.disabled=true;
+    return;
+  }
+  if(applyBtn) applyBtn.disabled=false;
+  el.innerHTML=`<div style="background:var(--s2);border-radius:9px;padding:10px 12px;max-height:200px;overflow-y:auto">
+    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">✅ 미리보기 — ${_procBulkParsed.length}개 시술 인식됨</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--s1)">
+        <th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">아이콘</th>
+        <th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">시술명</th>
+        <th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">카테고리</th>
+        <th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">하위 항목</th>
+      </tr></thead>
+      <tbody>${_procBulkParsed.map(p=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:4px 8px">${p.icon}</td>
+        <td style="padding:4px 8px;font-weight:700">${p.name}</td>
+        <td style="padding:4px 8px;color:var(--text3)">${p.cat||'-'}</td>
+        <td style="padding:4px 8px;color:var(--text3);font-size:10px">${p.subs.map(s=>s.name).join(', ')||'-'}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function procBulkConfirm(){
+  if(!_procBulkParsed.length){ toast('⚠️ 먼저 CSV 파일을 업로드하세요'); return; }
+  const replace=document.getElementById('proc-bulk-replace').checked;
+  if(replace){ S.procedures=_procBulkParsed; }
+  else {
+    const existNames=new Set(S.procedures.map(p=>p.name));
+    _procBulkParsed.forEach(p=>{ if(!existNames.has(p.name)) S.procedures.push(p); });
+  }
+  closeModal('modal-proc-bulk');
+  renderProcMgmt();
+  renderModalProcGrid();
+  autoSave();
+  syncPush(true);
+  toast(`✅ ${_procBulkParsed.length}개 시술 ${replace?'교체':'추가'}됨`);
+  _procBulkParsed=[];
+}
+
+function renderProcMgmt(){
+  const el = document.getElementById('proc-mgmt-grid');
+  if(!el) return;
+
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+    ${S.procedures.map(p=>{
+      const subs = p.subs||[];
+      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <!-- 시술 헤더 -->
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--s2)">
+          <span style="font-size:20px">${p.icon||'💉'}</span>
+          <span style="flex:1;font-size:13px;font-weight:700;color:var(--text)">${p.name}</span>
+          <span style="font-size:10px;color:var(--text3);background:var(--s1);padding:2px 8px;border-radius:8px;border:1px solid var(--border)">${p.cat||'카테고리 없음'}</span>
+          <button onclick="openAddSub('${p.id}')" style="padding:4px 10px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 하위 추가</button>
+          <button onclick="delProc('${p.id}')" style="padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text3);font-size:11px;cursor:pointer">✕</button>
+        </div>
+        <!-- 하위 카테고리 목록 -->
+        ${subs.length>0 ? `<div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px">
+          ${subs.map((s,i)=>`<div style="display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:3px 10px">
+            <span style="font-size:11px;color:var(--text)">${s.icon||''}${s.name}</span>
+            <button onclick="delSub('${p.id}',${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:0 2px;line-height:1">✕</button>
+          </div>`).join('')}
+        </div>` : `<div style="padding:8px 14px;font-size:11px;color:var(--text3)">하위 카테고리 없음 · 위 ＋ 버튼으로 추가하세요</div>`}
+      </div>`;
+    }).join('')}
+    <!-- 시술 추가 버튼 -->
+    <div onclick="openAddProc()" style="border:2px dashed var(--border2);border-radius:12px;padding:18px;text-align:center;cursor:pointer;color:var(--text3);font-size:13px;font-weight:600" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+      ＋ 시술 추가
+    </div>
+  </div>`;
+}
+
+function openAddSub(pid){
+  _editProcId = pid;
+  const p = S.procedures.find(x=>x.id===pid);
+  document.getElementById('sub-proc-name').textContent = p ? `${p.icon||'💉'} ${p.name}` : '';
+  document.getElementById('sub-icon').value = '';
+  document.getElementById('sub-name').value = '';
+  document.getElementById('modal-sub').classList.add('open');
+}
+
+function confirmAddSub(){
+  const name = document.getElementById('sub-name').value.trim();
+  if(!name){ toast('⚠️ 하위 항목명 입력 필요'); return; }
+  const icon = document.getElementById('sub-icon').value.trim();
+  const p = S.procedures.find(x=>x.id===_editProcId);
+  if(!p) return;
+  if(!p.subs) p.subs = [];
+  p.subs.push({name, icon});
+  closeModal('modal-sub');
+  renderProcMgmt();
+  if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+  autoSave();
+  syncPush(true);
+  toast(`✅ ${name} 추가됨`);
+}
+
+function delSub(pid, idx){
+  const p = S.procedures.find(x=>x.id===pid);
+  if(!p||!p.subs) return;
+  const name = p.subs[idx]?.name||'';
+  showConfirmToast(`🗑 "${name}" 하위 항목을 삭제할까요?`, ()=>{
+    p.subs.splice(idx,1);
+    renderProcMgmt();
+    if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+    autoSave();
+    syncPush(true);
+    toast('🗑 삭제됨');
+  });
+}
+
 function openAddProc(){
   document.getElementById('proc-icon').value='💉';document.getElementById('proc-name').value='';document.getElementById('proc-cat').value='';
   document.getElementById('modal-proc').classList.add('open');
@@ -3406,14 +3680,22 @@ function confirmAddProc(){
   if(_addingProc) return;
   const name=document.getElementById('proc-name').value.trim();if(!name){toast('⚠️ 시술명 입력 필요');return;}
   _addingProc=true;
-  S.procedures.push({id:'p'+uid(),icon:document.getElementById('proc-icon').value||'💉',name,cat:document.getElementById('proc-cat').value.trim()});
-  closeModal('modal-proc');renderProcMgmt();autoSave();toast('✅ '+name+' 추가됨');
+  S.procedures.push({id:'p'+uid(),icon:document.getElementById('proc-icon').value||'💉',name,cat:document.getElementById('proc-cat').value.trim(),subs:[]});
+  closeModal('modal-proc');
+  renderProcMgmt();
+  if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+  autoSave();syncPush(true);toast('✅ '+name+' 추가됨');
   setTimeout(()=>_addingProc=false,500);
 }
 function delProc(id){
   const p=S.procedures.find(x=>x.id===id);
-  if(!p||!confirm(`${p.name} 삭제할까요?`))return;
-  S.procedures=S.procedures.filter(x=>x.id!==id);renderProcMgmt();autoSave();toast('🗑 '+p.name+' 삭제됨');
+  if(!p) return;
+  showConfirmToast(`🗑 "${p.name}" 시술을 삭제할까요?`, ()=>{
+    S.procedures=S.procedures.filter(x=>x.id!==id);
+    renderProcMgmt();
+    if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+    autoSave();syncPush(true);toast('🗑 '+p.name+' 삭제됨');
+  });
 }
 
 // ═══════════════════════════════════
@@ -5476,7 +5758,7 @@ let _trendProcs = []; // 선택된 시술 IDs
 let _trendBid = null; // 지점별 시술 분석용 선택 지점
 let _trendProcPeriod = '6mo'; // 시술별 추이 기간
 let _dailyProcPeriod = 'today'; // 시술×지점 표 기간
-let _selectedPids = null; // null = 전체, Set = 선택된 시술 pid
+// _selectedPids, _selectedSubs, _focusedPid → 아래에서 선언됨
 let _selectedBids = null; // null = 전체, Set = 선택된 지점 bid
 
 function setTrendPeriod(n, el){
@@ -5562,6 +5844,7 @@ function renderTrend(){
   renderTrendBrFilter();
   renderDailyProcTable();
   renderTrendProcChartByPeriod();
+  renderPtTypeBranchChart();
 }
 
 // ── 날짜 범위 헬퍼 ──
@@ -5599,43 +5882,134 @@ function setDailyProcPeriod(period, el){
 }
 
 // 시술 pill 필터 렌더링 — S.procedures 전체 표시, 데이터 없으면 흐리게
+let _selectedPids = null;    // null=전체, Set=선택된 상위 pid
+let _selectedSubs = null;    // null=전체, Set=선택된 하위 키("pid:subIdx")
+let _focusedPid = null;      // 하위 카테고리 표시 중인 상위 pid
+
 function renderDpProcPills(allProcs, usedPids) {
   const pillEl = document.getElementById('dp-proc-pills');
   const allBtn = document.getElementById('dp-all-btn');
   if (!pillEl) return;
 
-  const isAll = !_selectedPids;
+  // S.procedures 최신 반영 (시술 관리와 동기화)
+  const procs = S.procedures;
+  const isAll = (_selectedPids === null);
 
-  // 전체 버튼: 선택 상태면 채우기, 아니면 테두리만
   if (allBtn) {
     allBtn.style.background = isAll ? 'var(--accent)' : 'transparent';
     allBtn.style.color = isAll ? '#fff' : 'var(--accent)';
     allBtn.style.borderColor = 'var(--accent)';
+    allBtn.textContent = '전체';
   }
 
-  pillEl.innerHTML = allProcs.map(p => {
-    // _selectedPids가 null(전체)이면 모두 미선택 상태로 표시
-    const selected = _selectedPids && _selectedPids.has(p.id);
-    const hasData = !usedPids || usedPids.has(p.id);
-    const clr = CLR[S.procedures.findIndex(x=>x.id===p.id) % CLR.length] || 'var(--accent)';
-    return `<button onclick="dpToggleProc('${p.id}')"
-      title="${hasData ? p.name : p.name+' (해당 기간 데이터 없음)'}"
-      style="padding:2px 10px;border-radius:12px;border:1.5px solid ${clr};font-size:11px;font-weight:700;
+  pillEl.innerHTML = procs.map(p => {
+    const selected = isAll || (_selectedPids && _selectedPids.has(p.id));
+    const isFocused = _focusedPid === p.id;
+    const hasSubs = p.subs && p.subs.length > 0;
+    const clr = CLR[procs.findIndex(x=>x.id===p.id) % CLR.length] || 'var(--accent)';
+    return `<div style="display:inline-flex;align-items:center;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid ${clr}">
+      <button onclick="dpToggleProc('${p.id}')"
+        style="padding:2px 8px;border:none;font-size:11px;font-weight:700;
+          background:${selected ? clr : 'transparent'};
+          color:${selected ? '#fff' : clr};
+          cursor:pointer;transition:all .15s;white-space:nowrap">
+        ${p.icon||''} ${p.name}
+      </button>${hasSubs ? `<button onclick="dpToggleSubs('${p.id}')"
+        title="하위 카테고리"
+        style="padding:2px 6px;border:none;border-left:1px solid ${clr}44;font-size:10px;
+          background:${isFocused ? clr : 'transparent'};
+          color:${isFocused ? '#fff' : clr};
+          cursor:pointer">▾</button>` : ''}
+    </div>`;
+  }).join('');
+
+  // 하위 카테고리 패널 렌더링
+  renderDpSubPills();
+}
+
+function dpToggleSubs(pid) {
+  if(_focusedPid === pid) {
+    _focusedPid = null;
+    _selectedSubs = null;
+  } else {
+    _focusedPid = pid;
+    _selectedSubs = null; // 전체 선택 리셋
+  }
+  renderDailyProcTable();
+}
+
+function renderDpSubPills() {
+  const subFilter = document.getElementById('dp-sub-filter');
+  const subPills = document.getElementById('dp-sub-pills');
+  const subAllBtn = document.getElementById('dp-sub-all-btn');
+  if(!subFilter || !subPills) return;
+
+  if(!_focusedPid) {
+    subFilter.style.display = 'none';
+    return;
+  }
+
+  const p = S.procedures.find(x=>x.id===_focusedPid);
+  if(!p || !p.subs || !p.subs.length) {
+    subFilter.style.display = 'none';
+    return;
+  }
+
+  subFilter.style.display = '';
+  const clr = CLR[S.procedures.findIndex(x=>x.id===_focusedPid) % CLR.length] || 'var(--accent)';
+  const isAllSub = (_selectedSubs === null);
+
+  if(subAllBtn) {
+    subAllBtn.style.background = isAllSub ? clr : 'transparent';
+    subAllBtn.style.color = isAllSub ? '#fff' : clr;
+    subAllBtn.style.borderColor = clr;
+  }
+
+  subPills.innerHTML = p.subs.map((s, i) => {
+    const key = `${p.id}:${i}`;
+    const selected = isAllSub || (_selectedSubs && _selectedSubs.has(key));
+    return `<button onclick="dpToggleSub('${p.id}',${i})"
+      style="padding:2px 10px;border-radius:12px;border:1.5px solid ${clr};font-size:11px;font-weight:600;
         background:${selected ? clr : 'transparent'};
         color:${selected ? '#fff' : clr};
-        cursor:pointer;transition:all .15s;white-space:nowrap">
-      ${p.icon} ${p.name}
+        cursor:pointer;transition:all .15s">
+      ${s.icon||''} ${s.name}
     </button>`;
   }).join('');
 }
 
+function dpSubSelectAll() {
+  _selectedSubs = (_selectedSubs === null) ? new Set() : null;
+  renderDailyProcTable();
+}
+
+function dpToggleSub(pid, idx) {
+  const key = `${pid}:${idx}`;
+  const p = S.procedures.find(x=>x.id===pid);
+  if(!p || !p.subs) return;
+  if(_selectedSubs === null) {
+    _selectedSubs = new Set([key]);
+  } else if(_selectedSubs.has(key)) {
+    _selectedSubs.delete(key);
+    if(_selectedSubs.size === 0) _selectedSubs = null;
+  } else {
+    _selectedSubs.add(key);
+    if(_selectedSubs.size === p.subs.length) _selectedSubs = null;
+  }
+  renderDailyProcTable();
+}
+
 function dpSelectAll() {
-  _selectedPids = null;
+  _selectedPids = (_selectedPids === null) ? new Set() : null;
+  _focusedPid = null;
+  _selectedSubs = null;
   renderDailyProcTable();
 }
 
 function dpToggleProc(pid) {
-  const allProcs = S.procedures;
+  _focusedPid = null;
+  _selectedSubs = null;
+  const procs = S.procedures;
   if (!_selectedPids) {
     _selectedPids = new Set([pid]);
   } else if (_selectedPids.has(pid)) {
@@ -5643,7 +6017,7 @@ function dpToggleProc(pid) {
     if (_selectedPids.size === 0) _selectedPids = null;
   } else {
     _selectedPids.add(pid);
-    if (_selectedPids.size === allProcs.length) _selectedPids = null;
+    if (_selectedPids.size === procs.length) _selectedPids = null;
   }
   renderDailyProcTable();
 }
@@ -5698,26 +6072,34 @@ function renderDailyProcTable(){
   const el=document.getElementById('daily-proc-table');
   if(!el) return;
 
-  // 실제 사용된 시술 pid (색상 구분용)
+  // 실제 사용된 시술 pid
   const usedPids=new Set();
   dates.forEach(ds=>(S.calls[ds]||[]).forEach(c=>{
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{if(n>0)usedPids.add(pid);});
   }));
 
-  // pill은 S.procedures 전체 기준 (콜기록과 동일 목록)
+  // S.procedures 최신 반영 (시술 관리 동기화)
   const allProcs = S.procedures;
 
-  // pill 필터 렌더 (전체 시술, 데이터 없는 것은 흐리게)
+  // pill 필터 렌더
   renderDpProcPills(allProcs, usedPids);
-  // 지점 pill 렌더
   renderDpBrPills();
 
-  // 표 컬럼: 선택된 것만. 전체 선택이면 데이터 있는 것만
-  const procs = _selectedPids
-    ? allProcs.filter(p => _selectedPids.has(p.id))
-    : allProcs.filter(p => usedPids.has(p.id));
+  // 표 컬럼 결정
+  let procs;
+  if(_focusedPid && _selectedSubs !== null && _selectedSubs.size === 0) {
+    // 하위 전체 해제 → 빈 표
+    procs = [];
+  } else if(_focusedPid) {
+    // 하위 카테고리 포커스 중: 해당 상위 시술만 표시
+    procs = allProcs.filter(p => p.id === _focusedPid);
+  } else if(_selectedPids) {
+    procs = allProcs.filter(p => _selectedPids.has(p.id));
+  } else {
+    procs = allProcs.filter(p => usedPids.has(p.id));
+  }
 
-  // 지점 필터 적용
+  // 지점 필터
   const branches = _selectedBids
     ? S.branches.filter(b => _selectedBids.has(b.id))
     : S.branches;
@@ -5731,16 +6113,34 @@ function renderDailyProcTable(){
     return;
   }
 
-  // 헤더 행
+  // 헤더: 하위 카테고리 포커스 중이면 하위 항목을 컬럼으로 표시
+  const focusedProc = _focusedPid ? S.procedures.find(x=>x.id===_focusedPid) : null;
+  const showSubs = focusedProc && focusedProc.subs && focusedProc.subs.length > 0;
+  const activeSubs = showSubs
+    ? focusedProc.subs.filter((_,i) => _selectedSubs===null || _selectedSubs.has(`${_focusedPid}:${i}`))
+    : [];
+
+  // 컬럼 정의
+  const cols = showSubs && activeSubs.length > 0
+    ? activeSubs.map((s,i)=>({id:`${_focusedPid}:${focusedProc.subs.indexOf(s)}`, name:s.name, icon:s.icon||'', isSub:true, parentId:_focusedPid}))
+    : procs.map(p=>({id:p.id, name:p.name, icon:p.icon||'', isSub:false}));
+
+  const clrFor = (col) => {
+    const idx = col.isSub
+      ? S.procedures.findIndex(x=>x.id===col.parentId)
+      : S.procedures.findIndex(x=>x.id===col.id);
+    return CLR[idx%CLR.length]||'var(--accent)';
+  };
+
   let html=`<table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%">
     <thead>
       <tr style="background:var(--s2)">
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;min-width:60px">날짜</th>
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap">지점</th>
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap">구분</th>
-        ${procs.map(p=>{
-          const clr=CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
-          return `<th style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr}">${p.icon} ${p.name}</th>`;
+        ${cols.map(col=>{
+          const clr=clrFor(col);
+          return `<th style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr}">${col.icon} ${col.name}</th>`;
         }).join('')}
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;background:rgba(37,99,235,.06)">합계</th>
       </tr>
@@ -5748,29 +6148,43 @@ function renderDailyProcTable(){
 
   // 날짜별 집계
   const grandTotal={shin:{},gu:{}};
-  procs.forEach(p=>{grandTotal.shin[p.id]=0;grandTotal.gu[p.id]=0;});
+  cols.forEach(c=>{grandTotal.shin[c.id]=0;grandTotal.gu[c.id]=0;});
   let grandShin=0, grandGu=0;
 
   dates.forEach(ds=>{
     const calls=S.calls[ds]||[];
     const dateLabel2 = dateLabel(ds);
     const brData={};
-    branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};procs.forEach(p=>{brData[b.id].shin[p.id]=0;brData[b.id].gu[p.id]=0;});});
+    branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};cols.forEach(c=>{brData[b.id].shin[c.id]=0;brData[b.id].gu[c.id]=0;});});
     calls.forEach(c=>{
-      if(!c.procs||!c.bid) return;
+      if(!c.procs||!c.bid||!brData[c.bid]) return;
       const ptShin = !c.pttype||c.pttype.includes('신환');
       Object.entries(c.procs).forEach(([pid,n])=>{
-        if(!n||!brData[c.bid]||!procs.find(p=>p.id===pid)) return;
-        if(ptShin) brData[c.bid].shin[pid]=(brData[c.bid].shin[pid]||0)+n;
-        else brData[c.bid].gu[pid]=(brData[c.bid].gu[pid]||0)+n;
+        if(!n) return;
+        cols.forEach(col=>{
+          if(col.isSub) return; // 하위는 아래에서 처리
+          if(col.id!==pid) return;
+          if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
+          else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
+        });
       });
+      // 하위 카테고리는 현재 집계 데이터가 없으므로 상위 pid 데이터로 표시
+      if(showSubs && activeSubs.length) {
+        cols.filter(col=>col.isSub).forEach(col=>{
+          if(c.procs[col.parentId]) {
+            const n = c.procs[col.parentId]||0;
+            if(n && ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
+            else if(n) brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
+          }
+        });
+      }
     });
 
     let dateRowspan = branches.length*2;
     let firstBr=true;
     branches.forEach(b=>{
-      const brShin=procs.map(p=>brData[b.id].shin[p.id]||0);
-      const brGu=procs.map(p=>brData[b.id].gu[p.id]||0);
+      const brShin=cols.map(col=>brData[b.id].shin[col.id]||0);
+      const brGu=cols.map(col=>brData[b.id].gu[col.id]||0);
       const brShinTotal=brShin.reduce((a,v)=>a+v,0);
       const brGuTotal=brGu.reduce((a,v)=>a+v,0);
       const bc=bclr(b.id);
@@ -5788,7 +6202,7 @@ function renderDailyProcTable(){
         <td style="padding:4px 8px;border:1px solid var(--border);text-align:center;font-weight:700;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06)">${brGuTotal}</td>
       </tr>`;
       firstBr=false;
-      procs.forEach((p,i)=>{grandTotal.shin[p.id]+=brShin[i];grandTotal.gu[p.id]+=brGu[i];});
+      cols.forEach((col,i)=>{grandTotal.shin[col.id]+=brShin[i];grandTotal.gu[col.id]+=brGu[i];});
       grandShin+=brShinTotal; grandGu+=brGuTotal;
     });
   });
@@ -5796,19 +6210,19 @@ function renderDailyProcTable(){
   html+=`<tr style="background:rgba(37,99,235,.04);font-weight:700;border-top:2px solid var(--border2)">
     <td colspan="2" style="padding:7px 10px;border:1px solid var(--border);text-align:center;font-weight:800">합계</td>
     <td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-size:10px;color:var(--green)">신환</td>
-    ${procs.map(p=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${grandTotal.shin[p.id]||0}</td>`).join('')}
+    ${cols.map(col=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${grandTotal.shin[col.id]||0}</td>`).join('')}
     <td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-weight:800;font-family:'DM Mono',monospace;background:rgba(37,99,235,.1)">${grandShin}</td>
   </tr>
   <tr style="background:rgba(37,99,235,.04);font-weight:700">
     <td colspan="2" style="padding:7px 10px;border:1px solid var(--border);text-align:center"></td>
     <td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-size:10px;color:var(--purple)">구환</td>
-    ${procs.map(p=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--purple)">${grandTotal.gu[p.id]||0}</td>`).join('')}
+    ${cols.map(col=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;color:var(--purple)">${grandTotal.gu[col.id]||0}</td>`).join('')}
     <td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-weight:800;font-family:'DM Mono',monospace;background:rgba(37,99,235,.1)">${grandGu}</td>
   </tr>
   <tr style="background:rgba(37,99,235,.08);font-weight:800;border-top:2px solid var(--accent)">
     <td colspan="2" style="padding:7px 10px;border:1px solid var(--border);text-align:center">총합</td>
     <td style="padding:7px 8px;border:1px solid var(--border)"></td>
-    ${procs.map(p=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:800;color:var(--accent)">${(grandTotal.shin[p.id]||0)+(grandTotal.gu[p.id]||0)}</td>`).join('')}
+    ${cols.map(col=>`<td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:800;color:var(--accent)">${(grandTotal.shin[col.id]||0)+(grandTotal.gu[col.id]||0)}</td>`).join('')}
     <td style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.15);color:var(--accent)">${grandShin+grandGu}</td>
   </tr>`;
 
@@ -6184,6 +6598,100 @@ function renderTrendProcChart(monthDefs){
 }
 
 // ── 6. 지점별 시술 집중 분석 ──
+let _ptTypePeriod = 3;
+function setPtTypePeriod(mo, btn){
+  _ptTypePeriod = mo;
+  document.querySelectorAll('#page-trend .period-btn[id^="ptb-"]').forEach(b=>b.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+  renderPtTypeBranchChart();
+}
+
+function renderPtTypeBranchChart(){
+  const el = document.getElementById('pttype-branch-chart');
+  if(!el) return;
+
+  // 기간 계산
+  const to = new Date(); to.setDate(1); to.setHours(0,0,0,0);
+  const from = new Date(to); from.setMonth(from.getMonth() - _ptTypePeriod);
+
+  // 날짜 범위 내 콜 수집
+  let calls = [];
+  Object.entries(S.calls||{}).forEach(([ds,arr])=>{
+    const d = new Date(ds+'T00:00:00');
+    if(d>=from && d<=new Date()) calls.push(...(arr||[]));
+  });
+
+  // 지점별 집계
+  const data = S.branches.map(b=>{
+    const bc = calls.filter(c=>c.bid===b.id);
+    const shin = bc.filter(c=>c.pttype==='신환').length;
+    const gu   = bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    const rem  = bc.filter(c=>c.pttype==='잔여시술').length;
+    const gen  = bc.filter(c=>c.pttype==='일반').length;
+    const total = bc.length;
+    return {name:b.name, shin, gu, rem, gen, total, cl:bclr(b.id)};
+  }).filter(d=>d.total>0);
+
+  if(!data.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px;font-size:12px">데이터 없음</div>';
+    return;
+  }
+
+  const maxTotal = Math.max(...data.map(d=>d.total), 1);
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+      ${data.map(d=>{
+        const shinPct = d.total ? Math.round(d.shin/d.total*100) : 0;
+        const guPct   = d.total ? Math.round(d.gu/d.total*100) : 0;
+        const remPct  = d.total ? Math.round(d.rem/d.total*100) : 0;
+        const genPct  = d.total ? Math.round(d.gen/d.total*100) : 0;
+        return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:13px;font-weight:800;color:${d.cl};margin-bottom:10px">${d.name}점 <span style="font-size:11px;color:var(--text3);font-weight:400">총 ${d.total}건</span></div>
+          ${[['신환','#059669',d.shin,shinPct],['구환(신규)','#7c3aed',d.gu,guPct],['잔여시술','#0891b2',d.rem,remPct],['일반문의','#94a3b8',d.gen,genPct]].map(([lbl,c,n,pct])=>`
+          <div style="margin-bottom:7px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+              <span style="color:${c};font-weight:700">${lbl}</span>
+              <span style="color:var(--text2)">${n}건 <span style="color:${c};font-weight:700">${pct}%</span></span>
+            </div>
+            <div style="height:6px;background:var(--s2);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${c};border-radius:3px;transition:width .4s"></div>
+            </div>
+          </div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);font-size:11px">지점</th>
+        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);font-size:11px;color:#059669">신환</th>
+        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);font-size:11px;color:#7c3aed">구환(신규)</th>
+        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);font-size:11px;color:#0891b2">잔여시술</th>
+        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);font-size:11px;color:#94a3b8">일반문의</th>
+        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);font-size:11px">합계</th>
+        <th style="padding:8px 10px;border-bottom:2px solid var(--border);font-size:11px">신환 비율</th>
+      </tr></thead>
+      <tbody>${data.map(d=>`
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 10px;font-weight:700;color:${d.cl}">${d.name}</td>
+          <td style="padding:8px 10px;text-align:right;color:#059669;font-weight:700">${d.shin}</td>
+          <td style="padding:8px 10px;text-align:right;color:#7c3aed;font-weight:700">${d.gu}</td>
+          <td style="padding:8px 10px;text-align:right;color:#0891b2">${d.rem}</td>
+          <td style="padding:8px 10px;text-align:right;color:#94a3b8">${d.gen}</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:700">${d.total}</td>
+          <td style="padding:8px 10px;min-width:100px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;height:7px;background:var(--s2);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${d.total?Math.round(d.shin/d.total*100):0}%;background:#059669;border-radius:4px"></div>
+              </div>
+              <span style="font-size:11px;color:#059669;font-weight:700;min-width:32px">${d.total?Math.round(d.shin/d.total*100):0}%</span>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
 function renderTrendBrFilter(){
   if(!_trendBid) _trendBid=S.branches[0]?.id||null;
   document.getElementById('trend-br-filter').innerHTML=S.branches.map(b=>{
