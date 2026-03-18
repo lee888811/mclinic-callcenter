@@ -486,12 +486,13 @@ td:first-child{text-align:left;padding-left:13px}
           <span id="inc-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
         </div>
 
-        <div class="slbl">아웃콜 차수별 인센티브 <span style="font-size:9px;color:var(--text3);font-weight:400;letter-spacing:0">(예약 성공 1건당 · 전 차수 인센티브 지급)</span></div>
-        <div class="tbl" style="max-width:340px">
-          <table>
-            <thead><tr><th style="text-align:left">차수</th><th>예약 성공 1건당</th></tr></thead>
-            <tbody id="inc-tbody"></tbody>
-          </table>
+        <div class="slbl">아웃콜 성공 인센티브 설정</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--s2);border-radius:10px;max-width:360px;margin-bottom:18px">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">예약 성공 1건당</span>
+          <input type="number" id="inc-rate-input" min="0" step="500" placeholder="0"
+            style="width:120px;background:#fff;border:1.5px solid var(--accent);border-radius:8px;padding:6px 10px;font-size:16px;font-weight:800;font-family:'DM Mono',monospace;text-align:center;color:var(--green)"
+            onchange="saveIncRate(this.value)">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">원</span>
         </div>
         <div style="margin-top:18px">
           <div class="slbl">직원별 인센티브 현황 <span id="inc-period-sub" style="font-size:9px"></span></div>
@@ -2132,10 +2133,8 @@ async function syncPull(){
   if(!_syncUrl) return;
   updateSyncUI('syncing');
   const base=_syncUrl.replace(/\/+$/,'');
-  const url = base+'/mclinic.json';
-  console.log('🔄 syncPull URL:', url);
   try{
-    const r=await fbFetch(url);
+    const r=await fbFetch(base+'/mclinic.json');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     if(!data) throw new Error('empty');
@@ -2175,9 +2174,9 @@ async function syncPull(){
     const actPage=document.querySelector('.page.act');
     if(actPage){const pid=actPage.id.replace('page-','');try{go(pid,document.querySelector(`.si[data-page="${pid}"]`),true);}catch(e){}}
   }catch(err){
-    updateSyncUI('error');
+    // 네트워크 일시 오류 - UI 오류 표시 없이 조용히 재시도
     console.warn('sync error:', err.message);
-    setTimeout(()=>{ if(_syncUrl&&!_isSyncing) syncPull(); }, 30000);
+    setTimeout(()=>{ if(_syncUrl&&!_isSyncing) syncPull(); }, 15000);
   }
 }
 
@@ -3993,134 +3992,104 @@ function getIncDateRange(){
   return {from:t,to:t,label:'오늘'};
 }
 
-function renderIncentive(){
-  document.getElementById('inc-tbody').innerHTML=[1,2,3,4,5].map(d=>{
-    const val=S.incentive[d]?.success||'';
-    return `<tr>
-      <td><strong>${d}차콜</strong></td>
-      <td style="text-align:center">
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-          <input type="number" value="${val}" min="0" step="500" placeholder="0"
-            style="width:100px;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:4px 9px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;text-align:center;color:var(--green)"
-            onchange="if(!S.incentive[${d}])S.incentive[${d}]={};S.incentive[${d}].success=+this.value;autoSave();renderIncentive()">
-          <span style="font-size:12px;color:var(--text2)">원</span>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+function saveIncRate(val){
+  if(!S.incentive) S.incentive={};
+  S.incentive.rate = +val||0;
+  autoSave(); syncPush(true);
+  toast('✅ 인센티브 금액 저장됨');
+}
 
-  // 기간 범위 계산
+function renderIncentive(){
+  const rateInput = document.getElementById('inc-rate-input');
+  const rate = S.incentive?.rate || S.incentive?.[1]?.success || 0;
+  if(rateInput) rateInput.value = rate||'';
+
   const {from, to, label} = getIncDateRange();
   const lbl=document.getElementById('inc-period-label');
   const sub=document.getElementById('inc-period-sub');
   if(lbl) lbl.textContent=label;
   if(sub) sub.textContent=`(${label})`;
 
-  // 기간 내 발신 콜 수집
   const dates=getDateRange(from,to);
   const mCalls=dates.flatMap(ds=>(S.calls[ds]||[]));
 
   document.getElementById('inc-staff-grid').innerHTML=S.staff.map(s=>{
     const outCalls=mCalls.filter(c=>c.sid===s.id&&c.type==='out');
-    let total=0;
-    const rows=[1,2,3,4,5].map(d=>{
-      const dc=outCalls.filter(c=>c.degree===d);
-      if(!dc.length) return `<div class="inc-row" style="opacity:.35"><span>${d}차콜</span><span class="inc-amt">-</span></div>`;
-      const succCalls=dc.filter(c=>c.booked);
-      const succ=succCalls.length;
-      const rate=S.incentive[d]?.success||0;
-      const amt=succ*rate;
-      total+=amt;
-      // 예약 성공 고객 목록 (클릭 가능)
-      const customerList=succCalls.map(c=>{
-        const name=c.outPtname||'이름 미입력';
-        const phone=c.outPtphone||'번호 미입력';
-        const branch=S.branches.find(b=>b.id===c.bid);
-        const bname=branch?branch.name+'점':'';
-        const info=[name,phone,bname].filter(Boolean).join(' · ');
-        // 콜 ID를 Map에 저장해두고 onclick에서 ID만 넘김 (JSON in HTML attribute 금지)
-        _incDetailMap[c.id]={
-          name:c.outPtname||'', phone:c.outPtphone||'',
-          branch:bname, purpose:c.outPurpose||'', degree:d,
-          time:c.time||'', date:c.date||'',
-          pttype:c.pttype||'', memo:c.memo||'',
-          staffName:s.name
-        };
-        return `<div onclick="openIncDetail('${c.id}')"
-          style="font-size:11px;color:var(--text2);padding:5px 10px;border-left:2px solid var(--green);margin:3px 0;background:var(--s2);border-radius:0 6px 6px 0;cursor:pointer;transition:background .15s"
-          onmouseover="this.style.background='rgba(5,150,105,.1)'" onmouseout="this.style.background='var(--s2)'">
-          ✅ ${info}
-          <span style="color:var(--text3);font-size:10px;margin-left:4px">${c.time||''}</span>
-          <span style="float:right;font-size:10px;color:var(--accent)">상세보기 ›</span>
-        </div>`;
-      }).filter(Boolean).join('');
-      return `<div style="margin-bottom:4px">
-        <div class="inc-row">
-          <span>${d}차콜 · <span style="color:var(--green);font-weight:700">성공 ${succ}건</span>${dc.length-succ>0?` · <span style="color:var(--text3)">${dc.length-succ}건 미예약</span>`:''}</span>
-          <span class="inc-amt">${rate>0?amt.toLocaleString()+'원':'미설정'}</span>
+    const succCalls=outCalls.filter(c=>c.booked);
+    const failCalls=outCalls.filter(c=>!c.booked);
+    const total=succCalls.length*rate;
+    const cl=sclr(s.id);
+    const succRate=outCalls.length>0?Math.round(succCalls.length/outCalls.length*100):0;
+
+    const customerList=succCalls.map(c=>{
+      const name=c.outPtname||'이름 미입력';
+      const phone=c.outPtphone||'번호 미입력';
+      const branch=S.branches.find(b=>b.id===c.bid);
+      const bname=branch?branch.name+'점':'';
+      const procNames=c.procs
+        ? Object.keys(c.procs).map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?`${p.icon||''} ${p.name}`:null;}).filter(Boolean).join(', ')
+        : '';
+      _incDetailMap[c.id]={
+        name:c.outPtname||'', phone:c.outPtphone||'',
+        branch:bname, purpose:c.outPurpose||'', degree:c.degree,
+        time:c.time||'', date:c.date||'',
+        pttype:c.pttype||'', memo:c.memo||'',
+        staffName:s.name
+      };
+      return `<div onclick="openIncDetail('${c.id}')"
+        style="padding:8px 10px;border-left:3px solid var(--green);margin:4px 0;background:var(--s2);border-radius:0 8px 8px 0;cursor:pointer"
+        onmouseover="this.style.background='rgba(5,150,105,.08)'" onmouseout="this.style.background='var(--s2)'">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:700;color:var(--text)">✅ ${name}</span>
+          <span style="font-size:10px;color:var(--text3)">${phone}</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--accent)">상세 ›</span>
         </div>
-        ${customerList}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--text3)">
+          ${bname?`<span>🏥 ${bname}</span>`:''}
+          ${c.date?`<span>📅 ${c.date}</span>`:''}
+          ${c.time?`<span>🕐 ${c.time}</span>`:''}
+          ${procNames?`<span style="color:var(--accent)">💉 ${procNames}</span>`:''}
+        </div>
       </div>`;
     }).join('');
-    const cl=sclr(s.id);
-    return `<div class="inc-card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px">
-        <div class="avl" style="background:${cl};width:28px;height:28px;font-size:12px">${s.name[0]}</div>
-        <span>${s.name}</span>
-        <span style="margin-left:auto;font-size:11px;color:var(--text3)">아웃콜 ${outCalls.length}건</span>
-      </div>
-      ${rows}
-      <div class="inc-row" style="font-weight:700;margin-top:4px;padding-top:8px;border-top:2px solid var(--border);border-bottom:none">
-        <span>이번달 인센티브 합계</span>
-        <span style="font-family:'DM Mono',monospace;font-weight:800;font-size:15px;color:var(--green)">${total.toLocaleString()}원</span>
-      </div>
-    </div>`;
-  }).join('')||'<div style="color:var(--text3);font-size:12px">직원 없음</div>';
-}
 
-function openIncDetail(cid){
-  const c=_incDetailMap[cid];
-  if(!c) return;
-  document.getElementById('inc-detail-title').textContent=`✅ 예약 성공 상세 — ${c.staffName}`;
-  const rows=[
-    ['👤 고객명',    c.name||'미입력'],
-    ['📱 연락처',    c.phone||'미입력'],
-    ['🏥 지점',      c.branch||'미입력'],
-    ['📅 상담일시',  `${c.date||''} ${c.time||''}`],
-    ['📞 통화 목적', c.purpose||'미입력'],
-    ['🔢 아웃콜 차수', c.degree+'차'],
-    ['👥 환자 구분', c.pttype||'미입력'],
-    ['📝 메모',      c.memo||'-'],
-  ];
-  document.getElementById('inc-detail-body').innerHTML=`
-    <table style="width:100%;border-collapse:collapse">
-      ${rows.map(([k,v])=>`
-        <tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:9px 12px;font-size:12px;font-weight:700;color:var(--text2);white-space:nowrap;width:110px;background:var(--s2)">${k}</td>
-          <td style="padding:9px 12px;font-size:13px;color:var(--text);font-weight:${k.includes('고객명')||k.includes('연락처')?'700':'400'}">${v}</td>
-        </tr>`).join('')}
-    </table>`;
-  document.getElementById('modal-inc-detail').classList.add('open');
-}
+    const failList=failCalls.length?`
+      <div style="margin-top:6px;font-size:11px;color:var(--text3);padding:6px 10px;background:#fef2f2;border-radius:8px;border-left:3px solid var(--red)">
+        ❌ 미예약 ${failCalls.length}건
+        ${failCalls.map(c=>`<span style="margin-left:8px;color:#dc2626">${c.outPtname||'미입력'} (${c.outResult||'결과없음'})</span>`).join('')}
+      </div>`:'';
 
-
-
-// ═══════════════════════════════════
-// BRANCH MANAGEMENT
-// ═══════════════════════════════════
-function renderBranchMgmt(){
-  document.getElementById('br-mgmt-grid').innerHTML=
-    S.branches.map(b=>`<div class="sc">
-      <div class="sct"><div class="avl" style="background:${bclr(b.id)}">${b.name[0]}</div>
+    return `<div class="inc-card" style="min-width:280px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div class="avl" style="background:${cl};width:32px;height:32px;font-size:13px">${s.name[0]}</div>
         <div style="flex:1">
-          <input class="scn" value="${b.name}" onchange="S.branches.find(x=>x.id==='${b.id}').name=this.value;autoSave()">
-          <input class="scr" style="background:var(--s2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-family:'Noto Sans KR',sans-serif;padding:4px 8px;border-radius:5px;width:100%;margin-top:4px"
-            value="${b.addr||''}" placeholder="주소" onchange="S.branches.find(x=>x.id==='${b.id}').addr=this.value;autoSave()">
+          <div style="font-size:14px;font-weight:800;color:var(--text)">${s.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${s.role||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:900;color:var(--green);font-family:'DM Mono',monospace">${total.toLocaleString()}원</div>
+          <div style="font-size:10px;color:var(--text3)">인센티브 합계</div>
         </div>
       </div>
-      <button class="scdel" onclick="delBr('${b.id}')">✕ 삭제</button>
-    </div>`).join('')+
-    `<div class="addc" onclick="openAddBranch()"><span style="font-size:20px">+</span><span>지점 추가</span></div>`;
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="text-align:center;padding:6px;background:var(--s2);border-radius:8px">
+          <div style="font-size:18px;font-weight:800;color:var(--text);font-family:'DM Mono',monospace">${outCalls.length}</div>
+          <div style="font-size:9px;color:var(--text3)">총 아웃콜</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+          <div style="font-size:18px;font-weight:800;color:var(--green);font-family:'DM Mono',monospace">${succCalls.length}</div>
+          <div style="font-size:9px;color:#059669">예약 성공</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca">
+          <div style="font-size:18px;font-weight:800;color:var(--red);font-family:'DM Mono',monospace">${failCalls.length}</div>
+          <div style="font-size:9px;color:#dc2626">미예약</div>
+        </div>
+      </div>
+      ${outCalls.length>0?`<div style="height:6px;background:var(--s2);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;width:${succRate}%;background:var(--green);border-radius:3px"></div></div>`:''}
+      ${succCalls.length?`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">✅ 예약 성공 고객</div>${customerList}`:`<div style="font-size:11px;color:var(--text3);text-align:center;padding:12px">아웃콜 성공 없음</div>`}
+      ${failList}
+    </div>`;
+  }).join('')||'<div style="color:var(--text3);font-size:12px">직원 없음</div>';
 }
 function openAddBranch(){
   document.getElementById('mn').value='';
