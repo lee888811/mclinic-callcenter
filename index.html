@@ -1205,18 +1205,19 @@ td:first-child{text-align:left;padding-left:13px}
       <button class="btn btn-p" onclick="confirmCall()">✅ 저장</button>
     </div>
   </div>
-    <!-- 수가표·병원정보 패널 (오른쪽 독립 창) -->
-    <div style="width:340px;flex-shrink:0;background:var(--s1);border:1px solid var(--border);border-radius:14px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18)">
-      <!-- 헤더 -->
-      <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:14px;font-weight:800;color:var(--text);flex:1">📒 수가표·병원정보</span>
-          <button onclick="openNoteModal(null)" style="padding:5px 12px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 추가</button>
-        </div>
-        <input id="modal-note-search" class="minp" placeholder="🔍 시술명·가격·공지 검색..." style="font-size:12px;padding:7px 10px;width:100%;box-sizing:border-box" oninput="renderModalNotes(this.value)">
+
+    <!-- ★ 수가표·병원정보 패널 -->
+    <div id="side-notes-panel" style="width:340px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <div style="padding:12px 14px;background:#2563eb;display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:800;color:#fff;flex:1">📒 수가표·병원정보</span>
+        <button onclick="openNoteModal(null)" style="padding:4px 10px;border-radius:7px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 추가</button>
       </div>
-      <!-- 목록 -->
-      <div id="modal-notes-list" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="padding:8px;background:#f0f4ff">
+        <input id="snp-search" type="text" placeholder="🔍 시술명·가격·공지 검색..."
+          style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid #c7d2fe;font-size:12px;box-sizing:border-box;background:#fff;color:#1e293b;outline:none"
+          oninput="snpRender(this.value)">
+      </div>
+      <div id="snp-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
     </div>
   </div>
 </div>
@@ -2471,8 +2472,7 @@ function openCallModal(sid){
   renderModalProcGrid();
   toggleSubFields();
   document.getElementById('modal-call').classList.add('open');
-  // _notes 로드 완료 후 렌더링
-  setTimeout(()=>renderModalNotes(''), 100);
+  setTimeout(()=>snpRender(''), 50);
 }
 
 function openEditModal(cid, sid, ds){
@@ -10755,7 +10755,9 @@ function initNotes(){
   try{
     const raw=localStorage.getItem(NK);
     if(raw){
-      _notes=JSON.parse(raw);
+      const parsed=JSON.parse(raw);
+      // null, 빈 객체, title 없는 항목 제거
+      _notes=(Array.isArray(parsed)?parsed:[]).filter(n=>n&&n.id&&n.title&&n.title.trim());
       const ids=new Set(_notes.map(n=>n.id));
       NDB.forEach(n=>{if(!ids.has(n.id))_notes.push({...n});});
     } else {
@@ -10787,7 +10789,18 @@ async function syncNotesPull(){
     const base=_syncUrl.replace(/\/+$/,'');
     const r=await fetch(base+'/notes.json');
     const data=await r.json();
-    if(Array.isArray(data)&&data.length){_notes=data;saveNotesLocal();}
+    let arr=[];
+    if(Array.isArray(data)) arr=data;
+    else if(data&&typeof data==='object') arr=Object.values(data);
+    arr=arr.filter(n=>n&&typeof n==='object'&&n.id&&n.title&&String(n.title).trim());
+    if(arr.length){
+      _notes=arr;
+      saveNotesLocal();
+      // 모달이 열려있으면 즉시 갱신
+      if(document.getElementById('modal-call')?.classList.contains('open')){
+        renderModalNotes(document.getElementById('modal-note-search')?.value||'');
+      }
+    }
   }catch(e){}
 }
 
@@ -10927,24 +10940,87 @@ async function startAiReformat(){
 }
 
 // ─── 렌더링 ─────────────────────────────────────────────────
+// ★ 콜 기록 옆 수가표 패널
+function snpRender(q){
+  const el = document.getElementById('snp-list');
+  if(!el){ setTimeout(()=>snpRender(q||''), 200); return; }
+
+  q = (q||'').toLowerCase().trim();
+  const words = q ? q.split(/\s+/) : [];
+
+  // NDB에서 직접 가져오기 (가장 확실한 방법)
+  let src = [];
+  try {
+    if(typeof NDB !== 'undefined' && NDB.length) {
+      src = NDB.filter(n => n && n.title && n.title.trim());
+    }
+    // Firebase 데이터가 있으면 병합
+    if(_notes && _notes.length) {
+      const ndbIds = new Set(src.map(n=>n.id));
+      const extra = _notes.filter(n=>n&&n.id&&n.title&&n.title.trim()&&!ndbIds.has(n.id));
+      src = [...extra, ...src];
+    }
+  } catch(e) {}
+
+  if(!src.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:12px">⏳ 로딩 중...</div>';
+    setTimeout(()=>snpRender(q), 500);
+    return;
+  }
+
+  let list = words.length
+    ? src.filter(n => {
+        const h = ((n.title||'')+' '+(n.content||'')+' '+(n.branch||'')+' '+(n.category||'')).toLowerCase();
+        return words.every(w => h.includes(w));
+      })
+    : src;
+
+  list = list.slice(0, 50);
+
+  if(!list.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:12px">검색 결과 없음</div>';
+    return;
+  }
+
+  const CC = {'수가표':'#2563eb','병원정보':'#059669','카톡이벤트':'#d97706','공지사항':'#7c3aed','이벤트':'#db2777','시술설명':'#0891b2','첫방문이벤트':'#e11d48','원장지정안내':'#0891b2'};
+
+  el.innerHTML = list.map(n => {
+    const c = CC[n.category] || '#94a3b8';
+    const id = (n.id||'').toString().replace(/'/g, '');
+    const title = (n.title||'').replace(/[<>]/g, '');
+    const preview = (n.content||'').replace(/\n/g,' ').replace(/[<>]/g,'').slice(0, 55);
+    return `<div style="background:#fff;border-radius:8px;border:1.5px solid #e2e8f0;margin-bottom:4px">
+      <div onclick="viewNote('${id}')" style="padding:8px 10px;cursor:pointer">
+        <div style="margin-bottom:3px">
+          <span style="font-size:9px;font-weight:800;color:${c};background:${c}20;padding:1px 6px;border-radius:5px">${n.category||''}</span>
+          <span style="font-size:9px;color:#999;margin-left:4px">${n.branch||''}</span>
+        </div>
+        <div style="font-size:11.5px;font-weight:700;color:#1e293b">${title}</div>
+        ${preview ? `<div style="font-size:10px;color:#888;margin-top:2px">${preview}…</div>` : ''}
+      </div>
+      <div style="display:flex;border-top:1px solid #f0f0f0">
+        <button onclick="viewNote('${id}')" style="flex:1;padding:5px;font-size:10px;border:none;background:#f8f8f8;color:#555;cursor:pointer;border-right:1px solid #f0f0f0">보기</button>
+        <button onclick="openNoteModal('${id}')" style="flex:1;padding:5px;font-size:10px;border:none;background:#eff6ff;color:#2563eb;cursor:pointer;font-weight:700;border-right:1px solid #f0f0f0">수정</button>
+        <button onclick="delNote('${id}')" style="flex:1;padding:5px;font-size:10px;border:none;background:#fff5f5;color:#dc2626;cursor:pointer;font-weight:700">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderModalNotes(q){
   q=(q||'').toLowerCase().trim();
   const words=q?q.split(/\s+/).filter(Boolean):[];
   const el=document.getElementById('modal-notes-list');
-  if(!el)return;
+  if(!el){ setTimeout(()=>renderModalNotes(q),100); return; }
 
-  // _notes가 아직 비어있으면 로딩 표시
-  if(!_notes||!_notes.length){
-    el.innerHTML=`<div style="color:var(--text3);text-align:center;padding:30px 10px;font-size:12px">
-      <div style="font-size:20px;margin-bottom:6px">⏳</div>데이터 로딩 중...</div>`;
-    setTimeout(()=>renderModalNotes(q), 800);
-    return;
-  }
+  // 유효 항목 추출 (title 있는 것만)
+  const validNotes=(_notes||[]).filter(n=>n&&n.id&&n.title&&String(n.title).trim());
 
-  // 제목 있는 항목만, 빈 항목 완전 제외
-  let list=_notes.filter(n=>{
-    if(!n||!n.id) return false;
-    if(!n.title||!n.title.trim()) return false;
+  // 유효 항목이 없으면 NDB 기본 데이터 사용
+  const source = validNotes.length>0 ? validNotes : NDB.filter(n=>n&&n.title);
+
+  // 검색 필터
+  let list = source.filter(n=>{
     if(!words.length) return true;
     const hay=(n.title+' '+(n.content||'')+' '+(n.branch||'')+' '+(n.category||'')+' '+(n.sheet||'')).toLowerCase();
     return words.every(w=>hay.includes(w));
@@ -10953,7 +11029,7 @@ function renderModalNotes(q){
   if(!list.length){
     el.innerHTML=`<div style="color:var(--text3);text-align:center;padding:30px 10px;font-size:12px">
       <div style="font-size:24px;margin-bottom:8px">🔍</div>
-      ${q?`"${q}" 검색 결과 없음`:'등록된 항목 없음'}<br>
+      ${q?`"${q}" 검색 결과 없음`:'항목 없음'}<br>
       <button onclick="openNoteModal(null)" style="margin-top:10px;padding:6px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 새 항목 추가</button>
     </div>`;
     return;
@@ -10963,25 +11039,25 @@ function renderModalNotes(q){
   el.innerHTML=list.map(n=>{
     const cc=N_CAT_C2[n.category]||'#94a3b8';
     const prev=(n.content||'').replace(/\n/g,' ').slice(0,70);
-    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:2px">
-      <div onclick="viewNote('${n.id}')" style="padding:10px 12px;cursor:pointer" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+    const nid=String(n.id).replace(/'/g,"\\'");
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+      <div onclick="viewNote('${nid}')" style="padding:10px 12px;cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap">
           <span style="font-size:9px;font-weight:800;background:${cc}18;color:${cc};padding:2px 7px;border-radius:8px;border:1px solid ${cc}33">${escHtml(n.category||'')}</span>
-          <span style="font-size:9px;color:var(--text3);background:var(--s2);padding:2px 6px;border-radius:6px">${escHtml(n.branch||'')}</span>
-          ${n.updatedAt?`<span style="font-size:9px;color:var(--text3);margin-left:auto">📅 ${n.updatedAt}</span>`:''}
+          <span style="font-size:9px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">${escHtml(n.branch||'')}</span>
+          ${n.updatedAt?`<span style="font-size:9px;color:#94a3b8;margin-left:auto">📅 ${n.updatedAt}</span>`:''}
         </div>
-        <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-all;margin-bottom:3px">${escHtml(n.title)}</div>
-        ${prev?`<div style="font-size:10px;color:var(--text3);line-height:1.5">${escHtml(prev)}${(n.content||'').length>70?'…':''}</div>`:''}
+        <div style="font-size:12px;font-weight:700;color:#1e293b;line-height:1.4;word-break:break-all;margin-bottom:3px">${escHtml(String(n.title))}</div>
+        ${prev?`<div style="font-size:10px;color:#64748b;line-height:1.5">${escHtml(prev)}${(n.content||'').length>70?'…':''}</div>`:''}
       </div>
-      <div style="display:flex;border-top:1px solid var(--border)">
-        <button onclick="viewNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:600;border:none;border-right:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer">🔍 전체보기</button>
-        <button onclick="openNoteModal('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;border-right:1px solid var(--border);background:#eff6ff;color:#2563eb;cursor:pointer">✏️ 수정</button>
-        <button onclick="delNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;background:#fff5f5;color:#dc2626;cursor:pointer">🗑 삭제</button>
+      <div style="display:flex;border-top:1px solid #e2e8f0">
+        <button onclick="viewNote('${nid}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:600;border:none;border-right:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer">🔍 전체보기</button>
+        <button onclick="openNoteModal('${nid}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;border-right:1px solid #e2e8f0;background:#eff6ff;color:#2563eb;cursor:pointer">✏️ 수정</button>
+        <button onclick="delNote('${nid}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;background:#fff5f5;color:#dc2626;cursor:pointer">🗑 삭제</button>
       </div>
     </div>`;
   }).join('');
 }
-
 // ══════════════════════════════════════
 // 마케팅 페이지
 // ══════════════════════════════════════
