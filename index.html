@@ -319,10 +319,10 @@ td:first-child{text-align:left;padding-left:13px}
     <div id="staffNavList"></div>
     <div class="sdiv"></div>
     <div class="sg">분석</div>
+    <div class="si" data-page="closingrpt" onclick="go('closingrpt',this)"><span class="sico">📢</span>일일 보고</div>
+    <div class="si" data-page="trend" onclick="go('trend',this)"><span class="sico">📈</span>월간 보고</div>
     <div class="si" data-page="procmatrix" onclick="go('procmatrix',this)"><span class="sico">📊</span>시술×지점 분석</div>
-    <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 현황</div>
-    <div class="si" data-page="trend" onclick="go('trend',this)"><span class="sico">📈</span>트렌드 분석</div>
-    <div class="si" data-page="closingrpt" onclick="go('closingrpt',this)"><span class="sico">📢</span>마감 보고</div>
+    <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 인입</div>
     <div class="sdiv"></div>
     <div class="sg">수가표·정보</div>
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
@@ -783,10 +783,10 @@ td:first-child{text-align:left;padding-left:13px}
       <div class="proc-mgmt-grid" id="channel-mgmt-grid"></div>
     </div>
 
-    <!-- 채널 현황 분석 -->
+    <!-- 채널 인입 분석 -->
     <div class="page" id="page-channel">
       <div class="ph">
-        <div><div class="pt">📡 채널별 현황</div><div class="ps" id="ch-date-lbl"></div></div>
+        <div><div class="pt">📡 채널 인입</div><div class="ps" id="ch-date-lbl"></div></div>
         <div class="pbtns">
           <button class="btn btn-g btn-sm" onclick="exportChannelCSV()">📥 엑셀</button>
           <button class="btn btn-g btn-sm" onclick="renderChannelPage()">🔄</button>
@@ -836,12 +836,43 @@ td:first-child{text-align:left;padding-left:13px}
         <button class="period-btn" id="pmpt-rem" onclick="setPmPttype('잔여시술',this)">잔여시술</button>
       </div>
       <div id="proc-matrix-content"></div>
+
+      <!-- 시술×지점 예약 현황 표 -->
+      <div class="card" style="margin-top:14px">
+        <div class="ch2" style="margin-bottom:8px;flex-wrap:wrap;gap:8px">
+          <span class="slbl" style="margin:0">📋 시술×지점 예약 현황</span>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+            <button class="period-btn act" id="dpb-today" onclick="setDailyProcPeriod('today',this)">당일</button>
+            <button class="period-btn" id="dpb-week" onclick="setDailyProcPeriod('week',this)">최근 7일</button>
+            <button class="period-btn" id="dpb-month" onclick="setDailyProcPeriod('month',this)">최근 1달</button>
+            <button class="period-btn" id="dpb-custom" onclick="setDailyProcPeriod('custom',this)">직접선택</button>
+            <div id="dp-custom-range" style="display:none;align-items:center;gap:5px">
+              <input type="date" id="dp-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
+              <span style="font-size:11px;color:var(--text3)">~</span>
+              <input type="date" id="dp-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
+            </div>
+          </div>
+        </div>
+        <div id="dp-proc-filter" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">시술 선택</span>
+          <button onclick="dpSelectAll()" id="dp-all-btn"
+            style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
+          <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">지점 선택</span>
+          <button onclick="dpBrSelectAll()" id="dp-br-all-btn"
+            style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
+          <div id="dp-br-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+        <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
+      </div>
     </div>
 
-    <!-- 📈 트렌드 분석 -->
+    <!-- 📈 월간 보고 -->
     <div class="page" id="page-trend">
       <div class="ph">
-        <div><div class="pt">📈 트렌드 분석</div><div class="ps">월별·지점별·시술별 추이 한눈에</div></div>
+        <div><div class="pt">📈 월간 보고</div><div class="ps">월별·지점별·시술별 추이 한눈에</div></div>
       </div>
 
       <!-- 기간 선택 -->
@@ -893,43 +924,6 @@ td:first-child{text-align:left;padding-left:13px}
         </div>
       </div>
 
-      <!-- 시술×지점 일일 예약 현황 표 -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="ch2" style="margin-bottom:8px;flex-wrap:wrap;gap:8px">
-          <span class="slbl" style="margin:0">📋 시술×지점 예약 현황</span>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-            <button class="period-btn act" id="dpb-today" onclick="setDailyProcPeriod('today',this)">당일</button>
-            <button class="period-btn" id="dpb-week" onclick="setDailyProcPeriod('week',this)">최근 7일</button>
-            <button class="period-btn" id="dpb-month" onclick="setDailyProcPeriod('month',this)">최근 1달</button>
-            <button class="period-btn" id="dpb-custom" onclick="setDailyProcPeriod('custom',this)">직접선택</button>
-            <div id="dp-custom-range" style="display:none;align-items:center;gap:5px">
-              <input type="date" id="dp-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
-              <span style="font-size:11px;color:var(--text3)">~</span>
-              <input type="date" id="dp-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
-            </div>
-          </div>
-        </div>
-        <!-- 시술 선택 필터 -->
-        <div id="dp-proc-filter" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-          <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">시술 선택</span>
-          <button onclick="dpSelectAll()" id="dp-all-btn"
-            style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">
-            전체
-          </button>
-          <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-        </div>
-        <!-- 지점 선택 필터 -->
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-          <span style="font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap">지점 선택</span>
-          <button onclick="dpBrSelectAll()" id="dp-br-all-btn"
-            style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">
-            전체
-          </button>
-          <div id="dp-br-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-        </div>
-        <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
-      </div>
-
       <!-- 4. 시술별 기간별 추이 (시술 선택) -->
       <div class="card" style="margin-bottom:14px">
         <div class="ch2" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
@@ -961,10 +955,10 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
-    <!-- 마감 보고 -->
+    <!-- 일일 보고 -->
     <div class="page" id="page-closingrpt">
       <div class="ph">
-        <div><div class="pt">📢 마감 보고</div><div class="ps">지점별 개별 보고 생성</div></div>
+        <div><div class="pt">📢 일일 보고</div><div class="ps">지점별 개별 보고 생성</div></div>
       </div>
       <!-- 날짜 + 지점 선택 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:11px 15px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
@@ -1349,11 +1343,11 @@ td:first-child{text-align:left;padding-left:13px}
         </label>
         <label style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--s2);border-radius:8px;cursor:pointer">
           <input type="checkbox" id="xl-chk-channel" checked style="accent-color:var(--accent);width:15px;height:15px">
-          <div><div style="font-size:13px;font-weight:600">📡 채널 현황</div><div style="font-size:11px;color:var(--text3)">채널별·지점별 상담 건수</div></div>
+          <div><div style="font-size:13px;font-weight:600">📡 채널 인입</div><div style="font-size:11px;color:var(--text3)">채널별·지점별 상담 건수</div></div>
         </label>
         <label style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--s2);border-radius:8px;cursor:pointer">
           <input type="checkbox" id="xl-chk-closing" style="accent-color:var(--accent);width:15px;height:15px">
-          <div><div style="font-size:13px;font-weight:600">📢 마감 보고</div><div style="font-size:11px;color:var(--text3)">지점별 마감 보고 요약</div></div>
+          <div><div style="font-size:13px;font-weight:600">📢 일일 보고</div><div style="font-size:11px;color:var(--text3)">지점별 일일 보고 요약</div></div>
         </label>
       </div>
     </div>
@@ -1900,17 +1894,17 @@ async function syncPull(){
     const base=_syncUrl.replace(/\/+$/,'');
 
     // 1) 설정(branches/staff/etc) + 최근 90일 콜 pull
-    // 우선 전체 구조를 가져오되, calls는 날짜별로 분리 저장됐을 수도 있음
-    // 구버전 호환: /mclinic.json 전체도 시도
     let merged = false;
 
     // 신규 구조: /mclinic.json (설정만, calls 별도)
     const r1=await fetch(base+'/mclinic.json');
     const cfg=await r1.json();
     if(cfg){
-      // 설정 적용
-      ['branches','staff','procedures','channels','roles'].forEach(k=>{if(cfg[k]?.length)S[k]=cfg[k];});
-      if(cfg.incentive) S.incentive=cfg.incentive;
+      // 로컬에 미저장 변경이 없을 때만 서버 설정으로 덮어씀
+      if(!_configDirty){
+        ['branches','staff','procedures','channels','roles'].forEach(k=>{if(cfg[k]?.length)S[k]=cfg[k];});
+        if(cfg.incentive) S.incentive=cfg.incentive;
+      }
       if(cfg._deletedIds?.length){
         if(!S._deletedIds)S._deletedIds=[];
         const ms=new Set([...S._deletedIds,...cfg._deletedIds]);
@@ -2144,8 +2138,7 @@ function go(pid,el){
   else if(pid==='procs') renderProcMgmt();
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
-  else if(pid==='procmatrix') renderProcMatrix();
-  else if(pid==='trend') renderTrend();
+  else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); }
   else if(pid==='closingrpt'){
     const cr=document.getElementById('cr-date');
     const crFrom=document.getElementById('cr-from');
@@ -2688,7 +2681,7 @@ function confirmCall(){
     else if(pid==='brsum') renderBrSum();
     else if(pid==='history') renderHistory();
     else if(pid==='channel') renderChannelPage();
-    else if(pid==='procmatrix') renderProcMatrix();
+    else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); }
   }
   toast(toastMsg);
 }
@@ -3340,11 +3333,10 @@ function saveStaffRow(sid){
   if(!s) return;
   if(nameEl) s.name=nameEl.value.trim()||s.name;
   if(roleEl) s.role=roleEl.value;
-  // 강제 서버 저장
-  autoSave();
-  syncPush(true);
+  _configDirty=false; // 풀 방지 해제 후 푸시
+  localStorage.setItem('mclinic_v2',JSON.stringify(S));
+  syncPush(true).then(()=>{ _configDirty=false; });
   renderSidebar();
-  // 저장 버튼 숨기기
   const btn=document.getElementById('ssave-'+sid);
   if(btn) btn.style.display='none';
   toast(`✅ ${s.name} 저장됨`);
@@ -3353,35 +3345,43 @@ function saveStaffRow(sid){
 function setStaffPw(sid, pw){
   if(!pw.trim()) return;
   const s=S.staff.find(x=>x.id===sid);
-  if(s){s.pw=pw.trim();autoSave();renderStaffMgmt();toast('🔑 '+s.name+' 비밀번호 설정됨');}
+  if(s){s.pw=pw.trim();localStorage.setItem('mclinic_v2',JSON.stringify(S));syncPush(true);renderStaffMgmt();toast('🔑 '+s.name+' 비밀번호 설정됨');}
 }
 
 function changeMasterPw(){
   const pw=document.getElementById('master-pw-change').value.trim();
   if(!pw){toast('비밀번호를 입력하세요');return;}
-  S.masterPw=pw;autoSave();renderStaffMgmt();toast('👑 원장 비밀번호 변경됨');
+  S.masterPw=pw;localStorage.setItem('mclinic_v2',JSON.stringify(S));syncPush(true);renderStaffMgmt();toast('👑 원장 비밀번호 변경됨');
 }
 function delRole(i){
   const r=S.roles[i];
   if(S.staff.some(s=>s.role===r)){toast(`⚠️ '${r}' 직책을 사용 중인 직원이 있습니다`);return;}
-  S.roles.splice(i,1);autoSave();renderStaffMgmt();toast('🗑 직책 삭제됨');
+  S.roles.splice(i,1);localStorage.setItem('mclinic_v2',JSON.stringify(S));syncPush(true);renderStaffMgmt();toast('🗑 직책 삭제됨');
 }
 function addRole(){
   const name=prompt('새 직책 이름:');if(!name?.trim())return;
   if(S.roles.includes(name.trim())){toast('이미 존재하는 직책입니다');return;}
-  S.roles.push(name.trim());autoSave();renderStaffMgmt();toast('✅ 직책 추가됨');
+  S.roles.push(name.trim());localStorage.setItem('mclinic_v2',JSON.stringify(S));syncPush(true);renderStaffMgmt();toast('✅ 직책 추가됨');
 }
 function delST(id){
   const s=S.staff.find(x=>x.id===id);
-  if(!s||!confirm(`${s.name} 직원을 삭제할까요?`))return;
-  S.staff=S.staff.filter(x=>x.id!==id);
-  const pg=document.getElementById('page-si-'+id);if(pg)pg.remove();
-  renderStaffMgmt();renderSidebar();autoSave();toast('🗑 '+s.name+' 삭제됨');
+  if(!s){toast('직원을 찾을 수 없습니다');return;}
+  showConfirmToast(`🗑 "${s.name}" 직원을 삭제할까요?`, ()=>{
+    S.staff=S.staff.filter(x=>x.id!==id);
+    const pg=document.getElementById('page-si-'+id);if(pg)pg.remove();
+    localStorage.setItem('mclinic_v2',JSON.stringify(S));
+    syncPush(true);
+    renderStaffMgmt();renderSidebar();
+    toast('🗑 '+s.name+' 삭제됨');
+  });
 }
 function addST(){
   const name=prompt('직원 이름:');if(!name?.trim())return;
-  S.staff.push({id:'s'+uid(),name:name.trim(),role:S.roles[0]||'상담원'});
-  renderStaffMgmt();renderSidebar();autoSave();toast('✅ '+name.trim()+' 추가됨');
+  S.staff.push({id:'s'+uid(),name:name.trim(),role:S.roles[0]||'상담원',pw:''});
+  localStorage.setItem('mclinic_v2',JSON.stringify(S));
+  syncPush(true);
+  renderStaffMgmt();renderSidebar();
+  toast('✅ '+name.trim()+' 추가됨');
 }
 
 // ═══════════════════════════════════
@@ -3920,7 +3920,7 @@ function exportProcMatrixCSV(){
 }
 
 // ═══════════════════════════════════
-// CLOSING REPORT (마감 보고)
+// CLOSING REPORT (일일 보고)
 // ═══════════════════════════════════
 let _crBid = 'all'; // 선택된 지점 (기본: 전지점)
 let _crMode = 'single'; // 'single' | 'range'
@@ -4063,7 +4063,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     return p?{icon:p.icon,name:p.name,n,shin:pCntShin[pid]||0,gu:pCntGu[pid]||0}:null;
   }).filter(Boolean);
 
-  let txt='🏢 미클리닉 전 지점 합산 마감 보고\n';
+  let txt='🏢 미클리닉 전 지점 합산 일일 보고\n';
   txt+=dateLabelStr+'\n'+'─'.repeat(28)+'\n\n';
   txt+='📊 전체 상담 현황\n';
   txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${incall+cb+out}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
@@ -4077,7 +4077,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+='\n'+'─'.repeat(28)+'\n이상 보고드립니다. 🙏';
 
   container.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+    <div style="margin-bottom:16px">
       <div class="card">
         <div class="ch2" style="margin-bottom:10px">
           <span class="slbl" style="margin:0">📝 텍스트 보고</span>
@@ -4086,20 +4086,9 @@ function renderClosingReportAll(allCalls, dateLabelStr){
         <pre id="report-text-all" style="white-space:pre-wrap;font-size:11.5px;line-height:1.85;font-family:'Noto Sans KR',sans-serif;background:var(--s2);border-radius:8px;padding:14px;color:var(--text);border:1px solid var(--border);user-select:all;max-height:520px;overflow-y:auto">${txt}</pre>
         <div style="margin-top:8px;font-size:10px;color:var(--text3)">💡 네이트온/카카오에 붙여넣기</div>
       </div>
-      <div class="card">
-        <div class="ch2" style="margin-bottom:10px">
-          <span class="slbl" style="margin:0">🖼 이미지 보고</span>
-          <button class="btn btn-p btn-sm" onclick="downloadReportImageAll()">🖼 이미지 복사 준비</button>
-        </div>
-        <div id="report-canvas-wrap-all">
-          <canvas id="report-canvas-all" style="width:100%;border-radius:8px;border:1px solid var(--border);background:#fff"></canvas>
-        </div>
-        <div style="margin-top:8px;font-size:10px;color:var(--text3)">💡 "이미지 복사 준비" 클릭 → 이미지 우클릭 → 이미지 복사</div>
-      </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-p" onclick="copyReportAll()">📋 텍스트 복사</button>
-      <button class="btn btn-p" onclick="downloadReportImageAll()">🖼 이미지 복사 준비</button>
     </div>`;
   setTimeout(()=>drawReportCanvasAll('전 지점 합산 · '+dateLabelStr, brSum, branchSubs, topProcs), 50);
 }
@@ -4128,7 +4117,7 @@ function drawReportCanvasAll(dateStr, sum, branchSubs, topProcs){
   if(!canvas) return;
   const W=600, PAD=28;
   const rows=[];
-  rows.push({t:'header',text:'미클리닉 전 지점 합산 마감 보고'});
+  rows.push({t:'header',text:'미클리닉 전 지점 합산 일일 보고'});
   rows.push({t:'date',text:dateStr});
   rows.push({t:'div'});
   rows.push({t:'sec',text:'📊 전체 상담 현황'});
@@ -4310,7 +4299,7 @@ ${procLines}`:''}
   const brSum={total:calls.length,incall,callback:cb,outcall:out,phone:phoneCalls.length,chat:chatCalls.length,shin,gu,cancel,noappt};
 
   container.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+    <div style="margin-bottom:16px">
       <div class="card">
         <div class="ch2" style="margin-bottom:10px">
           <span class="slbl" style="margin:0">📝 텍스트 보고</span>
@@ -4319,20 +4308,9 @@ ${procLines}`:''}
         <pre id="report-text" style="white-space:pre-wrap;font-size:11.5px;line-height:1.85;font-family:'Noto Sans KR',sans-serif;background:var(--s2);border-radius:8px;padding:14px;color:var(--text);border:1px solid var(--border);user-select:all;max-height:520px;overflow-y:auto">${reportText}</pre>
         <div style="margin-top:8px;font-size:10px;color:var(--text3)">💡 네이트온/카카오에 붙여넣기</div>
       </div>
-      <div class="card">
-        <div class="ch2" style="margin-bottom:10px">
-          <span class="slbl" style="margin:0">🖼 이미지 보고</span>
-          <button class="btn btn-p btn-sm" onclick="downloadReportImage()">🖼 이미지 복사 준비</button>
-        </div>
-        <div id="report-canvas-wrap">
-          <canvas id="report-canvas" style="width:100%;border-radius:8px;border:1px solid var(--border);background:#fff"></canvas>
-        </div>
-        <div style="margin-top:8px;font-size:10px;color:var(--text3)">💡 "이미지 복사 준비" 클릭 → 이미지 우클릭 → 이미지 복사</div>
-      </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-p" onclick="copyReport()">📋 텍스트 복사</button>
-      <button class="btn btn-p" onclick="downloadReportImage()">🖼 이미지 복사 준비</button>
       <button class="btn btn-g" onclick="exportClosingCSV('${ds}')">📥 엑셀 내보내기</button>
     </div>`;
 
@@ -4346,7 +4324,7 @@ function drawReportCanvas(dateStr, sum, chData, topProcs){
   let rows=[];
 
   // 데이터 → 행 목록으로 변환
-  rows.push({type:'header', text:'미클리닉 콜센터 마감 보고'});
+  rows.push({type:'header', text:'미클리닉 콜센터 일일 보고'});
   rows.push({type:'date', text:dateStr});
   rows.push({type:'divider'});
   rows.push({type:'section', text:'📞 상담 현황'});
@@ -4701,7 +4679,7 @@ function checkAutoReport(){
     document.getElementById('cr-date').value=todayStr();
     renderClosingReport();
     go('closingrpt',document.querySelector('[data-page="closingrpt"]'));
-    toast('🕘 자동 마감 보고 시간입니다!');
+    toast('🕘 자동 일일 보고 시간입니다!');
     // reset flag after 2 min so next check won't retrigger same minute
     setTimeout(()=>{_autoReportShown=false;},120000);
   }
@@ -5365,10 +5343,10 @@ function _buildExcel(){
     XLSX.utils.book_append_sheet(wb,ws,'채널 현황');
   }
 
-  // ── 시트5: 마감 보고 ─────────────────
+  // ── 시트5: 일일 보고 ─────────────────
   if(document.getElementById('xl-chk-closing')?.checked){
     const hdr=['지점','총상담','전화','채팅','수신(인콜)','콜백','발신','신환','구환','예약취소','미예약종료'];
-    const rows=[[`미클리닉 콜센터 · 마감 보고 · ${plabel}`],EMPTY,hdr];
+    const rows=[[`미클리닉 콜센터 · 일일 보고 · ${plabel}`],EMPTY,hdr];
     let totals=new Array(hdr.length-1).fill(0);
     S.branches.forEach(b=>{
       const bc=calls.filter(c=>c.bid===b.id);
@@ -5389,7 +5367,7 @@ function _buildExcel(){
     rows.push(['전체 합계',...totals]);
     const ws=XLSX.utils.aoa_to_sheet(rows);
     ws['!cols']=[{wch:12},...new Array(hdr.length-1).fill({wch:10})];
-    XLSX.utils.book_append_sheet(wb,ws,'마감 보고');
+    XLSX.utils.book_append_sheet(wb,ws,'일일 보고');
   }
 
   if(wb.SheetNames.length===0){toast('⚠️ 시트를 하나 이상 선택해주세요');return;}
