@@ -326,6 +326,8 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="sdiv"></div>
     <div class="sg">수가표·정보</div>
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
+    <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>근무 현황</div>
+    <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
     <div class="sdiv"></div>
     <div class="sg">관리</div>
     <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>직원 관리</div>
@@ -500,6 +502,75 @@ td:first-child{text-align:left;padding-left:13px}
     <!-- ══════════════════════════════════════════
          수가표·병원정보 페이지
     ══════════════════════════════════════════ -->
+    <!-- ═══ 마케팅 페이지 ═══ -->
+    <div class="page" id="page-marketing">
+      <div class="ph">
+        <div>
+          <div class="pt">📣 마케팅</div>
+          <div class="ps">상담 데이터 기반 마케팅 현황 · 채널 효율 · 이벤트 성과</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="mkt-branch-sel" onchange="renderMarketing()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+            <option value="">전체 지점</option>
+          </select>
+          <input type="date" id="mkt-date-from" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <span style="color:var(--text3);font-size:12px">~</span>
+          <input type="date" id="mkt-date-to" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <button onclick="mktSetRange(7)" class="btn btn-g btn-sm">7일</button>
+          <button onclick="mktSetRange(30)" class="btn btn-g btn-sm">30일</button>
+        </div>
+      </div>
+
+      <!-- KPI 카드 -->
+      <div id="mkt-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
+
+      <!-- 2단 레이아웃 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <!-- 채널별 유입 -->
+        <div class="card">
+          <div class="ch2" style="margin-bottom:12px">
+            <span class="slbl">📡 채널별 신환 유입</span>
+          </div>
+          <div id="mkt-channel-chart"></div>
+        </div>
+        <!-- 시술별 예약 -->
+        <div class="card">
+          <div class="ch2" style="margin-bottom:12px">
+            <span class="slbl">💉 시술별 예약 TOP 8</span>
+          </div>
+          <div id="mkt-proc-chart"></div>
+        </div>
+      </div>
+
+      <!-- 지점별 성과 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="ch2" style="margin-bottom:12px">
+          <span class="slbl">🏥 지점별 성과 비교</span>
+        </div>
+        <div id="mkt-branch-chart"></div>
+      </div>
+
+      <!-- 일별 추이 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="ch2" style="margin-bottom:12px">
+          <span class="slbl">📈 일별 상담 추이</span>
+          <div style="display:flex;gap:6px">
+            <span id="mkt-trend-total" style="font-size:11px;color:var(--text3)"></span>
+          </div>
+        </div>
+        <div id="mkt-trend-chart" style="overflow-x:auto"></div>
+      </div>
+
+      <!-- 카톡 이벤트 현황 -->
+      <div class="card">
+        <div class="ch2" style="margin-bottom:12px">
+          <span class="slbl">🎁 진행 중인 이벤트·프로모션</span>
+          <button onclick="go('notes',document.querySelector('[data-page=notes]'));setTimeout(()=>{document.getElementById('nf-cat').value='카톡이벤트';renderNotes();},100)" class="btn btn-g btn-sm">수가표에서 보기</button>
+        </div>
+        <div id="mkt-events-list"></div>
+      </div>
+    </div>
+
     <div class="page" id="page-notes">
       <div class="ph">
         <div>
@@ -1152,9 +1223,41 @@ td:first-child{text-align:left;padding-left:13px}
 
 <div class="toast" id="toast"></div>
 
+<!-- ═══ 근무 현황 모달 ═══ -->
+<div class="modal" id="modal-schedule" style="z-index:600;align-items:flex-start;padding-top:40px">
+  <div class="mbox" style="width:900px;max-width:99vw;max-height:90vh;display:flex;flex-direction:column">
+    <!-- 헤더 -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-shrink:0">
+      <span style="font-size:16px;font-weight:800;color:var(--text)">🏥 지점별 근무 현황</span>
+      <div style="flex:1"></div>
+      <!-- 날짜 이동 -->
+      <button onclick="scheduleMovDate(-1)" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;font-size:13px">‹</button>
+      <span id="schedule-date-label" style="font-size:13px;font-weight:700;color:var(--text);min-width:110px;text-align:center"></span>
+      <button onclick="scheduleMovDate(1)" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;font-size:13px">›</button>
+      <button onclick="scheduleGoToday()" style="padding:5px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:11px;font-weight:700">오늘</button>
+      <button class="btn btn-g btn-sm" onclick="closeModal('modal-schedule')">✕</button>
+    </div>
+
+    <!-- 지점 탭 -->
+    <div id="schedule-branch-tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;flex-shrink:0"></div>
+
+    <!-- 테이블 영역 -->
+    <div style="flex:1;overflow-y:auto">
+      <div id="schedule-table-wrap"></div>
+    </div>
+
+    <!-- 하단 버튼 -->
+    <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:12px;margin-top:10px;flex-shrink:0">
+      <button onclick="scheduleAddRow()" style="padding:7px 16px;border-radius:9px;border:none;background:#059669;color:#fff;font-size:12px;font-weight:700;cursor:pointer">＋ 직원 추가</button>
+      <button onclick="scheduleSave()" style="padding:7px 20px;border-radius:9px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">💾 저장</button>
+      <button class="btn btn-g" onclick="closeModal('modal-schedule')">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 동기화 FAB 제거됨 -->
 <div class="modal" id="modal-sync">
-  <div class="mbox" style="max-width:480px">
+  <div class="mbox" style="max-width:520px">
     <div class="mt">🔥 Firebase 동기화 설정</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7;background:var(--s2);padding:10px 12px;border-radius:8px">
       여러 기기·지점에서 같은 데이터를 실시간 공유합니다.<br>
@@ -1172,6 +1275,18 @@ td:first-child{text-align:left;padding-left:13px}
       <button class="btn btn-g btn-sm" onclick="syncPull()">⬇ 서버에서 불러오기</button>
     </div>
     <div id="sync-test-result" style="font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none"></div>
+
+    <!-- 구글 시트 설정 -->
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px">📋 지점별 근무표 구글 시트 연동</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6;background:var(--s2);padding:8px 10px;border-radius:8px">
+        각 지점 담당자가 구글 시트에 근무표를 작성하면 자동으로 불러옵니다.<br>
+        시트 공유 설정: <b>링크 있는 모든 사용자 → 뷰어</b> 로 설정 필요
+      </div>
+      <div id="sheet-url-inputs">
+        <!-- JS로 지점별 입력 렌더링 -->
+      </div>
+    </div>
 
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-sync')">닫기</button>
@@ -1628,6 +1743,15 @@ function saveSyncSettings(){
   if(!url.startsWith('https://')){toast('⚠️ https:// 로 시작하는 URL을 입력해주세요');return;}
   _syncUrl=url; _syncName=name||'알 수 없음';
   try{localStorage.setItem('mclinic_sync_url',_syncUrl);localStorage.setItem('mclinic_sync_name',_syncName);}catch(e){}
+  // 구글 시트 URL 저장
+  S.branches.forEach(b=>{
+    const el=document.getElementById(`sheet-url-${b.id}`);
+    if(el){
+      const v=el.value.trim();
+      if(v) localStorage.setItem(`mclinic_sheet_url_${b.id}`,v);
+      else localStorage.removeItem(`mclinic_sheet_url_${b.id}`);
+    }
+  });
   closeModal('modal-sync');
   updateSyncUI();
   startSyncPoll();
@@ -1638,6 +1762,20 @@ function openSyncSettings(){
   document.getElementById('sync-url-input').value=_syncUrl;
   document.getElementById('sync-name-input').value=_syncName;
   document.getElementById('sync-test-result').style.display='none';
+  // 지점별 구글 시트 URL 입력 렌더링
+  const wrap=document.getElementById('sheet-url-inputs');
+  if(wrap){
+    wrap.innerHTML=S.branches.map(b=>{
+      const saved=localStorage.getItem(`mclinic_sheet_url_${b.id}`)||'';
+      const cl=bclr(b.id);
+      return `<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:${cl};margin-bottom:3px">${b.name}점</div>
+        <input id="sheet-url-${b.id}" class="minp" value="${saved}"
+          placeholder="구글 시트 URL 붙여넣기 (공유 링크)"
+          style="font-size:10.5px;font-family:'DM Mono',monospace">
+      </div>`;
+    }).join('');
+  }
   document.getElementById('modal-sync').classList.add('open');
 }
 
@@ -2006,6 +2144,7 @@ function go(pid,el){
   else if(pid==='incentive') openIncentivePage();
   else if(pid==='branches') renderBranchMgmt();
   else if(pid==='notes') renderNotes();
+  else if(pid==='marketing') initMarketingPage();
 }
 function goSI(sid,el){
   // 본인 또는 관리자만 접근 가능
@@ -4629,6 +4768,329 @@ function confirmChangePw(){
   closeModal('modal-changepw');
   toast('🔑 비밀번호가 변경되었습니다');
 }
+// ══════════════════════════════════════
+// 근무 현황 (Schedule) - 구글 시트 자동 연동
+// ══════════════════════════════════════
+let _scheduleDate = null;
+let _scheduleBid  = null;
+let _scheduleCache = {}; // { bid: { rows:[], fetchedAt:'' } }
+
+const SCHED_STATUS_COLOR = {'출근':'#059669','퇴근':'#2563eb','휴무':'#dc2626','반차':'#d97706','외근':'#7c3aed','대기':'#94a3b8'};
+
+// 구글 시트 URL → CSV export URL 변환
+function sheetUrlToCsv(url){
+  if(!url) return null;
+  // /spreadsheets/d/SHEET_ID/edit... → CSV export
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m) return null;
+  const id = m[1];
+  // gid(탭) 파라미터 추출
+  const gidM = url.match(/[#&?]gid=(\d+)/);
+  const gid  = gidM ? gidM[1] : '0';
+  return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+}
+
+// CSV 텍스트 → 행 배열
+function parseCsv(text){
+  const lines = text.trim().split(/\r?\n/);
+  return lines.map(line=>{
+    const cols=[]; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){ inQ=!inQ; }
+      else if(c===','&&!inQ){ cols.push(cur.trim()); cur=''; }
+      else cur+=c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// 구글 시트에서 해당 지점·날짜 근무 데이터 가져오기
+async function fetchSheetSchedule(bid, ds){
+  const url = localStorage.getItem(`mclinic_sheet_url_${bid}`);
+  if(!url) return null;
+  const csvUrl = sheetUrlToCsv(url);
+  if(!csvUrl) return null;
+
+  try{
+    const r = await fetch(csvUrl);
+    if(!r.ok) return null;
+    const text = await r.text();
+    const rows = parseCsv(text);
+    if(!rows.length) return null;
+
+    // 1행이 헤더인지 확인 (날짜 셀이 숫자/날짜 형식인지)
+    const firstCellIsHeader = isNaN(Date.parse(rows[0][0]));
+    const dataRows = firstCellIsHeader ? rows.slice(1) : rows;
+
+    // ds(YYYY-MM-DD) 또는 M/D, M월D일 형식으로 필터
+    const target = new Date(ds+'T00:00:00');
+    const filtered = dataRows.filter(r=>{
+      if(!r[0]) return false;
+      const raw = r[0].trim();
+      // YYYY-MM-DD 직접 일치
+      if(raw === ds) return true;
+      // M/D, MM/DD
+      const mSlash = raw.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if(mSlash){
+        const m=parseInt(mSlash[1])-1, d=parseInt(mSlash[2]);
+        return target.getMonth()===m && target.getDate()===d;
+      }
+      // M월D일
+      const mKor = raw.match(/^(\d{1,2})월\s*(\d{1,2})일/);
+      if(mKor){
+        const m=parseInt(mKor[1])-1, d=parseInt(mKor[2]);
+        return target.getMonth()===m && target.getDate()===d;
+      }
+      return false;
+    });
+
+    return filtered.map(r=>({
+      name:   (r[1]||'').trim(),
+      role:   (r[2]||'').trim(),
+      status: (r[3]||'출근').trim(),
+      start:  (r[4]||'').trim(),
+      end:    (r[5]||'').trim(),
+      memo:   (r[6]||'').trim(),
+    })).filter(r=>r.name);
+
+  } catch(e){ return null; }
+}
+
+async function openScheduleModal(){
+  _scheduleDate = _scheduleDate || todayStr();
+  _scheduleBid  = _scheduleBid  || S.branches[0]?.id;
+  renderScheduleModal();
+  document.getElementById('modal-schedule').classList.add('open');
+  await scheduleLoadBranch(_scheduleBid);
+}
+
+async function scheduleLoadBranch(bid){
+  const ds = _scheduleDate;
+  const wrap = document.getElementById('schedule-table-wrap');
+  // 로딩 표시
+  const loadEl = document.getElementById('sched-loading');
+  if(loadEl) loadEl.style.display='flex';
+
+  const rows = await fetchSheetSchedule(bid, ds);
+
+  if(loadEl) loadEl.style.display='none';
+
+  if(rows === null){
+    // 시트 미설정 or 오류 → 수동 입력 모드
+    if(!_scheduleCache[bid+'_'+ds]){
+      _scheduleCache[bid+'_'+ds] = {rows:[], mode:'manual'};
+    }
+  } else {
+    _scheduleCache[bid+'_'+ds] = {rows, mode:'sheet'};
+  }
+  renderScheduleTable();
+}
+
+function scheduleMovDate(delta){
+  // 이전 지점 데이터 수동모드면 임시 저장
+  _saveManualRows();
+  const d = new Date(_scheduleDate+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  _scheduleDate = d.toISOString().slice(0,10);
+  renderScheduleModal();
+  scheduleLoadBranch(_scheduleBid);
+}
+
+function scheduleGoToday(){
+  _saveManualRows();
+  _scheduleDate = todayStr();
+  renderScheduleModal();
+  scheduleLoadBranch(_scheduleBid);
+}
+
+function scheduleSelectBranch(bid){
+  _saveManualRows();
+  _scheduleBid = bid;
+  renderScheduleModal();
+  scheduleLoadBranch(bid);
+}
+
+function _saveManualRows(){
+  const key = _scheduleBid+'_'+_scheduleDate;
+  if(_scheduleCache[key]?.mode==='manual'){
+    _scheduleCache[key].rows = collectScheduleRows();
+  }
+}
+
+function scheduleAddRow(){
+  const tbody = document.getElementById('sched-tbody');
+  if(!tbody) return;
+  const tr = document.createElement('tr');
+  tr.style.borderBottom='1px solid var(--border)';
+  tr.innerHTML = scheduleRowHtml({name:'',role:'콜센터',status:'출근',start:'09:00',end:'18:00',memo:''});
+  tbody.appendChild(tr);
+}
+
+function scheduleDelRow(btn){ btn.closest('tr').remove(); }
+
+function collectScheduleRows(){
+  const tbody = document.getElementById('sched-tbody');
+  if(!tbody) return [];
+  return Array.from(tbody.querySelectorAll('tr')).map(tr=>{
+    const cells = tr.querySelectorAll('td');
+    return {
+      name:   cells[0]?.querySelector('input')?.value||'',
+      role:   cells[1]?.querySelector('select')?.value||'',
+      status: cells[2]?.querySelector('select')?.value||'출근',
+      start:  cells[3]?.querySelector('select')?.value||'',
+      end:    cells[4]?.querySelector('select')?.value||'',
+      memo:   cells[5]?.querySelector('input')?.value||'',
+    };
+  }).filter(r=>r.name.trim());
+}
+
+const SCHED_TIMES=['','09:00','09:30','10:00','10:30','11:00','12:00','13:00','14:00','18:00','19:00','20:00','21:00','22:00'];
+const SCHED_STATUS=['출근','퇴근','휴무','반차','외근','대기'];
+const SCHED_ROLES=['콜센터','데스크','원장','부원장','간호사','실장','매니저','기타'];
+
+function scheduleRowHtml(r, readOnly=false){
+  const sc = SCHED_STATUS_COLOR[r.status]||'#94a3b8';
+  if(readOnly){
+    return `
+      <td style="padding:8px 6px;font-weight:700;font-size:12px">${escHtml(r.name)}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text2)">${escHtml(r.role)}</td>
+      <td style="padding:8px 6px"><span style="background:${sc}18;color:${sc};border:1px solid ${sc}33;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700">${escHtml(r.status)}</span></td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text2)">${escHtml(r.start)}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text2)">${escHtml(r.end)}</td>
+      <td style="padding:8px 6px;font-size:11px;color:var(--text3)">${escHtml(r.memo)}</td>`;
+  }
+  const statusOpts = SCHED_STATUS.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('');
+  const roleOpts   = SCHED_ROLES.map(x=>`<option value="${x}" ${r.role===x?'selected':''}>${x}</option>`).join('');
+  const timeOpts   = sel => SCHED_TIMES.map(t=>`<option value="${t}" ${sel===t?'selected':''}>${t||'-'}</option>`).join('');
+  return `
+    <td style="padding:5px 4px"><input value="${escHtml(r.name)}" placeholder="이름" style="width:72px;padding:5px 7px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;font-weight:700"></td>
+    <td style="padding:5px 4px"><select style="padding:5px 4px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px">${roleOpts}</select></td>
+    <td style="padding:5px 4px"><select onchange="this.style.color=({'출근':'#059669','퇴근':'#2563eb','휴무':'#dc2626','반차':'#d97706','외근':'#7c3aed','대기':'#94a3b8'}[this.value]||'#64748b')" style="padding:5px 4px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:${sc};font-size:11px;font-weight:700">${statusOpts}</select></td>
+    <td style="padding:5px 4px"><select style="padding:5px 4px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px">${timeOpts(r.start)}</select></td>
+    <td style="padding:5px 4px"><select style="padding:5px 4px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px">${timeOpts(r.end)}</select></td>
+    <td style="padding:5px 4px"><input value="${escHtml(r.memo)}" placeholder="메모" style="width:100px;padding:5px 7px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px"></td>
+    <td style="padding:5px 4px"><button onclick="scheduleDelRow(this)" style="padding:3px 7px;border-radius:6px;border:none;background:#fee2e2;color:#dc2626;cursor:pointer;font-size:11px">✕</button></td>`;
+}
+
+function renderScheduleModal(){
+  const d = new Date(_scheduleDate+'T00:00:00');
+  document.getElementById('schedule-date-label').textContent =
+    `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${DAYS[d.getDay()]})`;
+
+  const tabs = document.getElementById('schedule-branch-tabs');
+  tabs.innerHTML = S.branches.map(b=>{
+    const isAct = b.id===_scheduleBid;
+    const cl = bclr(b.id);
+    const cached = _scheduleCache[b.id+'_'+_scheduleDate];
+    const cnt = cached ? cached.rows.filter(r=>r.status==='출근').length : 0;
+    return `<div onclick="scheduleSelectBranch('${b.id}')"
+      style="padding:6px 16px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:700;
+             border:2px solid ${isAct?cl:'var(--border)'};
+             background:${isAct?cl+'18':'var(--s2)'};
+             color:${isAct?cl:'var(--text3)'};
+             display:flex;align-items:center;gap:6px;transition:all .15s">
+      ${b.name}
+      ${cnt>0?`<span style="background:${cl};color:#fff;border-radius:10px;font-size:10px;padding:1px 7px">${cnt}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderScheduleTable(){
+  const key = _scheduleBid+'_'+_scheduleDate;
+  const cached = _scheduleCache[key];
+  const rows = cached?.rows || [];
+  const isSheet = cached?.mode === 'sheet';
+  const branch = S.branches.find(b=>b.id===_scheduleBid);
+  const cl = bclr(_scheduleBid);
+  const wrap = document.getElementById('schedule-table-wrap');
+  if(!wrap) return;
+
+  // 출근 현황 요약 뱃지
+  const summary = SCHED_STATUS.map(st=>{
+    const n=rows.filter(r=>r.status===st).length;
+    if(!n)return '';
+    const c=SCHED_STATUS_COLOR[st];
+    return `<span style="background:${c}18;color:${c};border:1px solid ${c}33;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">${st} ${n}명</span>`;
+  }).join('');
+
+  const sheetUrl = localStorage.getItem(`mclinic_sheet_url_${_scheduleBid}`);
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:800;color:${cl}">${branch?.name||''}점</span>
+      ${isSheet
+        ? `<span style="font-size:10px;background:#dcfce7;color:#059669;padding:2px 8px;border-radius:6px;font-weight:700">📋 구글 시트 연동</span>`
+        : `<span style="font-size:10px;background:#fef9c3;color:#d97706;padding:2px 8px;border-radius:6px;font-weight:700">✏️ 수동 입력</span>`
+      }
+      ${!sheetUrl?`<button onclick="openSyncSettings()" style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer">⚙️ 시트 URL 등록</button>`:''}
+      <button onclick="scheduleReload()" style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer;margin-left:auto">🔄 새로고침</button>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${summary||'<span style="font-size:11px;color:var(--text3)">데이터 없음</span>'}</div>
+    </div>
+    <!-- 로딩 표시 -->
+    <div id="sched-loading" style="display:none;align-items:center;justify-content:center;padding:30px;gap:10px;color:var(--text3);font-size:13px">
+      <div style="width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite"></div>
+      구글 시트에서 불러오는 중...
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--s2)">
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">이름</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">역할</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">상태</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">출근</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">퇴근</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--border);font-size:11px;font-weight:700">메모</th>
+          ${!isSheet?'<th style="padding:8px 6px;border-bottom:2px solid var(--border)"></th>':''}
+        </tr>
+      </thead>
+      <tbody id="sched-tbody">
+        ${rows.length
+          ? rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">${scheduleRowHtml(r, isSheet)}</tr>`).join('')
+          : `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text3)">
+              <div style="font-size:24px;margin-bottom:8px">👥</div>
+              ${sheetUrl
+                ? '구글 시트에 오늘 날짜 데이터가 없습니다'
+                : '시트 URL을 등록하거나 직접 입력하세요'
+              }
+             </td></tr>`
+        }
+      </tbody>
+    </table>`;
+}
+
+async function scheduleReload(){
+  _scheduleCache[_scheduleBid+'_'+_scheduleDate] = null;
+  const loadEl = document.getElementById('sched-loading');
+  if(loadEl) loadEl.style.display='flex';
+  await scheduleLoadBranch(_scheduleBid);
+  toast('🔄 새로고침 완료');
+}
+
+async function scheduleSave(){
+  // 시트 모드면 수동 수정 내용 저장 (Firebase)
+  const rows = collectScheduleRows();
+  const key = _scheduleBid+'_'+_scheduleDate;
+  if(!_scheduleCache[key]) _scheduleCache[key]={rows,mode:'manual'};
+  else _scheduleCache[key].rows = rows;
+
+  if(_syncUrl){
+    try{
+      await fetch(`${_syncUrl}/mclinic/schedule/${_scheduleDate}.json`,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({[_scheduleBid]:rows})
+      });
+      toast('💾 근무 현황 저장됨');
+    }catch(e){ toast('⚠️ 저장 실패'); }
+  } else {
+    toast('💾 로컬 저장됨');
+  }
+  renderScheduleModal();
+  renderScheduleTable();
+}
+
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2500);}
 
 function showConfirmToast(msg, onConfirm){
@@ -10442,7 +10904,9 @@ function renderModalNotes(q){
   const words=q?q.split(/\s+/).filter(Boolean):[];
   const el=document.getElementById('modal-notes-list');
   if(!el)return;
+  // 제목 없는 항목 제외
   let list=_notes.filter(n=>{
+    if(!n.title||!n.title.trim()) return false;
     if(!words.length)return true;
     const hay=(n.title+' '+n.content+' '+n.branch+' '+n.category+' '+(n.sheet||'')).toLowerCase();
     return words.every(w=>hay.includes(w));
@@ -10460,26 +10924,249 @@ function renderModalNotes(q){
   const N_CAT_C2={'수가표':'#2563eb','병원정보':'#059669','카톡이벤트':'#d97706','공지사항':'#7c3aed','이벤트':'#db2777','시술설명':'#0891b2','첫방문이벤트':'#db2777','원장지정안내':'#0891b2'};
   el.innerHTML=list.map(n=>{
     const cc=N_CAT_C2[n.category]||'#94a3b8';
-    const prev=n.content.replace(/\n/g,' ').slice(0,70);
-    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      <!-- 클릭 영역: 전체보기 -->
-      <div onclick="viewNote('${n.id}')" style="padding:10px 12px;cursor:pointer" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+    const prev=(n.content||'').replace(/\n/g,' ').slice(0,70);
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div onclick="viewNote('${n.id}')" style="padding:10px 12px;cursor:pointer;background:var(--s1)" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background='var(--s1)'">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap">
           <span style="font-size:9px;font-weight:800;background:${cc}18;color:${cc};padding:2px 7px;border-radius:8px;border:1px solid ${cc}33">${n.category}</span>
           <span style="font-size:9px;color:var(--text3);background:var(--s2);padding:2px 6px;border-radius:6px">${n.branch}</span>
           ${n.updatedAt?`<span style="font-size:9px;color:var(--text3);margin-left:auto">📅 ${n.updatedAt}</span>`:''}
         </div>
         <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-all;margin-bottom:3px">${escHtml(n.title)}</div>
-        <div style="font-size:10px;color:var(--text3);line-height:1.5">${escHtml(prev)}${n.content.length>70?'…':''}</div>
+        ${prev?`<div style="font-size:10px;color:var(--text3);line-height:1.5">${escHtml(prev)}${(n.content||'').length>70?'…':''}</div>`:''}
       </div>
-      <!-- 액션 버튼 영역 -->
-      <div style="display:flex;gap:0;border-top:1px solid var(--border)">
-        <button onclick="viewNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:600;border:none;border-right:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">🔍 전체보기</button>
-        <button onclick="openNoteModal('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;border-right:1px solid var(--border);background:#eff6ff;color:#2563eb;cursor:pointer" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">✏️ 수정</button>
-        <button onclick="delNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;background:#fff5f5;color:#dc2626;cursor:pointer" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">🗑 삭제</button>
+      <div style="display:flex;border-top:1px solid var(--border)">
+        <button onclick="viewNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:600;border:none;border-right:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer">🔍 전체보기</button>
+        <button onclick="openNoteModal('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;border-right:1px solid var(--border);background:#eff6ff;color:#2563eb;cursor:pointer">✏️ 수정</button>
+        <button onclick="delNote('${n.id}')" style="flex:1;padding:7px 0;font-size:10px;font-weight:700;border:none;background:#fff5f5;color:#dc2626;cursor:pointer">🗑 삭제</button>
       </div>
     </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════
+// 마케팅 페이지
+// ══════════════════════════════════════
+function mktSetRange(days){
+  const to=new Date(); to.setHours(0,0,0,0);
+  const from=new Date(to); from.setDate(from.getDate()-(days-1));
+  document.getElementById('mkt-date-from').value=from.toISOString().slice(0,10);
+  document.getElementById('mkt-date-to').value=to.toISOString().slice(0,10);
+  renderMarketing();
+}
+
+function initMarketingPage(){
+  // 지점 셀렉트 채우기
+  const sel=document.getElementById('mkt-branch-sel');
+  if(sel&&sel.options.length===1){
+    S.branches.forEach(b=>{
+      const o=document.createElement('option');
+      o.value=b.id; o.textContent=b.name+'점';
+      sel.appendChild(o);
+    });
+  }
+  // 기본 날짜: 최근 30일
+  if(!document.getElementById('mkt-date-from').value) mktSetRange(30);
+  else renderMarketing();
+}
+
+function renderMarketing(){
+  const fromStr=document.getElementById('mkt-date-from')?.value;
+  const toStr=document.getElementById('mkt-date-to')?.value;
+  const bidF=document.getElementById('mkt-branch-sel')?.value||'';
+  if(!fromStr||!toStr) return;
+
+  // 날짜 범위 내 콜 수집
+  const from=new Date(fromStr+'T00:00:00');
+  const to=new Date(toStr+'T23:59:59');
+  let calls=[];
+  Object.entries(S.calls||{}).forEach(([ds,arr])=>{
+    const d=new Date(ds+'T00:00:00');
+    if(d>=from&&d<=to) calls.push(...(arr||[]));
+  });
+  if(bidF) calls=calls.filter(c=>c.bid===bidF);
+
+  const shin=calls.filter(c=>c.pttype==='신환');
+  const totalAppt=calls.reduce((a,c)=>a+(+c.appt||0),0);
+  const totalCancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
+  const convRate=calls.length?Math.round(shin.length/calls.length*100):0;
+
+  // KPI
+  document.getElementById('mkt-kpi').innerHTML=`
+    ${mktKpiCard('📞 총 상담','#2563eb',calls.length,'건')}
+    ${mktKpiCard('✨ 신환(신규)','#059669',shin.length,'명')}
+    ${mktKpiCard('📅 예약 전환율','#7c3aed',convRate,'%')}
+    ${mktKpiCard('❌ 예약 취소','#dc2626',totalCancel,'건')}`;
+
+  // 채널별 신환
+  renderMktChannelChart(shin);
+  // 시술별 TOP
+  renderMktProcChart(calls);
+  // 지점별
+  renderMktBranchChart(calls, fromStr, toStr);
+  // 일별 추이
+  renderMktTrendChart(calls, fromStr, toStr);
+  // 이벤트 목록
+  renderMktEvents();
+}
+
+function mktKpiCard(label, color, val, unit){
+  return `<div class="card" style="border-left:3px solid ${color}">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${label}</div>
+    <div style="font-size:26px;font-weight:900;color:${color}">${val.toLocaleString()}<span style="font-size:13px;font-weight:600">${unit}</span></div>
+  </div>`;
+}
+
+function mktBar(label, val, max, color, sub=''){
+  const pct=max?Math.round(val/max*100):0;
+  return `<div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+      <span style="font-size:12px;font-weight:600;color:var(--text)">${label}</span>
+      <span style="font-size:12px;font-weight:800;color:${color}">${val}${sub}</span>
+    </div>
+    <div style="height:7px;background:var(--s2);border-radius:4px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;transition:width .4s"></div>
+    </div>
+  </div>`;
+}
+
+function renderMktChannelChart(shin){
+  const el=document.getElementById('mkt-channel-chart');
+  if(!el)return;
+  const cnt={};
+  shin.forEach(c=>{
+    if(c.channels) Object.entries(c.channels).forEach(([cid,n])=>{
+      if(n>0){ const ch=S.channels?.find(x=>x.id===cid); cnt[ch?.name||cid]=(cnt[ch?.name||cid]||0)+n; }
+    });
+  });
+  const entries=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max=entries[0]?.[1]||1;
+  const colors=['#2563eb','#059669','#d97706','#7c3aed','#db2777','#0891b2','#dc2626','#94a3b8'];
+  el.innerHTML=entries.length
+    ? entries.map(([name,n],i)=>mktBar(name,n,max,colors[i%colors.length],'명')).join('')
+    : `<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">채널 데이터 없음</div>`;
+}
+
+function renderMktProcChart(calls){
+  const el=document.getElementById('mkt-proc-chart');
+  if(!el)return;
+  const cnt={};
+  calls.forEach(c=>{ if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{ cnt[pid]=(cnt[pid]||0)+n; }); });
+  const entries=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max=entries[0]?.[1]||1;
+  el.innerHTML=entries.length
+    ? entries.map(([pid,n],i)=>{
+        const p=S.procedures?.find(x=>x.id===pid);
+        const label=p?(p.icon?p.icon+' ':'')+p.name:pid;
+        const colors=['#2563eb','#059669','#d97706','#7c3aed','#db2777','#0891b2','#dc2626','#94a3b8'];
+        return mktBar(label,n,max,colors[i%colors.length],'건');
+      }).join('')
+    : `<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">시술 데이터 없음</div>`;
+}
+
+function renderMktBranchChart(calls, fromStr, toStr){
+  const el=document.getElementById('mkt-branch-chart');
+  if(!el)return;
+  const data=S.branches.map(b=>{
+    const bc=calls.filter(c=>c.bid===b.id);
+    const shin=bc.filter(c=>c.pttype==='신환').length;
+    const appt=bc.reduce((a,c)=>a+(+c.appt||0),0);
+    const cancel=bc.reduce((a,c)=>a+(+c.cancel||0),0);
+    return {name:b.name, total:bc.length, shin, appt, cancel, cl:bclr(b.id)};
+  });
+  const maxTotal=Math.max(1,...data.map(d=>d.total));
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:var(--s2)">
+      <th style="padding:8px;text-align:left;font-size:11px">지점</th>
+      <th style="padding:8px;text-align:right;font-size:11px">총 상담</th>
+      <th style="padding:8px;text-align:right;font-size:11px">신환</th>
+      <th style="padding:8px;text-align:right;font-size:11px">전환율</th>
+      <th style="padding:8px;text-align:right;font-size:11px">취소</th>
+      <th style="padding:8px;font-size:11px">비율</th>
+    </tr></thead>
+    <tbody>${data.map(d=>`
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px;font-weight:700;color:${d.cl}">${d.name}</td>
+        <td style="padding:8px;text-align:right;font-weight:700">${d.total}</td>
+        <td style="padding:8px;text-align:right;color:#059669;font-weight:700">${d.shin}</td>
+        <td style="padding:8px;text-align:right;color:#7c3aed;font-weight:700">${d.total?Math.round(d.shin/d.total*100):0}%</td>
+        <td style="padding:8px;text-align:right;color:#dc2626">${d.cancel}</td>
+        <td style="padding:8px;min-width:100px">
+          <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(d.total/maxTotal*100)}%;background:${d.cl};border-radius:4px"></div>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderMktTrendChart(calls, fromStr, toStr){
+  const el=document.getElementById('mkt-trend-chart');
+  if(!el)return;
+  // 날짜별 집계
+  const byDate={};
+  const from=new Date(fromStr+'T00:00:00'), to=new Date(toStr+'T00:00:00');
+  for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1)){
+    byDate[d.toISOString().slice(0,10)]={total:0,shin:0};
+  }
+  calls.forEach(c=>{
+    const ds=c.date||(Object.entries(S.calls||{}).find(([,arr])=>arr?.some(x=>x.id===c.id))?.[0]);
+    if(ds&&byDate[ds]){byDate[ds].total++;if(c.pttype==='신환')byDate[ds].shin++;}
+  });
+  const entries=Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxVal=Math.max(1,...entries.map(([,v])=>v.total));
+  const totalCalls=entries.reduce((a,[,v])=>a+v.total,0);
+  document.getElementById('mkt-trend-total').textContent=`총 ${totalCalls}건`;
+
+  // 바 차트 (가로 스크롤)
+  const barW=Math.max(20,Math.min(40,Math.floor(700/entries.length)));
+  el.innerHTML=`<div style="display:flex;align-items:flex-end;gap:2px;height:100px;padding-bottom:20px;min-width:${entries.length*barW+20}px">
+    ${entries.map(([ds,v])=>{
+      const h=Math.max(2,Math.round(v.total/maxVal*80));
+      const hS=Math.max(0,Math.round(v.shin/maxVal*80));
+      const d=new Date(ds+'T00:00:00');
+      const lbl=`${d.getMonth()+1}/${d.getDate()}`;
+      const isToday=ds===todayStr();
+      return `<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 ${barW}px" title="${ds} 총${v.total} 신환${v.shin}">
+        <div style="font-size:8px;color:var(--text3);margin-bottom:2px">${v.total||''}</div>
+        <div style="width:${barW-4}px;display:flex;flex-direction:column;justify-content:flex-end;height:80px">
+          <div style="background:#2563eb22;border-radius:3px 3px 0 0;height:${h}px;position:relative">
+            <div style="position:absolute;bottom:0;left:0;right:0;height:${hS}px;background:#059669;border-radius:3px 3px 0 0"></div>
+          </div>
+        </div>
+        <div style="font-size:8px;color:${isToday?'var(--accent)':'var(--text3)'};font-weight:${isToday?'700':'400'};margin-top:2px;writing-mode:initial">${lbl}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="display:flex;gap:12px;margin-top:4px;font-size:10px">
+    <span><span style="display:inline-block;width:10px;height:10px;background:#2563eb22;border-radius:2px;margin-right:3px"></span>전체</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:#059669;border-radius:2px;margin-right:3px"></span>신환</span>
+  </div>`;
+}
+
+function renderMktEvents(){
+  const el=document.getElementById('mkt-events-list');
+  if(!el)return;
+  const events=_notes.filter(n=>n.category==='카톡이벤트'||n.category==='이벤트'||n.category==='첫방문이벤트');
+  if(!events.length){
+    el.innerHTML=`<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">등록된 이벤트 없음</div>`;
+    return;
+  }
+  const N_CAT_C2={'카톡이벤트':'#d97706','이벤트':'#db2777','첫방문이벤트':'#db2777'};
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+    ${events.slice(0,12).map(n=>{
+      const cc=N_CAT_C2[n.category]||'#94a3b8';
+      return `<div onclick="viewNote('${n.id}')" style="background:var(--s2);border:1px solid ${cc}44;border-radius:10px;padding:12px;cursor:pointer" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <span style="font-size:9px;font-weight:800;background:${cc}18;color:${cc};padding:2px 8px;border-radius:8px">${n.category}</span>
+          <span style="font-size:9px;color:var(--text3)">${n.branch}</span>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4">${escHtml(n.title)}</div>
+        ${n.updatedAt?`<div style="font-size:10px;color:var(--text3);margin-top:4px">📅 ${n.updatedAt}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 function renderNotes(){
