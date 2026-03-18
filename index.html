@@ -328,9 +328,10 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>근무 현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
+    <div class="si" data-page="voc" onclick="go('voc',this)"><span class="sico">💬</span>VOC</div>
     <div class="sdiv"></div>
     <div class="sg">관리</div>
-    <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>직원 관리</div>
+    <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>지점근무현황</div>
     <div class="si" data-page="procs" onclick="go('procs',this)"><span class="sico">💉</span>시술 관리</div>
     <div class="si" data-page="channels-mgmt" onclick="go('channels-mgmt',this)"><span class="sico">📡</span>채널 관리</div>
     <div class="si" data-page="incentive" onclick="go('incentive',this)"><span class="sico">💰</span>인센티브</div>
@@ -436,9 +437,9 @@ td:first-child{text-align:left;padding-left:13px}
 
     <!-- ④ 직원 입력 (동적) -->
 
-    <!-- ⑤ 직원 관리 -->
+    <!-- ⑤ 지점근무현황 -->
     <div class="page" id="page-staff">
-      <div class="ph"><div><div class="pt">👤 직원 관리</div><div class="ps">추가·삭제·역할 설정</div></div></div>
+      <div class="ph"><div><div class="pt">👤 지점근무현황</div><div class="ps">추가·삭제·역할 설정</div></div></div>
       <div id="sgrid"></div>
       <div id="roles-mgmt" style="margin-top:4px"></div>
     </div>
@@ -467,8 +468,24 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- 실제 내용 (잠금 해제 후) -->
       <div id="inc-content" style="display:none">
         <div class="ph">
-          <div><div class="pt">💰 인센티브 설정</div><div class="ps">아웃콜 예약 성공 건당 고정금액 · 직원별 이번달 현황</div></div>
+          <div><div class="pt">💰 인센티브 설정</div><div class="ps">아웃콜 예약 성공 건당 고정금액 · 직원별 현황</div></div>
         </div>
+
+        <!-- 기간 선택 -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);flex-shrink:0">조회 기간</span>
+          <button class="period-btn act" id="incpb-today" onclick="setIncPeriod('today',this)">당일</button>
+          <button class="period-btn" id="incpb-week" onclick="setIncPeriod('week',this)">일주일</button>
+          <button class="period-btn" id="incpb-month" onclick="setIncPeriod('month',this)">한달</button>
+          <button class="period-btn" id="incpb-custom" onclick="setIncPeriod('custom',this)">기간선택</button>
+          <div id="inc-custom-range" style="display:none;align-items:center;gap:6px">
+            <input type="date" id="inc-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderIncentive()">
+            <span style="font-size:11px;color:var(--text3)">~</span>
+            <input type="date" id="inc-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderIncentive()">
+          </div>
+          <span id="inc-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
+        </div>
+
         <div class="slbl">아웃콜 차수별 인센티브 <span style="font-size:9px;color:var(--text3);font-weight:400;letter-spacing:0">(예약 성공 1건당 · 전 차수 인센티브 지급)</span></div>
         <div class="tbl" style="max-width:340px">
           <table>
@@ -477,7 +494,7 @@ td:first-child{text-align:left;padding-left:13px}
           </table>
         </div>
         <div style="margin-top:18px">
-          <div class="slbl">직원별 인센티브 현황 <span style="font-size:9px">(이번달 누적)</span></div>
+          <div class="slbl">직원별 인센티브 현황 <span id="inc-period-sub" style="font-size:9px"></span></div>
           <div id="inc-staff-grid" class="inc-grid"></div>
         </div>
         <div style="margin-top:24px;padding:14px;background:var(--s2);border-radius:10px;max-width:340px">
@@ -506,6 +523,49 @@ td:first-child{text-align:left;padding-left:13px}
          수가표·병원정보 페이지
     ══════════════════════════════════════════ -->
     <!-- ═══ 마케팅 페이지 ═══ -->
+    <!-- VOC 페이지 -->
+    <div class="page" id="page-voc">
+      <div class="ph">
+        <div><div class="pt">💬 VOC 보고서</div><div class="ps">긍정 VOC · 컴플레인 현황 · 처리 상태 관리</div></div>
+      </div>
+
+      <!-- 필터 -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
+        <select id="voc-filter-branch" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <option value="">전체 지점</option>
+        </select>
+        <select id="voc-filter-type" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <option value="">전체 유형</option>
+          <option value="긍정">😊 긍정 VOC</option>
+          <option value="컴플레인">😤 컴플레인</option>
+        </select>
+        <select id="voc-filter-status" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <option value="">전체 상태</option>
+          <option value="접수">접수</option>
+          <option value="처리중">처리중</option>
+          <option value="완료">완료</option>
+        </select>
+        <input type="date" id="voc-filter-from" onchange="renderVocPage()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+        <span style="color:var(--text3);font-size:12px">~</span>
+        <input type="date" id="voc-filter-to" onchange="renderVocPage()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+        <button onclick="vocSetRange(7)" class="btn btn-g btn-sm">7일</button>
+        <button onclick="vocSetRange(30)" class="btn btn-g btn-sm">30일</button>
+        <button onclick="vocSetRange(90)" class="btn btn-g btn-sm">90일</button>
+      </div>
+
+      <!-- KPI -->
+      <div id="voc-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+
+      <!-- 목록 -->
+      <div class="card">
+        <div class="ch2" style="margin-bottom:12px">
+          <span class="slbl">📋 VOC 목록</span>
+          <span id="voc-count" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+        <div id="voc-list"></div>
+      </div>
+    </div>
+
     <div class="page" id="page-marketing">
       <div class="ph">
         <div>
@@ -565,12 +625,67 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
 
       <!-- 카톡 이벤트 현황 -->
-      <div class="card">
+      <div class="card" style="margin-bottom:16px">
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl">🎁 진행 중인 이벤트·프로모션</span>
           <button onclick="go('notes',document.querySelector('[data-page=notes]'));setTimeout(()=>{document.getElementById('nf-cat').value='카톡이벤트';renderNotes();},100)" class="btn btn-g btn-sm">수가표에서 보기</button>
         </div>
         <div id="mkt-events-list"></div>
+      </div>
+
+      <!-- 콜수 비교 분석 -->
+      <div class="card">
+        <div class="ch2" style="margin-bottom:14px">
+          <span class="slbl">📊 콜수 비교 분석</span>
+        </div>
+
+        <!-- 비교 설정 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <!-- 지점 선택 -->
+          <div style="background:var(--s2);border-radius:10px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">🏥 지점 선택 (복수 가능)</div>
+            <div id="cmp-branch-pills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          </div>
+          <!-- 기간 A -->
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:#2563eb;margin-bottom:8px">📅 기간 A</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+              <button onclick="cmpSetPeriod('A','today',this)" class="period-btn act" style="font-size:10px">오늘</button>
+              <button onclick="cmpSetPeriod('A','week',this)" class="period-btn" style="font-size:10px">7일</button>
+              <button onclick="cmpSetPeriod('A','month',this)" class="period-btn" style="font-size:10px">30일</button>
+              <button onclick="cmpSetPeriod('A','custom',this)" class="period-btn" style="font-size:10px">직접</button>
+            </div>
+            <div id="cmp-A-custom" style="display:none;flex-direction:column;gap:4px">
+              <input type="date" id="cmp-A-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-A-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+            </div>
+            <div id="cmp-A-label" style="font-size:11px;color:#2563eb;font-weight:600;margin-top:4px"></div>
+          </div>
+          <!-- 기간 B -->
+          <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">📅 기간 B</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+              <button onclick="cmpSetPeriod('B','today',this)" class="period-btn" style="font-size:10px">오늘</button>
+              <button onclick="cmpSetPeriod('B','week',this)" class="period-btn act" style="font-size:10px">7일</button>
+              <button onclick="cmpSetPeriod('B','month',this)" class="period-btn" style="font-size:10px">30일</button>
+              <button onclick="cmpSetPeriod('B','custom',this)" class="period-btn" style="font-size:10px">직접</button>
+            </div>
+            <div id="cmp-B-custom" style="display:none;flex-direction:column;gap:4px">
+              <input type="date" id="cmp-B-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-B-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+            </div>
+            <div id="cmp-B-label" style="font-size:11px;color:#7c3aed;font-weight:600;margin-top:4px"></div>
+          </div>
+        </div>
+
+        <!-- 시술 선택 -->
+        <div style="background:var(--s2);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">💉 시술 선택 (미선택 시 전체)</div>
+          <div id="cmp-proc-pills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+        </div>
+
+        <!-- 결과 차트 -->
+        <div id="cmp-result"></div>
       </div>
     </div>
 
@@ -1136,9 +1251,9 @@ td:first-child{text-align:left;padding-left:13px}
 </div>
 
 <div class="modal" id="modal-call">
-  <div style="display:flex;gap:12px;align-items:flex-start;max-width:98vw;max-height:95vh">
+  <div style="display:flex;gap:12px;align-items:flex-start;max-width:99vw;max-height:95vh">
     <!-- 콜 입력 폼 -->
-  <div class="mbox" style="width:460px">
+  <div class="mbox" style="width:560px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="mt" id="modal-call-title" style="margin:0">📋 상담 기록</div>
       <button onclick="closeModal('modal-call')" style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.color='#64748b'">✕</button>
@@ -1294,6 +1409,52 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="ml">메모 (선택)</div>
     <textarea class="minp" id="cf-memo" rows="2" placeholder="특이사항..." style="resize:none;margin-top:4px"></textarea>
 
+    <!-- VOC 입력 (선택) -->
+    <div style="margin-top:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+      <div onclick="toggleVocSection()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);cursor:pointer">
+        <span style="font-size:12px;font-weight:700;color:var(--text)">💬 VOC 등록</span>
+        <span style="font-size:10px;color:var(--text3)">(선택 · 특이사항 있을 때만)</span>
+        <span id="voc-toggle-icon" style="margin-left:auto;font-size:12px;color:var(--text3)">▾</span>
+      </div>
+      <div id="voc-section" style="display:none;padding:10px 12px">
+        <!-- VOC 유형 -->
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div id="voc-type-pos" onclick="setVocType('긍정')"
+            style="flex:1;padding:8px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:var(--text3);transition:all .15s">
+            😊 긍정 VOC
+          </div>
+          <div id="voc-type-neg" onclick="setVocType('컴플레인')"
+            style="flex:1;padding:8px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:var(--text3);transition:all .15s">
+            😤 컴플레인
+          </div>
+          <input type="hidden" id="cf-voc-type" value="">
+        </div>
+        <!-- 관련 시술 -->
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">관련 시술 (선택)</div>
+          <div id="voc-proc-pills" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+        </div>
+        <!-- 내용 -->
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">내용 *</div>
+          <textarea id="cf-voc-content" rows="2" placeholder="VOC 내용을 입력하세요..."
+            style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;background:var(--s2);color:var(--text);resize:none;box-sizing:border-box;font-family:'Noto Sans KR',sans-serif"></textarea>
+        </div>
+        <!-- 처리 상태 -->
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600">
+            <input type="radio" name="voc-status" value="접수" checked style="accent-color:var(--accent)"> 접수
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600">
+            <input type="radio" name="voc-status" value="처리중" style="accent-color:#2563eb"> 처리중
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600">
+            <input type="radio" name="voc-status" value="완료" style="accent-color:#059669"> 완료
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-call')">취소</button>
       <button class="btn btn-p" onclick="confirmCall()">✅ 저장</button>
@@ -1301,17 +1462,37 @@ td:first-child{text-align:left;padding-left:13px}
   </div>
 
     <!-- ★ 수가표·병원정보 패널 -->
-    <div id="side-notes-panel" style="width:340px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;box-shadow:0 8px 32px rgba(0,0,0,.2)">
-      <div style="padding:12px 14px;background:#2563eb;display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:800;color:#fff;flex:1">📒 수가표·병원정보</span>
-        <button onclick="openNoteModal(null)" style="padding:4px 10px;border-radius:7px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 추가</button>
-      </div>
-      <div style="padding:8px;background:#f0f4ff">
+    <div id="side-notes-panel" style="width:400px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <!-- 헤더 -->
+      <div style="padding:12px 14px 8px;background:#2563eb">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:#fff;flex:1">📒 수가표·병원정보</span>
+          <button onclick="openNoteModal(null)" style="padding:4px 10px;border-radius:7px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">＋ 추가</button>
+        </div>
+        <!-- 지점 필터 탭 -->
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+          <button id="snp-br-all" onclick="snpSetBranch('')"
+            style="padding:3px 10px;border-radius:10px;border:none;background:rgba(255,255,255,.9);color:#2563eb;font-size:10px;font-weight:700;cursor:pointer">전체</button>
+          <button onclick="snpSetBranch('공통')" id="snp-br-공통"
+            style="padding:3px 10px;border-radius:10px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:600;cursor:pointer">공통</button>
+          <div id="snp-br-tabs" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+        <!-- 검색 -->
         <input id="snp-search" type="text" placeholder="🔍 시술명·가격·공지 검색..."
-          style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid #c7d2fe;font-size:12px;box-sizing:border-box;background:#fff;color:#1e293b;outline:none"
+          style="width:100%;padding:7px 10px;border-radius:8px;border:none;font-size:12px;box-sizing:border-box;background:rgba(255,255,255,.95);color:#1e293b;outline:none"
           oninput="snpRender(this.value)">
       </div>
       <div id="snp-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- 지점근무현황 미니 패널 -->
+    <div id="call-schedule-panel" style="width:400px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:92vh">
+      <div style="padding:10px 14px;background:#059669;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleCallSchedulePanel()">
+        <span style="font-size:13px;font-weight:800;color:#fff;flex:1">🏥 지점근무현황</span>
+        <span id="call-sched-toggle-icon" style="color:#fff;font-size:12px">▲</span>
+      </div>
+      <div id="call-sched-branch-tabs" style="display:flex;gap:5px;flex-wrap:wrap;padding:8px 10px;background:#f0fdf4;border-bottom:1px solid #bbf7d0"></div>
+      <div id="call-sched-table" style="flex:1;overflow-y:auto;background:#fff;padding:8px;min-height:80px;max-height:280px"></div>
     </div>
   </div>
 </div>
@@ -2103,7 +2284,29 @@ async function testSyncConnection(){
 }
 
 function getDayCalls(ds){return S.calls[ds]||[];}
+// 분석 탭 전용: 발신(아웃콜) 제외
+function getAnalysisCalls(ds){ return (S.calls[ds]||[]).filter(c=>c.type!=='out'); }
+function getAllAnalysisCalls(){ 
+  return Object.values(S.calls||{}).flat().filter(c=>c.type!=='out'); 
+}
 function getDaySummary(ds){
+  // 분석용: 발신(아웃콜) 제외
+  const calls=getDayCalls(ds).filter(c=>c.type!=='out');
+  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,cancel=0,noappt=0;
+  const proc={};
+  calls.forEach(c=>{
+    if(c.medium==='chat') chat++; else phone++;
+    if(c.type==='in') incall++;
+    else if(c.type==='cb') callback++;
+    if(c.pttype==='신환') shin++;
+    else if(c.pttype==='구환'||c.pttype==='구환(신규상담)'||c.pttype==='잔여시술') gu++;
+    cancel+=+c.cancel||0; noappt+=+c.noappt||0;
+    if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
+  });
+  return {total:calls.length,incall,callback,outcall:0,phone,chat,shin,gu,cancel,noappt,proc};
+}
+// 인센티브 전용: 발신 포함 전체
+function getDaySummaryFull(ds){
   const calls=getDayCalls(ds);
   let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,cancel=0,noappt=0;
   const proc={};
@@ -2168,6 +2371,10 @@ function getSummaryForRange(from, to){
 
 function getCallsForRange(from, to){
   return getDateRange(from,to).flatMap(ds=>getDayCalls(ds));
+}
+// 분석 탭 전용: 발신 제외
+function getAnalysisCallsForRange(from, to){
+  return getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
 }
 
 function setPeriodBtns(prefix, period){
@@ -2239,6 +2446,7 @@ function go(pid,el){
   else if(pid==='branches') renderBranchMgmt();
   else if(pid==='notes') renderNotes();
   else if(pid==='marketing') initMarketingPage();
+  else if(pid==='voc') initVocPage();
 }
 function goSI(sid,el){
   // 본인 또는 관리자만 접근 가능
@@ -2517,7 +2725,7 @@ function setMedium(m){
 }
 
 function renderChatChannelFields(existingChannels){
-  // 채팅 채널만 표시 (ch0=대표번호 제외)
+  // S.channels 최신 상태 반영 (채널 관리와 동기화)
   const chatChs=S.channels.filter(ch=>ch.id!=='ch0');
   const chFields=document.getElementById('modal-channel-fields');
   if(!chFields) return;
@@ -2525,11 +2733,21 @@ function renderChatChannelFields(existingChannels){
     chFields.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px">채팅 채널 없음 — 채널 관리에서 추가하세요</div>';
     return;
   }
-  chFields.innerHTML=chatChs.map(ch=>`
-    <div class="cf">
-      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">${ch.icon} ${ch.name}</label>
-      <input type="number" id="modal-ch-${ch.id}" min="0" value="${existingChannels?.[ch.id]||0}" style="width:100%;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
-    </div>`).join('');
+  chFields.innerHTML=chatChs.map(ch=>{
+    const val=existingChannels?.[ch.id]||0;
+    const clr=CLR[S.channels.findIndex(x=>x.id===ch.id)%CLR.length]||'var(--accent)';
+    return `<div class="cf" style="text-align:center">
+      <label style="font-size:12px;font-weight:700;color:${clr};display:block;margin-bottom:6px">${ch.icon||'📡'} ${ch.name}</label>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+        <button onclick="stepNum('modal-ch-${ch.id}',-1)"
+          style="width:32px;height:32px;border-radius:8px;border:none;background:${clr};color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1;flex-shrink:0">−</button>
+        <input type="number" id="modal-ch-${ch.id}" min="0" value="${val}"
+          style="width:52px;text-align:center;background:var(--s2);border:1.5px solid ${clr}66;border-radius:8px;padding:5px;font-size:16px;font-weight:800;font-family:'DM Mono',monospace;color:${clr}">
+        <button onclick="stepNum('modal-ch-${ch.id}',1)"
+          style="width:32px;height:32px;border-radius:8px;border:none;background:${clr};color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1;flex-shrink:0">＋</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function openCallModal(sid){
@@ -2556,6 +2774,8 @@ function openCallModal(sid){
   const rcw=document.getElementById('out-recall-wrap'); if(rcw) rcw.style.display='none';
   const rcd=document.getElementById('out-recall-date'); if(rcd) rcd.value='';
   Object.keys(_procSel).forEach(k=>delete _procSel[k]);
+  Object.keys(_procSubOpen).forEach(k=>delete _procSubOpen[k]);
+  resetVocFields();
   document.getElementById('modal-branch-pills').innerHTML=S.branches.map(b=>{
     const isAct=b.id===_callBid, cl=bclr(b.id);
     return `<div class="br-pill${isAct?' act':''}" id="bpill-${b.id}"
@@ -2566,7 +2786,12 @@ function openCallModal(sid){
   renderModalProcGrid();
   toggleSubFields();
   document.getElementById('modal-call').classList.add('open');
-  setTimeout(()=>snpRender(''), 50);
+  setTimeout(()=>{ 
+    snpRenderBranchTabs();
+    _snpBranch='';
+    snpRender(''); 
+    initCallSchedulePanel(); 
+  }, 50);
 }
 
 function openEditModal(cid, sid, ds){
@@ -2702,17 +2927,62 @@ function toggleSubFields(){
   const sf=document.getElementById('modal-sub-fields');
   if(sf) sf.style.display=_callPttype==='일반'?'none':'block';
 }
+let _procSubOpen = {}; // { pid: true/false } 하위 펼침 상태
+
 function renderModalProcGrid(){
-  document.getElementById('modal-proc-grid').innerHTML=S.procedures.map(p=>{
-    const cnt=_procSel[p.id]||0;
-    return `<div class="proc-btn${cnt>0?' sel':''}" id="pb-${p.id}" onclick="toggleProc('${p.id}')">
-      ${p.icon} ${p.name}${cnt>0?`<span class="pc">${cnt}</span>`:''}
+  const el = document.getElementById('modal-proc-grid');
+  if(!el) return;
+  el.innerHTML = S.procedures.map(p=>{
+    const cnt = _procSel[p.id]||0;
+    const hasSubs = p.subs && p.subs.length > 0;
+    const isOpen = _procSubOpen[p.id];
+    const clr = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
+
+    // 하위 카테고리 선택 현황
+    const subCnt = hasSubs ? p.subs.reduce((a,s,i)=>a+(_procSel[p.id+':'+i]||0),0) : 0;
+    const totalCnt = cnt + subCnt;
+
+    return `<div style="display:inline-flex;flex-direction:column;gap:0;margin:2px">
+      <!-- 상위 시술 버튼 -->
+      <div style="display:flex;align-items:center;gap:0;border-radius:20px;border:1.5px solid ${totalCnt>0?clr:'var(--border)'};overflow:hidden;background:${totalCnt>0?`${clr}18`:'var(--s2)'}">
+        <div onclick="toggleProc('${p.id}')"
+          style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${totalCnt>0?'700':'500'};color:${totalCnt>0?clr:'var(--text2)'};position:relative">
+          ${p.icon||''} ${p.name}
+          ${cnt>0?`<span style="position:absolute;top:-6px;right:-6px;background:${clr};color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${cnt}</span>`:''}
+        </div>
+        ${hasSubs?`<div onclick="toggleProcSub('${p.id}')"
+          style="padding:5px 7px;cursor:pointer;font-size:10px;color:${isOpen?clr:'var(--text3)'};border-left:1px solid ${totalCnt>0?clr+'44':'var(--border)'};background:${isOpen?clr+'18':'transparent'}">▾</div>`:''}
+      </div>
+      <!-- 하위 카테고리 (펼쳤을 때) -->
+      ${hasSubs && isOpen ? `<div style="display:flex;flex-wrap:wrap;gap:3px;padding:5px 6px;background:${clr}08;border:1.5px solid ${clr}44;border-top:none;border-radius:0 0 12px 12px;margin-top:-2px">
+        ${p.subs.map((s,i)=>{
+          const sc = _procSel[p.id+':'+i]||0;
+          return `<div onclick="toggleSubProc('${p.id}',${i})"
+            style="padding:3px 9px;border-radius:12px;border:1.5px solid ${sc>0?clr:'var(--border)'};background:${sc>0?clr:'transparent'};color:${sc>0?'#fff':'var(--text2)'};font-size:11px;font-weight:${sc>0?'700':'500'};cursor:pointer;position:relative">
+            ${s.icon||''} ${s.name}
+            ${sc>0?`<span style="position:absolute;top:-5px;right:-5px;background:${clr};color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center">${sc}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>` : ''}
     </div>`;
   }).join('');
 }
+
 function toggleProc(pid){
   _procSel[pid]=(_procSel[pid]||0)+1;
   if(_procSel[pid]>9) _procSel[pid]=0;
+  renderModalProcGrid();
+}
+
+function toggleProcSub(pid){
+  _procSubOpen[pid] = !_procSubOpen[pid];
+  renderModalProcGrid();
+}
+
+function toggleSubProc(pid, idx){
+  const key = pid+':'+idx;
+  _procSel[key]=(_procSel[key]||0)+1;
+  if(_procSel[key]>9) _procSel[key]=0;
   renderModalProcGrid();
 }
 function confirmCall(){
@@ -2738,6 +3008,7 @@ function confirmCall(){
     channels:chData,
     procs:{...Object.fromEntries(Object.entries(_procSel).filter(([,v])=>v>0))},
     memo:document.getElementById('cf-memo').value.trim(),
+    voc:getVocData()||undefined,
     booked:document.querySelector('input[name=booked]:checked')?.value==='1',
     // 아웃콜 전용
     outPtname: _callType==='out'?(document.getElementById('out-ptname')?.value.trim()||''):'',
@@ -2780,7 +3051,7 @@ function confirmCall(){
 function renderBrSum(){
   const {from,to}=getPeriodDates(_brPeriod,'br-date-from','br-date-to');
   document.getElementById('brsum-date-lbl').textContent=periodLabel(from,to);
-  const calls=getCallsForRange(from,to);
+  const calls=getAnalysisCallsForRange(from,to);
   let html='';
   S.branches.forEach(b=>{
     const bc=calls.filter(c=>c.bid===b.id), cl=bclr(b.id);
@@ -2952,7 +3223,7 @@ function getMonthSums(){
 function renderCEO(){
   const {from,to}=getPeriodDates(_ceoPeriod,'ceo-date-from','ceo-date-to');
   document.getElementById('ceo-date-label').textContent=periodLabel(from,to);
-  const allCalls=getCallsForRange(from,to);
+  const allCalls=getAnalysisCallsForRange(from,to);
   const sum=getSummaryForRange(from,to);
 
   // delta: compare to same-length prior period
@@ -3651,7 +3922,7 @@ function confirmAddSub(){
   p.subs.push({name, icon});
   closeModal('modal-sub');
   renderProcMgmt();
-  if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+  if(document.getElementById('modal-call')?.classList.contains('open')){ renderModalProcGrid(); renderVocProcPills(); }
   autoSave();
   syncPush(true);
   toast(`✅ ${name} 추가됨`);
@@ -3693,7 +3964,7 @@ function delProc(id){
   showConfirmToast(`🗑 "${p.name}" 시술을 삭제할까요?`, ()=>{
     S.procedures=S.procedures.filter(x=>x.id!==id);
     renderProcMgmt();
-    if(document.getElementById('modal-call')?.classList.contains('open')) renderModalProcGrid();
+    if(document.getElementById('modal-call')?.classList.contains('open')){ renderModalProcGrid(); renderVocProcPills(); }
     autoSave();syncPush(true);toast('🗑 '+p.name+' 삭제됨');
   });
 }
@@ -3730,6 +4001,44 @@ function changeIncPw(){
   setTimeout(()=>msg.style.display='none',2500);
 }
 
+let _incPeriod = 'today';
+
+function setIncPeriod(period, btn){
+  _incPeriod = period;
+  document.querySelectorAll('[id^="incpb-"]').forEach(b=>b.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+  const cr=document.getElementById('inc-custom-range');
+  if(cr) cr.style.display=period==='custom'?'flex':'none';
+  if(period==='custom'){
+    const t=todayStr();
+    const w=new Date(); w.setDate(w.getDate()-6);
+    const fi=document.getElementById('inc-from');
+    const ti=document.getElementById('inc-to');
+    if(fi&&!fi.value) fi.value=w.toISOString().slice(0,10);
+    if(ti&&!ti.value) ti.value=t;
+  }
+  renderIncentive();
+}
+
+function getIncDateRange(){
+  const t=todayStr();
+  if(_incPeriod==='today') return {from:t,to:t,label:'오늘'};
+  if(_incPeriod==='week'){
+    const w=new Date(); w.setDate(w.getDate()-6);
+    return {from:w.toISOString().slice(0,10),to:t,label:'최근 7일'};
+  }
+  if(_incPeriod==='month'){
+    const m=new Date(); m.setDate(m.getDate()-29);
+    return {from:m.toISOString().slice(0,10),to:t,label:'최근 30일'};
+  }
+  if(_incPeriod==='custom'){
+    const from=document.getElementById('inc-from')?.value||t;
+    const to=document.getElementById('inc-to')?.value||t;
+    return {from,to,label:`${from} ~ ${to}`};
+  }
+  return {from:t,to:t,label:'오늘'};
+}
+
 function renderIncentive(){
   document.getElementById('inc-tbody').innerHTML=[1,2,3,4,5].map(d=>{
     const val=S.incentive[d]?.success||'';
@@ -3746,8 +4055,16 @@ function renderIncentive(){
     </tr>`;
   }).join('');
 
-  const now=new Date(),mk=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const mCalls=Object.entries(S.calls).filter(([ds])=>ds.slice(0,7)===mk).flatMap(([,c])=>c);
+  // 기간 범위 계산
+  const {from, to, label} = getIncDateRange();
+  const lbl=document.getElementById('inc-period-label');
+  const sub=document.getElementById('inc-period-sub');
+  if(lbl) lbl.textContent=label;
+  if(sub) sub.textContent=`(${label})`;
+
+  // 기간 내 발신 콜 수집
+  const dates=getDateRange(from,to);
+  const mCalls=dates.flatMap(ds=>(S.calls[ds]||[]));
 
   document.getElementById('inc-staff-grid').innerHTML=S.staff.map(s=>{
     const outCalls=mCalls.filter(c=>c.sid===s.id&&c.type==='out');
@@ -3903,13 +4220,19 @@ function confirmAddChannel(){
   const icon=document.getElementById('ch-icon').value.trim()||'📢';
   _addingChannel=true;
   S.channels.push({id:'ch'+uid(),icon,name});
-  closeModal('modal-channel');renderChannelMgmt();autoSave();toast('✅ '+name+' 채널 추가됨');
+  closeModal('modal-channel');renderChannelMgmt();autoSave();syncPush(true);toast('✅ '+name+' 채널 추가됨');
+  // 콜 기록 모달 열려있으면 채널 필드 즉시 갱신
+  if(document.getElementById('modal-call')?.classList.contains('open')) renderChatChannelFields({});
   setTimeout(()=>_addingChannel=false,500);
 }
 function delChannel(id){
   const ch=S.channels.find(x=>x.id===id);
-  if(!ch||!confirm(`"${ch.name}" 채널을 삭제할까요?`))return;
-  S.channels=S.channels.filter(x=>x.id!==id);renderChannelMgmt();autoSave();toast('🗑 채널 삭제됨');
+  if(!ch) return;
+  showConfirmToast(`🗑 "${ch.name}" 채널을 삭제할까요?`, ()=>{
+    S.channels=S.channels.filter(x=>x.id!==id);
+    renderChannelMgmt();autoSave();syncPush(true);toast('🗑 채널 삭제됨');
+    if(document.getElementById('modal-call')?.classList.contains('open')) renderChatChannelFields({});
+  });
 }
 
 // ═══════════════════════════════════
@@ -3933,7 +4256,7 @@ function setChPeriod(period, el){
 function renderChannelPage(){
   const {from,to}=getPeriodDates(_chPeriod,'ch-date-from','ch-date-to');
   document.getElementById('ch-date-lbl').textContent=periodLabel(from,to);
-  const calls=getCallsForRange(from,to);
+  const calls=getAnalysisCallsForRange(from,to);
   const container=document.getElementById('channel-content');
 
   // aggregate channel data
@@ -4075,7 +4398,7 @@ function setPmPttype(val, el){
 function renderProcMatrix(){
   const {from,to}=getPeriodDates(_pmPeriod,'pm-date-from','pm-date-to');
   document.getElementById('pm-date-lbl').textContent=periodLabel(from,to)+(_pmPttype!=='all'?' · '+_pmPttype:'');
-  let calls=getCallsForRange(from,to);
+  let calls=getAnalysisCallsForRange(from,to);
   if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
 
   const container=document.getElementById('proc-matrix-content');
@@ -4264,13 +4587,13 @@ function renderClosingReport(){
   // 기간 모드 판단
   let calls, dateLabel;
   if(_crMode==='range' && _crFrom && _crTo){
-    calls=getCallsForRange(_crFrom, _crTo);
+    calls=getAnalysisCallsForRange(_crFrom, _crTo);
     dateLabel=`${_crFrom} ~ ${_crTo}`;
   } else if(fromDs && fromDs!==ds){
-    calls=getCallsForRange(fromDs, ds);
+    calls=getAnalysisCallsForRange(fromDs, ds);
     dateLabel=`${fromDs} ~ ${ds}`;
   } else {
-    calls=getDayCalls(ds);
+    calls=getAnalysisCalls(ds);
     const d=new Date(ds+'T00:00:00');
     dateLabel=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${DAYS[d.getDay()]})`;
   }
@@ -4495,7 +4818,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   }
   const cl=bclr(bid);
 
-  const allCalls=allCallsOverride||getDayCalls(ds);
+  const allCalls=(allCallsOverride||getDayCalls(ds)).filter(c=>c.type!=='out');
   const calls=allCalls.filter(c=>c.bid===bid);
 
   if(!calls.length){
@@ -5834,6 +6157,9 @@ function getMonthCalls(mk){
   });
   return calls;
 }
+function getMonthAnalysisCalls(mk){
+  return getMonthCalls(mk).filter(c=>c.type!=='out');
+}
 
 function renderTrend(){
   const monthDefs = getTrendMonthDefs();
@@ -6068,13 +6394,13 @@ function dpToggleBr(bid) {
 
 function renderDailyProcTable(){
   const {from,to}=getPeriodRange(_dailyProcPeriod,'dp-from','dp-to');
-  const dates=getDateRange(from,to).filter(d=>(S.calls[d]||[]).length>0);
+  const dates=getDateRange(from,to).filter(d=>(S.calls[d]||[]).some(c=>c.type!=='out'));
   const el=document.getElementById('daily-proc-table');
   if(!el) return;
 
-  // 실제 사용된 시술 pid
+  // 실제 사용된 시술 pid (발신 제외)
   const usedPids=new Set();
-  dates.forEach(ds=>(S.calls[ds]||[]).forEach(c=>{
+  dates.forEach(ds=>getAnalysisCalls(ds).forEach(c=>{
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{if(n>0)usedPids.add(pid);});
   }));
 
@@ -6152,7 +6478,7 @@ function renderDailyProcTable(){
   let grandShin=0, grandGu=0;
 
   dates.forEach(ds=>{
-    const calls=S.calls[ds]||[];
+    const calls=getAnalysisCalls(ds);
     const dateLabel2 = dateLabel(ds);
     const brData={};
     branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};cols.forEach(c=>{brData[b.id].shin[c.id]=0;brData[b.id].gu[c.id]=0;});});
@@ -6249,7 +6575,7 @@ function renderTrendProcChartByPeriod(){
   // 시술 선택 버튼 렌더
   if(!_trendProcs.length){
     const allPCnt={};
-    dates.forEach(ds=>(S.calls[ds]||[]).forEach(c=>{
+    dates.forEach(ds=>getAnalysisCalls(ds).forEach(c=>{
       if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{allPCnt[pid]=(allPCnt[pid]||0)+n;});
     }));
     _trendProcs=Object.entries(allPCnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pid])=>pid);
@@ -6288,11 +6614,11 @@ function renderTrendProcChartByPeriod(){
     if(g.key.length===2){
       // 시간 키
       const ds=todayStr();
-      calls=(S.calls[ds]||[]).filter(c=>(c.time||'').startsWith(g.key));
+      calls=getAnalysisCalls(ds).filter(c=>(c.time||'').startsWith(g.key));
     } else if(g.key.length===7){
-      Object.keys(S.calls).forEach(ds=>{if(ds.startsWith(g.key))calls.push(...(S.calls[ds]||[]));});
+      Object.keys(S.calls).forEach(ds=>{if(ds.startsWith(g.key))calls.push(...getAnalysisCalls(ds));});
     } else {
-      calls=S.calls[g.key]||[];
+      calls=getAnalysisCalls(g.key);
     }
     const byProc=_trendProcs.map(pid=>calls.reduce((a,c)=>a+(c.procs?.[pid]||0),0));
     return {label:g.label, byProc};
@@ -6363,7 +6689,7 @@ function renderTrendBrChart(monthDefs){
   const activeBrColors = activeBrs.map(b=>bclr(b.id));
 
   const data = monthDefs.map(m=>{
-    const calls = getMonthCalls(m.key);
+    const calls = getMonthAnalysisCalls(m.key);
     const byBr = activeBrs.map(b=>calls.filter(c=>c.bid===b.id).length);
     const total = byBr.reduce((a,v)=>a+v,0);
     return {label:m.label, byBr, total, key:m.key};
@@ -6419,7 +6745,7 @@ function toggleTrendBr(bid){
 // ── 2. 신환/구환 라인 차트 ──
 function renderTrendPtChart(monthDefs){
   const data = monthDefs.map(m=>{
-    const calls = getMonthCalls(m.key);
+    const calls = getMonthAnalysisCalls(m.key);
     const shin = calls.filter(c=>c.pttype==='신환').length;
     const gu = calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
     return {label:m.label, shin, gu, total:calls.length};
@@ -6552,7 +6878,7 @@ function renderTrendProcChart(monthDefs){
   }
   const PCOLS=['#2563eb','#059669','#d97706','#dc2626','#7c3aed'];
   const data = monthDefs.map(m=>{
-    const calls=getMonthCalls(m.key);
+    const calls=getMonthAnalysisCalls(m.key);
     const byProc=_trendProcs.map(pid=>calls.reduce((a,c)=>a+(c.procs?.[pid]||0),0));
     return {label:m.label, byProc};
   });
@@ -6614,11 +6940,11 @@ function renderPtTypeBranchChart(){
   const to = new Date(); to.setDate(1); to.setHours(0,0,0,0);
   const from = new Date(to); from.setMonth(from.getMonth() - _ptTypePeriod);
 
-  // 날짜 범위 내 콜 수집
+  // 날짜 범위 내 콜 수집 (발신 제외)
   let calls = [];
   Object.entries(S.calls||{}).forEach(([ds,arr])=>{
     const d = new Date(ds+'T00:00:00');
-    if(d>=from && d<=new Date()) calls.push(...(arr||[]));
+    if(d>=from && d<=new Date()) calls.push(...(arr||[]).filter(c=>c.type!=='out'));
   });
 
   // 지점별 집계
@@ -11448,6 +11774,161 @@ async function startAiReformat(){
 
 // ─── 렌더링 ─────────────────────────────────────────────────
 // ★ 콜 기록 옆 수가표 패널
+let _snpBranch = ''; // '' = 전체
+
+function snpSetBranch(br){
+  _snpBranch = br;
+  // 탭 버튼 스타일 업데이트
+  const allBtn = document.getElementById('snp-br-all');
+  const comBtn = document.getElementById('snp-br-공통');
+  if(allBtn) {
+    allBtn.style.background = br==='' ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.25)';
+    allBtn.style.color = br==='' ? '#2563eb' : '#fff';
+  }
+  if(comBtn) {
+    comBtn.style.background = br==='공통' ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.25)';
+    comBtn.style.color = br==='공통' ? '#2563eb' : '#fff';
+  }
+  document.querySelectorAll('[id^="snp-br-btn-"]').forEach(btn=>{
+    const isSel = btn.dataset.br === br;
+    btn.style.background = isSel ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.25)';
+    btn.style.color = isSel ? '#2563eb' : '#fff';
+  });
+  snpRender(document.getElementById('snp-search')?.value||'');
+}
+
+function snpRenderBranchTabs(){
+  const tabEl = document.getElementById('snp-br-tabs');
+  if(!tabEl) return;
+  tabEl.innerHTML = S.branches.map(b=>`
+    <button id="snp-br-btn-${b.id}" data-br="${b.name}"
+      onclick="snpSetBranch('${b.name}')"
+      style="padding:3px 10px;border-radius:10px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:600;cursor:pointer">
+      ${b.name}
+    </button>`).join('');
+}
+// ── 콜 기록 모달 내 지점근무현황 패널 ──
+let _callSchedBid = null;
+let _callSchedOpen = true;
+
+function toggleCallSchedulePanel(){
+  _callSchedOpen = !_callSchedOpen;
+  const tabs = document.getElementById('call-sched-branch-tabs');
+  const table = document.getElementById('call-sched-table');
+  const icon = document.getElementById('call-sched-toggle-icon');
+  if(tabs) tabs.style.display = _callSchedOpen ? '' : 'none';
+  if(table) table.style.display = _callSchedOpen ? '' : 'none';
+  if(icon) icon.textContent = _callSchedOpen ? '▲' : '▼';
+}
+
+async function initCallSchedulePanel(){
+  _callSchedBid = _callSchedBid || S.branches[0]?.id;
+  renderCallSchedBranchTabs();
+  await loadCallSchedData(_callSchedBid);
+}
+
+function renderCallSchedBranchTabs(){
+  const el = document.getElementById('call-sched-branch-tabs');
+  if(!el) return;
+  el.innerHTML = S.branches.map(b=>{
+    const isAct = b.id === _callSchedBid;
+    const cl = bclr(b.id);
+    return `<button onclick="callSchedSelectBranch('${b.id}')"
+      style="padding:4px 12px;border-radius:14px;border:2px solid ${isAct?cl:'#d1fae5'};
+        background:${isAct?cl:'#fff'};color:${isAct?'#fff':cl};
+        font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
+      ${b.name}
+    </button>`;
+  }).join('');
+}
+
+async function callSchedSelectBranch(bid){
+  _callSchedBid = bid;
+  renderCallSchedBranchTabs();
+  await loadCallSchedData(bid);
+}
+
+async function loadCallSchedData(bid){
+  const tableEl = document.getElementById('call-sched-table');
+  if(!tableEl) return;
+  tableEl.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:11px">⏳ 불러오는 중...</div>';
+
+  const ds = todayStr();
+  const key = bid+'_'+ds;
+
+  // 캐시 있으면 바로 표시
+  if(_scheduleCache[key]){
+    renderCallSchedTable(_scheduleCache[key].rows);
+    return;
+  }
+
+  // 구글 시트에서 불러오기 시도
+  const rows = await fetchSheetSchedule(bid, ds);
+  if(rows !== null){
+    _scheduleCache[key] = {rows, mode:'sheet'};
+  } else {
+    // Firebase에서 불러오기
+    if(_syncUrl){
+      try{
+        const r = await fetch(`${_syncUrl}/mclinic/schedule/${ds}.json`);
+        const d = await r.json();
+        const fbRows = d?.[bid] || [];
+        _scheduleCache[key] = {rows:fbRows, mode:'manual'};
+      } catch(e){ _scheduleCache[key]={rows:[],mode:'manual'}; }
+    } else {
+      _scheduleCache[key] = {rows:[], mode:'manual'};
+    }
+  }
+  renderCallSchedTable(_scheduleCache[key].rows);
+}
+
+function renderCallSchedTable(rows){
+  const tableEl = document.getElementById('call-sched-table');
+  if(!tableEl) return;
+  const branch = S.branches.find(b=>b.id===_callSchedBid);
+  const cl = bclr(_callSchedBid);
+
+  if(!rows||!rows.length){
+    tableEl.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;font-size:11px">
+      <div style="font-size:18px;margin-bottom:6px">📭</div>
+      ${branch?.name||''}점 오늘 근무 데이터 없음
+    </div>`;
+    return;
+  }
+
+  const SC = {'출근':'#059669','퇴근':'#2563eb','휴무':'#dc2626','반차':'#d97706','외근':'#7c3aed','대기':'#94a3b8'};
+  tableEl.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      ${['출근','휴무','반차'].map(st=>{
+        const n=rows.filter(r=>r.status===st).length;
+        if(!n) return '';
+        const c=SC[st]||'#64748b';
+        return `<span style="background:${c}18;color:${c};border:1px solid ${c}33;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">${st} ${n}명</span>`;
+      }).join('')}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f0fdf4">
+        <th style="padding:5px 6px;text-align:left;border-bottom:1px solid #bbf7d0;font-size:10px">이름</th>
+        <th style="padding:5px 6px;text-align:left;border-bottom:1px solid #bbf7d0;font-size:10px">역할</th>
+        <th style="padding:5px 6px;text-align:center;border-bottom:1px solid #bbf7d0;font-size:10px">상태</th>
+        <th style="padding:5px 6px;text-align:center;border-bottom:1px solid #bbf7d0;font-size:10px">시간</th>
+        <th style="padding:5px 6px;text-align:left;border-bottom:1px solid #bbf7d0;font-size:10px">메모</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>{
+        const sc=SC[r.status]||'#94a3b8';
+        return `<tr style="border-bottom:1px solid #f0fdf4">
+          <td style="padding:5px 6px;font-weight:700;color:#1e293b">${r.name||''}</td>
+          <td style="padding:5px 6px;color:#64748b">${r.role||''}</td>
+          <td style="padding:5px 6px;text-align:center">
+            <span style="background:${sc}18;color:${sc};border:1px solid ${sc}33;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700">${r.status||''}</span>
+          </td>
+          <td style="padding:5px 6px;text-align:center;color:#64748b;font-size:10px">${r.start||''} ${r.end?'~'+r.end:''}</td>
+          <td style="padding:5px 6px;color:#94a3b8;font-size:10px">${r.memo||''}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
 function snpRender(q){
   const el = document.getElementById('snp-list');
   if(!el){ setTimeout(()=>snpRender(q||''), 200); return; }
@@ -11481,6 +11962,11 @@ function snpRender(q){
         return words.every(w => h.includes(w));
       })
     : src;
+
+  // 지점 필터 적용
+  if(_snpBranch) {
+    list = list.filter(n => (n.branch||'')=== _snpBranch || (n.branch||'')==='전지점');
+  }
 
   list = list.slice(0, 50);
 
@@ -11576,6 +12062,431 @@ function mktSetRange(days){
   renderMarketing();
 }
 
+// ── 콜수 비교 분석 ──────────────────────────
+let _cmpBranches = new Set(); // 선택된 지점 bid
+let _cmpPeriodA = 'today';
+let _cmpPeriodB = 'week';
+let _cmpProcs = new Set(); // 선택된 시술 pid (빈 Set = 전체)
+
+function initCmpSection(){
+  // 지점 필터 렌더
+  const brEl = document.getElementById('cmp-branch-pills');
+  if(brEl) brEl.innerHTML = S.branches.map(b=>{
+    const cl = bclr(b.id);
+    return `<button id="cmp-br-${b.id}" onclick="cmpToggleBranch('${b.id}')"
+      style="padding:3px 10px;border-radius:10px;border:1.5px solid ${cl};background:${cl};color:#fff;font-size:11px;font-weight:600;cursor:pointer">
+      ${b.name}
+    </button>`;
+  }).join('');
+  _cmpBranches = new Set(S.branches.map(b=>b.id)); // 기본 전체 선택
+
+  // 시술 필터 렌더
+  const prEl = document.getElementById('cmp-proc-pills');
+  if(prEl) prEl.innerHTML = S.procedures.map(p=>{
+    const cl = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length];
+    return `<button id="cmp-pr-${p.id}" onclick="cmpToggleProc('${p.id}')"
+      style="padding:3px 10px;border-radius:10px;border:1.5px solid ${cl};background:transparent;color:${cl};font-size:11px;font-weight:600;cursor:pointer">
+      ${p.icon||''} ${p.name}
+    </button>`;
+  }).join('');
+
+  // 기간 라벨 업데이트
+  cmpUpdateLabel('A'); cmpUpdateLabel('B');
+  renderCmpChart();
+}
+
+function cmpToggleBranch(bid){
+  if(_cmpBranches.has(bid)) { _cmpBranches.delete(bid); }
+  else { _cmpBranches.add(bid); }
+  const cl = bclr(bid);
+  const btn = document.getElementById('cmp-br-'+bid);
+  if(btn){
+    const sel = _cmpBranches.has(bid);
+    btn.style.background = sel ? cl : 'transparent';
+    btn.style.color = sel ? '#fff' : cl;
+  }
+  renderCmpChart();
+}
+
+function cmpToggleProc(pid){
+  if(_cmpProcs.has(pid)) { _cmpProcs.delete(pid); }
+  else { _cmpProcs.add(pid); }
+  const cl = CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length];
+  const btn = document.getElementById('cmp-pr-'+pid);
+  if(btn){
+    const sel = _cmpProcs.has(pid);
+    btn.style.background = sel ? cl : 'transparent';
+    btn.style.color = sel ? '#fff' : cl;
+  }
+  renderCmpChart();
+}
+
+function cmpSetPeriod(ab, period, btn){
+  if(ab==='A') _cmpPeriodA=period; else _cmpPeriodB=period;
+  const prefix = `cmp-${ab}`;
+  document.querySelectorAll(`#cmp-result ~ * [onclick*="cmpSetPeriod('${ab}"]`);
+  // 버튼 스타일 업데이트
+  const wrap = btn?.closest('div');
+  if(wrap) wrap.querySelectorAll('.period-btn').forEach(b=>{
+    b.classList.toggle('act', b===btn);
+  });
+  const custom = document.getElementById(`${prefix}-custom`);
+  if(custom) custom.style.display = period==='custom' ? 'flex' : 'none';
+  if(period==='custom'){
+    const t=todayStr();
+    const w=new Date(); w.setDate(w.getDate()-6);
+    const fi=document.getElementById(`${prefix}-from`);
+    const ti=document.getElementById(`${prefix}-to`);
+    if(fi&&!fi.value) fi.value=w.toISOString().slice(0,10);
+    if(ti&&!ti.value) ti.value=t;
+  }
+  cmpUpdateLabel(ab);
+  renderCmpChart();
+}
+
+function getCmpRange(ab){
+  const t=todayStr();
+  const period = ab==='A' ? _cmpPeriodA : _cmpPeriodB;
+  if(period==='today') return {from:t,to:t,label:'오늘'};
+  if(period==='week'){
+    const w=new Date(); w.setDate(w.getDate()-6);
+    return {from:w.toISOString().slice(0,10),to:t,label:'최근 7일'};
+  }
+  if(period==='month'){
+    const m=new Date(); m.setDate(m.getDate()-29);
+    return {from:m.toISOString().slice(0,10),to:t,label:'최근 30일'};
+  }
+  if(period==='custom'){
+    const from=document.getElementById(`cmp-${ab}-from`)?.value||t;
+    const to=document.getElementById(`cmp-${ab}-to`)?.value||t;
+    return {from,to,label:`${from}~${to}`};
+  }
+  return {from:t,to:t,label:'오늘'};
+}
+
+function cmpUpdateLabel(ab){
+  const {label}=getCmpRange(ab);
+  const el=document.getElementById(`cmp-${ab}-label`);
+  if(el) el.textContent=label;
+}
+
+function getCmpCalls(range){
+  return getDateRange(range.from,range.to)
+    .flatMap(ds=>getAnalysisCalls(ds))
+    .filter(c=>_cmpBranches.has(c.bid));
+}
+
+function renderCmpChart(){
+  const el=document.getElementById('cmp-result');
+  if(!el) return;
+
+  const rA=getCmpRange('A'), rB=getCmpRange('B');
+  const callsA=getCmpCalls(rA), callsB=getCmpCalls(rB);
+
+  // 선택된 지점 목록
+  const branches=S.branches.filter(b=>_cmpBranches.has(b.id));
+  if(!branches.length){
+    el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">지점을 선택하세요</div>';
+    return;
+  }
+
+  // 전체 KPI 비교
+  const kpiItems=[
+    {label:'총 상담', a:callsA.length, b:callsB.length},
+    {label:'신환', a:callsA.filter(c=>c.pttype==='신환').length, b:callsB.filter(c=>c.pttype==='신환').length},
+    {label:'구환', a:callsA.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length, b:callsB.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length},
+    {label:'예약 취소', a:callsA.reduce((s,c)=>s+(+c.cancel||0),0), b:callsB.reduce((s,c)=>s+(+c.cancel||0),0)},
+  ];
+
+  const kpiHtml=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+    ${kpiItems.map(k=>{
+      const diff=k.b-k.a;
+      const pct=k.a>0?Math.round(diff/k.a*100):0;
+      const up=diff>0, dn=diff<0;
+      return `<div style="background:var(--s2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${k.label}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:16px;font-weight:800;color:#2563eb">${k.a}</span>
+          <span style="font-size:12px;color:var(--text3)">→</span>
+          <span style="font-size:16px;font-weight:800;color:#7c3aed">${k.b}</span>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:${up?'#059669':dn?'#dc2626':'#94a3b8'}">
+          ${diff>0?'▲':''}${diff<0?'▼':''}${Math.abs(diff)} (${pct>0?'+':''}${pct}%)
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // 지점별 비교 바 차트
+  const brHtml=`<div style="margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🏥 지점별 비교</div>
+    <div style="display:flex;gap:10px;margin-bottom:8px;font-size:11px">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#2563eb;border-radius:3px;display:inline-block"></span>기간A (${rA.label})</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#7c3aed;border-radius:3px;display:inline-block"></span>기간B (${rB.label})</span>
+    </div>
+    ${branches.map(b=>{
+      const a=callsA.filter(c=>c.bid===b.id).length;
+      const bv=callsB.filter(c=>c.bid===b.id).length;
+      const mx=Math.max(a,bv,1);
+      const cl=bclr(b.id);
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:${cl};margin-bottom:4px">${b.name}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:10px;color:#2563eb;width:28px;text-align:right">${a}</span>
+          <div style="flex:1;height:8px;background:#e0e7ff;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(a/mx*100)}%;background:#2563eb;border-radius:4px"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:#7c3aed;width:28px;text-align:right">${bv}</span>
+          <div style="flex:1;height:8px;background:#ede9fe;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(bv/mx*100)}%;background:#7c3aed;border-radius:4px"></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // 시술별 비교
+  const selProcs=_cmpProcs.size>0
+    ? S.procedures.filter(p=>_cmpProcs.has(p.id))
+    : S.procedures;
+
+  const procData=selProcs.map(p=>{
+    const a=callsA.reduce((s,c)=>s+(c.procs?.[p.id]||0),0);
+    const bv=callsB.reduce((s,c)=>s+(c.procs?.[p.id]||0),0);
+    return {p,a,b:bv};
+  }).filter(d=>d.a>0||d.b>0).sort((x,y)=>(y.a+y.b)-(x.a+x.b)).slice(0,10);
+
+  const procHtml=procData.length?`<div>
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">💉 시술별 비교</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:7px 8px;text-align:left;border-bottom:1px solid var(--border)">시술</th>
+        <th style="padding:7px 8px;text-align:right;color:#2563eb;border-bottom:1px solid var(--border)">기간A</th>
+        <th style="padding:7px 8px;text-align:right;color:#7c3aed;border-bottom:1px solid var(--border)">기간B</th>
+        <th style="padding:7px 8px;text-align:right;border-bottom:1px solid var(--border)">변화</th>
+      </tr></thead>
+      <tbody>${procData.map(({p,a,b})=>{
+        const diff=b-a, pct=a>0?Math.round(diff/a*100):0;
+        const col=diff>0?'#059669':diff<0?'#dc2626':'#94a3b8';
+        return `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:7px 8px;font-weight:600">${p.icon||''} ${p.name}</td>
+          <td style="padding:7px 8px;text-align:right;color:#2563eb;font-weight:700">${a}</td>
+          <td style="padding:7px 8px;text-align:right;color:#7c3aed;font-weight:700">${b}</td>
+          <td style="padding:7px 8px;text-align:right;color:${col};font-weight:700">${diff>0?'+':''}${diff} (${pct>0?'+':''}${pct}%)</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`:'<div style="color:var(--text3);font-size:12px;padding:10px">선택된 기간에 시술 데이터 없음</div>';
+
+  el.innerHTML=kpiHtml+brHtml+procHtml;
+}
+
+// ══════════════════════════════════════
+// VOC 기능
+// ══════════════════════════════════════
+let _vocType = ''; // 현재 선택된 VOC 유형
+let _vocProcSel = new Set(); // VOC 관련 시술
+
+function toggleVocSection(){
+  const sec = document.getElementById('voc-section');
+  const icon = document.getElementById('voc-toggle-icon');
+  if(!sec) return;
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? '' : 'none';
+  if(icon) icon.textContent = open ? '▴' : '▾';
+  if(open) renderVocProcPills();
+}
+
+function setVocType(type){
+  _vocType = _vocType === type ? '' : type;
+  document.getElementById('cf-voc-type').value = _vocType;
+  const pos = document.getElementById('voc-type-pos');
+  const neg = document.getElementById('voc-type-neg');
+  if(pos){
+    const sel = _vocType==='긍정';
+    pos.style.borderColor = sel?'#059669':'var(--border)';
+    pos.style.background = sel?'#dcfce7':'var(--s2)';
+    pos.style.color = sel?'#059669':'var(--text3)';
+  }
+  if(neg){
+    const sel = _vocType==='컴플레인';
+    neg.style.borderColor = sel?'#dc2626':'var(--border)';
+    neg.style.background = sel?'#fee2e2':'var(--s2)';
+    neg.style.color = sel?'#dc2626':'var(--text3)';
+  }
+}
+
+function renderVocProcPills(){
+  const el = document.getElementById('voc-proc-pills');
+  if(!el) return;
+  el.innerHTML = S.procedures.map(p=>{
+    const sel = _vocProcSel.has(p.id);
+    const cl = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
+    return `<button onclick="vocToggleProc('${p.id}')" id="voc-pr-${p.id}"
+      style="padding:2px 9px;border-radius:10px;border:1.5px solid ${cl};background:${sel?cl:'transparent'};color:${sel?'#fff':cl};font-size:10px;font-weight:600;cursor:pointer">
+      ${p.icon||''} ${p.name}
+    </button>`;
+  }).join('');
+}
+
+function vocToggleProc(pid){
+  if(_vocProcSel.has(pid)) _vocProcSel.delete(pid);
+  else _vocProcSel.add(pid);
+  renderVocProcPills();
+}
+
+// VOC 데이터 콜에서 수집
+function getAllVocs(){
+  const vocs = [];
+  Object.entries(S.calls||{}).forEach(([ds, arr])=>{
+    (arr||[]).forEach(c=>{
+      if(c.voc && c.voc.type){
+        const branch = S.branches.find(b=>b.id===c.bid);
+        const staff = S.staff.find(s=>s.id===c.sid);
+        vocs.push({
+          id: c.id,
+          date: ds,
+          type: c.voc.type,
+          content: c.voc.content||'',
+          status: c.voc.status||'접수',
+          procs: c.voc.procs||[],
+          branch: branch?.name||'',
+          bid: c.bid,
+          staffName: staff?.name||'',
+          sid: c.sid,
+          pttype: c.pttype||'',
+        });
+      }
+    });
+  });
+  return vocs.sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function vocSetRange(days){
+  const to = new Date(); 
+  const from = new Date(); from.setDate(from.getDate()-(days-1));
+  document.getElementById('voc-filter-from').value = from.toISOString().slice(0,10);
+  document.getElementById('voc-filter-to').value = to.toISOString().slice(0,10);
+  renderVocPage();
+}
+
+function initVocPage(){
+  const brSel = document.getElementById('voc-filter-branch');
+  if(brSel && brSel.options.length===1){
+    S.branches.forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name; brSel.appendChild(o); });
+  }
+  if(!document.getElementById('voc-filter-from').value) vocSetRange(30);
+  else renderVocPage();
+}
+
+function renderVocPage(){
+  const bidF = document.getElementById('voc-filter-branch')?.value||'';
+  const typeF = document.getElementById('voc-filter-type')?.value||'';
+  const statusF = document.getElementById('voc-filter-status')?.value||'';
+  const fromF = document.getElementById('voc-filter-from')?.value||'';
+  const toF = document.getElementById('voc-filter-to')?.value||'';
+
+  let vocs = getAllVocs();
+  if(bidF) vocs = vocs.filter(v=>v.bid===bidF);
+  if(typeF) vocs = vocs.filter(v=>v.type===typeF);
+  if(statusF) vocs = vocs.filter(v=>v.status===statusF);
+  if(fromF) vocs = vocs.filter(v=>v.date>=fromF);
+  if(toF) vocs = vocs.filter(v=>v.date<=toF);
+
+  // KPI
+  const pos = vocs.filter(v=>v.type==='긍정').length;
+  const neg = vocs.filter(v=>v.type==='컴플레인').length;
+  const done = vocs.filter(v=>v.status==='완료').length;
+  const pending = vocs.filter(v=>v.status==='접수'||v.status==='처리중').length;
+  document.getElementById('voc-kpi').innerHTML=`
+    ${vocKpi('💬 전체 VOC','#2563eb',vocs.length)}
+    ${vocKpi('😊 긍정 VOC','#059669',pos)}
+    ${vocKpi('😤 컴플레인','#dc2626',neg)}
+    ${vocKpi('⏳ 미처리','#d97706',pending)}`;
+
+  const countEl = document.getElementById('voc-count');
+  if(countEl) countEl.textContent = `${vocs.length}건`;
+
+  // 목록
+  const listEl = document.getElementById('voc-list');
+  if(!listEl) return;
+  if(!vocs.length){
+    listEl.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">📭 해당 조건의 VOC가 없습니다</div>';
+    return;
+  }
+
+  const typeColor = {'긍정':'#059669','컴플레인':'#dc2626'};
+  const statusColor = {'접수':'#d97706','처리중':'#2563eb','완료':'#059669'};
+  listEl.innerHTML = vocs.map(v=>{
+    const tc = typeColor[v.type]||'#94a3b8';
+    const sc = statusColor[v.status]||'#94a3b8';
+    const prNames = (v.procs||[]).map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?`${p.icon||''} ${p.name}`:pid; }).join(', ');
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ${tc}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="background:${tc}18;color:${tc};border:1px solid ${tc}33;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700">${v.type==='긍정'?'😊':'😤'} ${v.type}</span>
+        <span style="background:${sc}18;color:${sc};border:1px solid ${sc}33;padding:2px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer" onclick="cycleVocStatus('${v.id}','${v.date}')">${v.status} ↻</span>
+        <span style="font-size:11px;color:var(--text3)">${v.date}</span>
+        <span style="font-size:11px;color:var(--text3)">${v.branch||''}</span>
+        <span style="font-size:11px;color:var(--text3)">${v.staffName||''}</span>
+        ${v.pttype?`<span style="font-size:10px;background:var(--s2);padding:1px 6px;border-radius:6px;color:var(--text3)">${v.pttype}</span>`:''}
+      </div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:${prNames?'6px':'0'}">${v.content||'(내용 없음)'}</div>
+      ${prNames?`<div style="font-size:10px;color:var(--text3)">관련 시술: ${prNames}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function vocKpi(label, color, val){
+  return `<div class="card" style="border-left:3px solid ${color}">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${label}</div>
+    <div style="font-size:26px;font-weight:900;color:${color}">${val}<span style="font-size:13px;font-weight:600">건</span></div>
+  </div>`;
+}
+
+function cycleVocStatus(cid, ds){
+  const arr = S.calls[ds];
+  if(!arr) return;
+  const c = arr.find(x=>x.id===cid);
+  if(!c||!c.voc) return;
+  const cycle = ['접수','처리중','완료'];
+  const idx = cycle.indexOf(c.voc.status||'접수');
+  c.voc.status = cycle[(idx+1)%cycle.length];
+  autoSave(); syncPush(true);
+  renderVocPage();
+  toast(`✅ 처리 상태 → ${c.voc.status}`);
+}
+
+// 콜 저장 시 VOC 포함
+function getVocData(){
+  const sec = document.getElementById('voc-section');
+  if(!sec || sec.style.display==='none') return null;
+  const type = document.getElementById('cf-voc-type')?.value||'';
+  if(!type) return null;
+  const content = document.getElementById('cf-voc-content')?.value.trim()||'';
+  if(!content) return null;
+  const status = document.querySelector('input[name="voc-status"]:checked')?.value||'접수';
+  return { type, content, status, procs:[..._vocProcSel] };
+}
+
+// VOC 초기화 (모달 열 때)
+function resetVocFields(){
+  _vocType=''; _vocProcSel=new Set();
+  const sec=document.getElementById('voc-section');
+  if(sec) sec.style.display='none';
+  const icon=document.getElementById('voc-toggle-icon');
+  if(icon) icon.textContent='▾';
+  const typeEl=document.getElementById('cf-voc-type');
+  if(typeEl) typeEl.value='';
+  const contentEl=document.getElementById('cf-voc-content');
+  if(contentEl) contentEl.value='';
+  setVocType(''); // 스타일 초기화
+  _vocType='';
+  const radio=document.querySelector('input[name="voc-status"][value="접수"]');
+  if(radio) radio.checked=true;
+}
+
 function initMarketingPage(){
   // 지점 셀렉트 채우기
   const sel=document.getElementById('mkt-branch-sel');
@@ -11589,6 +12500,8 @@ function initMarketingPage(){
   // 기본 날짜: 최근 30일
   if(!document.getElementById('mkt-date-from').value) mktSetRange(30);
   else renderMarketing();
+  // 콜수 비교 초기화
+  setTimeout(()=>initCmpSection(), 100);
 }
 
 function renderMarketing(){
