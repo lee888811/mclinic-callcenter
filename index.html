@@ -2005,7 +2005,7 @@ function saveAll(){markConfigDirty();autoSave();syncPush(true);}
 
 function loadSyncSettings(){
   try{
-    _syncUrl=localStorage.getItem('mclinic_sync_url')||'';
+    _syncUrl=localStorage.getItem('mclinic_sync_url')||'https://mclinic-callcenter-default-rtdb.firebaseio.com';
     _syncName=localStorage.getItem('mclinic_sync_name')||'';
     _lastSyncedAt=localStorage.getItem('mclinic_sync_last')||null;
   }catch(e){}
@@ -2231,7 +2231,12 @@ async function syncPull(){
     updateSyncUI('ok');
     const actPage=document.querySelector('.page.act');
     if(actPage){const pid=actPage.id.replace('page-','');try{go(pid,document.querySelector(`.si[data-page="${pid}"]`),true);}catch(e){}}
-  }catch(err){updateSyncUI('error');toast('⚠️ 서버 연결 실패: '+err.message);}
+  }catch(err){
+    updateSyncUI('error');
+    // 60초 후 자동 재시도 (조용히)
+    setTimeout(()=>{ if(_syncUrl) syncPull(); }, 60000);
+    console.warn('sync error:', err.message);
+  }
 }
 
 function mergeRemoteData(remote){
@@ -2260,6 +2265,12 @@ function mergeRemoteData(remote){
 function startSyncPoll(){
   clearInterval(_syncPollTimer);
   _syncPollTimer=setInterval(()=>{if(document.visibilityState==='visible')syncPull();},30000);
+  // 탭 다시 활성화될 때 즉시 재연결
+  document.removeEventListener('visibilitychange',_onVisibilityChange);
+  document.addEventListener('visibilitychange',_onVisibilityChange);
+}
+function _onVisibilityChange(){
+  if(document.visibilityState==='visible' && _syncUrl) syncPull();
 }
 
 // Firebase REST: GET /.json (ping)
