@@ -1058,7 +1058,10 @@ td:first-child{text-align:left;padding-left:13px}
   <div style="display:flex;gap:12px;align-items:flex-start;max-width:98vw;max-height:95vh">
     <!-- 콜 입력 폼 -->
   <div class="mbox" style="width:460px">
-    <div class="mt" id="modal-call-title">📋 상담 기록</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="mt" id="modal-call-title" style="margin:0">📋 상담 기록</div>
+      <button onclick="closeModal('modal-call')" style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.color='#64748b'">✕</button>
+    </div>
 
     <!-- 대분류: 전화 / 채팅 -->
     <div class="ml" style="margin-bottom:6px">상담 유형</div>
@@ -1165,13 +1168,19 @@ td:first-child{text-align:left;padding-left:13px}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
         <div class="cf">
           <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">예약건수</label>
-          <input type="number" id="cf-today" min="0" placeholder="0" style="width:100%;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
+          <div style="display:flex;align-items:center;gap:4px">
+            <button onclick="stepNum('cf-today',-1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">−</button>
+            <input type="number" id="cf-today" min="0" placeholder="0" style="flex:1;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
+            <button onclick="stepNum('cf-today',1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">＋</button>
+          </div>
         </div>
       </div>
       <div id="cancel-section" style="margin-top:10px;padding:10px 12px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.15);border-radius:8px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <label style="font-size:11px;font-weight:700;color:var(--red)">예약취소 건수</label>
-          <input type="number" id="cf-cancel" min="0" placeholder="0" style="width:64px;text-align:center;background:#fff;border:1px solid rgba(220,38,38,.3);border-radius:7px;padding:5px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)" oninput="toggleCancelReason()">
+          <button onclick="stepNum('cf-cancel',-1)" style="width:28px;height:28px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:900;cursor:pointer;line-height:1">−</button>
+          <input type="number" id="cf-cancel" min="0" placeholder="0" style="width:52px;text-align:center;background:#fff;border:1px solid rgba(220,38,38,.3);border-radius:7px;padding:4px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)" oninput="toggleCancelReason()">
+          <button onclick="stepNum('cf-cancel',1);toggleCancelReason()" style="width:28px;height:28px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:900;cursor:pointer;line-height:1">＋</button>
         </div>
         <div id="cancel-reason-wrap" style="display:none">
           <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">취소 사유 <span style="font-weight:400;color:var(--text3)">(해당 항목 선택)</span></label>
@@ -1189,7 +1198,11 @@ td:first-child{text-align:left;padding-left:13px}
       <div style="margin-top:8px">
         <div class="cf">
           <label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px">미예약 종료</label>
-          <input type="number" id="cf-noappt" min="0" placeholder="0" style="width:80px;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
+          <div style="display:flex;align-items:center;gap:4px">
+            <button onclick="stepNum('cf-noappt',-1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#d97706;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">−</button>
+            <input type="number" id="cf-noappt" min="0" placeholder="0" style="width:60px;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
+            <button onclick="stepNum('cf-noappt',1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#d97706;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">＋</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2576,6 +2589,14 @@ function selectBranch(bid){
     p.style.cssText=isAct?`background:${cl};border-color:${cl};color:#fff`:'';
   });
 }
+function stepNum(id, delta){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const v = Math.max(0, (+el.value||0) + delta);
+  el.value = v;
+  el.dispatchEvent(new Event('input'));
+}
+
 function toggleCancelReason(){
   const n=+document.getElementById('cf-cancel').value||0;
   const wrap=document.getElementById('cancel-reason-wrap');
