@@ -2779,35 +2779,80 @@ function getStaffPeriodDates(sid){
 }
 
 function renderStaffInputPage(sid){
-  const pg=document.getElementById('page-si-'+sid);if(!pg)return;
-  const s=S.staff.find(x=>x.id===sid);if(!s)return;
+  const pg=document.getElementById('page-si-'+sid); if(!pg) return;
+  const s=S.staff.find(x=>x.id===sid); if(!s) return;
   const period=getStaffPeriod(sid);
   const {from,to}=getStaffPeriodDates(sid);
-  const calls=getCallsForRange(from,to).filter(c=>c.sid===sid);
-  const incall=calls.filter(c=>c.type==='in').length;
-  const callback=calls.filter(c=>c.type==='cb').length;
-  const outcall=calls.filter(c=>c.type==='out').length;
-  const shin=calls.filter(c=>c.pttype==='신환').length;
-  const gu=calls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
-  const rem=calls.filter(c=>c.pttype==='잔여시술').length;
-  const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
-  const noappt=calls.reduce((a,c)=>a+(+c.noappt||0),0);
-  const sc=sclr(sid);
-  _curDate=todayStr();
+  const allCalls=getCallsForRange(from,to).filter(c=>c.sid===sid);
+  const calls=allCalls; // 전체 (오발신/광고 포함)
+  const analysisCalls=calls.filter(c=>c.type!=='miss'&&c.type!=='ad'); // 분석용
+
+  // ── 기본 집계 ──
+  const incall  = analysisCalls.filter(c=>c.type==='in').length;
+  const callback= analysisCalls.filter(c=>c.type==='cb').length;
+  const outcall = calls.filter(c=>c.type==='out').length;
+  const shin    = analysisCalls.filter(c=>c.pttype==='신환').length;
+  const gu      = analysisCalls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
+  const rem     = analysisCalls.filter(c=>c.pttype==='잔여시술').length;
+  const cancel  = analysisCalls.reduce((a,c)=>a+(+c.cancel||0),0);
+  const noappt  = analysisCalls.reduce((a,c)=>a+(+c.noappt||0),0);
+  const booked  = analysisCalls.reduce((a,c)=>a+(+c.today||0),0);
+  const inTotal = incall+callback;
+  const sc      = sclr(sid);
+  _curDate = todayStr();
+
+  // ── 전환율 계산 ──
+  const convRate  = inTotal>0 ? (booked/inTotal*100).toFixed(1) : 0;
+  const shinRate  = booked>0  ? (shin/booked*100).toFixed(1) : 0;
+  const cancelRate= booked>0  ? (cancel/booked*100).toFixed(1) : 0;
+
+  // ── 목표 대비 달성률 ──
+  const goals = (S.perfGoals||{})[sid]||{};
+  const goalIn  = goals.inCall||0;
+  const goalShin= goals.shin||0;
+  const goalOut = goals.outCall||0;
+  const inPct   = goalIn>0  ? Math.min(100,Math.round(inTotal/goalIn*100)) : null;
+  const shinPct = goalShin>0? Math.min(100,Math.round(shin/goalShin*100))  : null;
+  const outPct  = goalOut>0 ? Math.min(100,Math.round(outcall/goalOut*100)): null;
+
+  // ── 팀 내 순위 (당일 기준) ──
+  const today = todayStr();
+  const todayCalls = (S.calls[today]||[]);
+  const teamRanks = S.staff
+    .filter(st=>(S.perfGoals?.[st.id]?.workType||'콜담당')!=='미포함')
+    .map(st=>{
+      const stCalls=todayCalls.filter(c=>c.sid===st.id&&c.type!=='miss'&&c.type!=='ad');
+      return {sid:st.id, name:st.name, shin:stCalls.filter(c=>c.pttype==='신환').length,
+              in:stCalls.filter(c=>c.type==='in'||c.type==='cb').length};
+    }).sort((a,b)=>b.shin-a.shin||b.in-a.in);
+  const myRank = teamRanks.findIndex(r=>r.sid===sid)+1;
+  const teamSize= teamRanks.length;
+
+  // ── 오늘 시간대별 분포 ──
+  const todayMyCalls = (S.calls[today]||[]).filter(c=>c.sid===sid&&c.type!=='miss'&&c.type!=='ad');
+  const hourDist = {};
+  todayMyCalls.forEach(c=>{
+    const h = (c.time||'').slice(0,2);
+    if(h) hourDist[h]=(hourDist[h]||0)+1;
+  });
 
   const customFromVal=(()=>{const d7=new Date();d7.setDate(d7.getDate()-6);return localDateStr(d7);})();
 
   pg.innerHTML=`
+    <!-- 헤더 -->
     <div class="ph">
-      <div><div class="pt" style="color:${sc}">✏️ ${s.name}</div><div class="ps">${s.role} · 개인 콜 입력</div></div>
+      <div>
+        <div class="pt" style="color:${sc}">✏️ ${s.name}</div>
+        <div class="ps">${s.role} · 개인 콜 입력</div>
+      </div>
       <div class="pbtns">
         <button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')">＋ 콜 기록</button>
       </div>
     </div>
 
     <!-- 기간 필터 -->
-    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:14px;padding:9px 13px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-      <span style="font-size:15px;font-weight:700;color:#0f172a;margin-right:4px">기간</span>
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px;padding:9px 13px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
+      <span style="font-size:13px;font-weight:700;color:#0f172a">기간</span>
       <button class="period-btn${period==='today'?' act':''}" id="spb-${sid}-today" onclick="setStaffPeriod('${sid}','today')">오늘</button>
       <button class="period-btn${period==='week'?' act':''}" id="spb-${sid}-week" onclick="setStaffPeriod('${sid}','week')">최근 7일</button>
       <button class="period-btn${period==='year'?' act':''}" id="spb-${sid}-year" onclick="setStaffPeriod('${sid}','year')">최근 1년</button>
@@ -2817,24 +2862,139 @@ function renderStaffInputPage(sid){
           style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
           onchange="updateStaffCustomDate('${sid}','from',this.value)">
         <span style="font-size:11px;color:var(--text3)">~</span>
-        <input type="date" id="sp-to-${sid}" value="${_staffCustomTo[sid]||todayStr()}"
+        <input type="date" id="sp-to-${sid}" value="${_staffCustomTo[sid]||today}"
           style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
           onchange="updateStaffCustomDate('${sid}','to',this.value)">
       </div>
       <span style="margin-left:auto;font-size:11px;color:var(--text3)">${periodLabel(from,to)}</span>
     </div>
 
-    <div class="kstrip" style="margin-bottom:16px">
-      <div class="kpi" style="--kc:var(--cyan)"><div class="kl">수신 콜</div><div class="kv">${incall}</div></div>
-      <div class="kpi" style="--kc:var(--green)"><div class="kl">콜백</div><div class="kv">${callback}</div></div>
-      <div class="kpi" style="--kc:var(--purple)"><div class="kl">발신 콜</div><div class="kv">${outcall}</div></div>
-      <div class="kpi" style="--kc:#0e9f6e"><div class="kl">신환(신규상담)</div><div class="kv">${shin}</div></div>
-      <div class="kpi" style="--kc:#7c3aed"><div class="kl">구환(신규상담)</div><div class="kv">${gu}</div></div>
-      <div class="kpi" style="--kc:#0891b2"><div class="kl">잔여시술</div><div class="kv">${rem}</div></div>
-      <div class="kpi" style="--kc:var(--red)"><div class="kl">예약취소</div><div class="kv">${cancel}</div></div>
-      <div class="kpi" style="--kc:var(--amber)"><div class="kl">미예약종료</div><div class="kv">${noappt}</div></div>
+    <!-- ① 목표 달성률 -->
+    ${(goalIn||goalShin||goalOut)?`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px">🎯 목표 달성률</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${goalIn?`<div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">📞 인콜+콜백</span>
+            <span style="font-size:12px;font-weight:700;color:${inPct>=100?'#059669':inPct>=70?'#f59e0b':'#ef4444'}">${inTotal} / ${goalIn} (${inPct}%)</span>
+          </div>
+          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${inPct}%;background:${inPct>=100?'#059669':inPct>=70?'#f59e0b':'#3b82f6'};border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>`:''}
+        ${goalShin?`<div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">🆕 신환</span>
+            <span style="font-size:12px;font-weight:700;color:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#ef4444'}">${shin} / ${goalShin} (${shinPct}%)</span>
+          </div>
+          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${shinPct}%;background:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#3b82f6'};border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>`:''}
+        ${goalOut?`<div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">📤 아웃콜</span>
+            <span style="font-size:12px;font-weight:700;color:${outPct>=100?'#059669':outPct>=70?'#f59e0b':'#ef4444'}">${outcall} / ${goalOut} (${outPct}%)</span>
+          </div>
+          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${outPct}%;background:${outPct>=100?'#059669':outPct>=70?'#f59e0b':'#7c3aed'};border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>`:''}
+      </div>
+    </div>`:''}
+
+    <!-- ② KPI 카드 2열 그리드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+
+      <!-- 콜 현황 -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">📞 콜 현황</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${[
+            ['수신 인콜',incall,'#3b82f6'],
+            ['콜백',callback,'#059669'],
+            ['발신 아웃콜',outcall,'#7c3aed'],
+          ].map(([l,v,c])=>`
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--text2)">${l}</span>
+              <span style="font-size:18px;font-weight:800;color:${c}">${v}</span>
+            </div>`).join('')}
+          <div style="border-top:1px solid var(--border);padding-top:7px;display:flex;justify-content:space-between">
+            <span style="font-size:11px;color:var(--text3)">총 인콜+콜백</span>
+            <span style="font-size:14px;font-weight:800;color:#0f172a">${inTotal}건</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 예약 전환율 -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">📅 예약 전환</div>
+        <div style="text-align:center;margin-bottom:10px">
+          <div style="font-size:36px;font-weight:900;color:${+convRate>=50?'#059669':+convRate>=30?'#f59e0b':'#ef4444'}">${convRate}%</div>
+          <div style="font-size:11px;color:var(--text3)">인콜 전환율</div>
+        </div>
+        <div style="height:6px;background:var(--s3);border-radius:3px;margin-bottom:8px">
+          <div style="height:100%;width:${Math.min(100,+convRate)}%;background:${+convRate>=50?'#059669':+convRate>=30?'#f59e0b':'#ef4444'};border-radius:3px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+          <span>예약 ${booked}건</span>
+          <span>취소 ${cancel}건 (${cancelRate}%)</span>
+        </div>
+      </div>
+
+      <!-- 환자 구분 -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">👤 환자 구분</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${[
+            ['🆕 신환',shin,'#059669'],
+            ['🔄 구환',gu,'#7c3aed'],
+            ['🗓 잔여시술',rem,'#0891b2'],
+            ['💬 일반문의',analysisCalls.filter(c=>c.pttype==='일반').length,'#94a3b8'],
+          ].map(([l,v,c])=>`
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--text2)">${l}</span>
+              <span style="font-size:16px;font-weight:800;color:${c}">${v}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- 팀 내 순위 + 오늘 현황 -->
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">🏆 오늘 팀 내 순위</div>
+        ${myRank>0?`
+          <div style="text-align:center;margin-bottom:8px">
+            <div style="font-size:40px">${myRank===1?'🥇':myRank===2?'🥈':myRank===3?'🥉':'🏅'}</div>
+            <div style="font-size:22px;font-weight:900;color:${sc}">${myRank}위 / ${teamSize}명</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">신환 기준</div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:3px">
+            ${teamRanks.slice(0,3).map((r,i)=>`
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:12px;width:16px">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
+                <span style="font-size:11px;flex:1;font-weight:${r.sid===sid?700:400};color:${r.sid===sid?sc:'var(--text2)'}">${r.name}</span>
+                <span style="font-size:11px;color:#059669;font-weight:600">신환 ${r.shin}</span>
+              </div>`).join('')}
+          </div>`
+        :`<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">오늘 입력 데이터 없음</div>`}
+      </div>
     </div>
-    <div class="slbl" style="margin-bottom:10px">상담 기록 · 총 ${calls.length}건</div>
+
+    <!-- ③ 미예약 현황 요약 (중요 follow-up) -->
+    ${noappt>0?`
+    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">⚠️</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#92400e">미예약종료 ${noappt}건</div>
+        <div style="font-size:11px;color:#b45309;margin-top:2px">아웃콜 대상입니다. 아래 콜 목록에서 확인하세요.</div>
+      </div>
+    </div>`:''}
+
+    <!-- ④ 콜 목록 -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span class="slbl" style="margin:0">상담 기록 · 총 ${calls.length}건</span>
+    </div>
     <div class="call-log-list">
       ${calls.length===0
         ?`<div style="padding:24px;text-align:center;color:var(--text3);background:var(--s1);border:1px solid var(--border);border-radius:10px">
