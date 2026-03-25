@@ -2054,7 +2054,9 @@ td:first-child{text-align:left;padding-left:13px}
           <button id="snp-tab-notes" onclick="snpSwitchTab('notes')"
             style="flex:1;padding:10px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:800;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">📒 수가표·병원정보</button>
           <button id="snp-tab-faq" onclick="snpSwitchTab('faq')"
-            style="flex:1;padding:10px;border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">💬 스크립트/FAQ</button>
+            style="flex:1;padding:10px;border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">💬 스크립트/FAQ</button>
+          <button id="snp-tab-landing" onclick="snpSwitchTab('landing')"
+            style="flex:1;padding:10px;border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">🔗 랜딩페이지</button>
         </div>
 
         <!-- 수가표 헤더 -->
@@ -2088,10 +2090,24 @@ td:first-child{text-align:left;padding-left:13px}
         </div>
       </div>
 
+        <!-- 랜딩페이지 헤더 -->
+        <div id="snp-landing-header" style="padding:10px 14px 8px;display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:11px;color:rgba(255,255,255,.8);flex:1">시술 랜딩페이지 URL 빠른 검색</span>
+            <button onclick="loadLandingData(true)" style="padding:4px 10px;border-radius:7px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">🔄</button>
+          </div>
+          <input id="snp-landing-search" type="text" placeholder="🔍 시술명 검색 (예: 보톡스, 필러...)"
+            style="width:100%;padding:7px 10px;border-radius:8px;border:none;font-size:12px;box-sizing:border-box;background:rgba(255,255,255,.95);color:#1e293b;outline:none"
+            oninput="snpRenderLanding(this.value)">
+        </div>
+      </div>
+
       <!-- 수가표 목록 -->
       <div id="snp-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
       <!-- FAQ 목록 -->
       <div id="faq-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
+      <!-- 랜딩페이지 목록 -->
+      <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
     </div>
 
     <!-- 직원근무현황 미니 패널 -->
@@ -16802,30 +16818,37 @@ const FAQ_CATS = ['전체','가격문의','시술설명','예약/취소','이벤
 
 function snpSwitchTab(tab) {
   _snpActiveTab = tab;
-  const noteHeader = document.getElementById('snp-notes-header');
-  const faqHeader  = document.getElementById('snp-faq-header');
-  const noteList   = document.getElementById('snp-list');
-  const faqList    = document.getElementById('faq-list');
-  const noteTab    = document.getElementById('snp-tab-notes');
-  const faqTab     = document.getElementById('snp-tab-faq');
+  const noteHeader    = document.getElementById('snp-notes-header');
+  const faqHeader     = document.getElementById('snp-faq-header');
+  const landingHeader = document.getElementById('snp-landing-header');
+  const noteList      = document.getElementById('snp-list');
+  const faqList       = document.getElementById('faq-list');
+  const landingList   = document.getElementById('snp-landing-list');
+  const noteTab       = document.getElementById('snp-tab-notes');
+  const faqTab        = document.getElementById('snp-tab-faq');
+  const landingTab    = document.getElementById('snp-tab-landing');
+
+  // 모두 숨기기
+  [noteHeader, faqHeader, landingHeader].forEach(el=>{ if(el) el.style.display='none'; });
+  [noteList, faqList, landingList].forEach(el=>{ if(el) el.style.display='none'; });
+  [noteTab, faqTab, landingTab].forEach(el=>{ if(el){ el.style.background='transparent'; el.style.color='rgba(255,255,255,.7)'; el.style.fontWeight='600'; }});
 
   if(tab === 'notes') {
-    if(noteHeader) noteHeader.style.display = '';
-    if(faqHeader)  faqHeader.style.display  = 'none';
-    if(noteList)   { noteList.style.display = 'flex'; }
-    if(faqList)    { faqList.style.display  = 'none'; }
-    if(noteTab) { noteTab.style.background='rgba(255,255,255,.15)'; noteTab.style.color='#fff'; noteTab.style.fontWeight='800'; }
-    if(faqTab)  { faqTab.style.background='transparent'; faqTab.style.color='rgba(255,255,255,.7)'; faqTab.style.fontWeight='600'; }
+    if(noteHeader) noteHeader.style.display='';
+    if(noteList)   noteList.style.display='flex';
+    if(noteTab)  { noteTab.style.background='rgba(255,255,255,.15)'; noteTab.style.color='#fff'; noteTab.style.fontWeight='800'; }
     snpRender(document.getElementById('snp-search')?.value||'');
-  } else {
-    if(noteHeader) noteHeader.style.display = 'none';
-    if(faqHeader)  faqHeader.style.display  = '';
-    if(noteList)   { noteList.style.display = 'none'; }
-    if(faqList)    { faqList.style.display  = 'flex'; }
-    if(noteTab) { noteTab.style.background='transparent'; noteTab.style.color='rgba(255,255,255,.7)'; noteTab.style.fontWeight='600'; }
+  } else if(tab === 'faq') {
+    if(faqHeader) faqHeader.style.display='';
+    if(faqList)   faqList.style.display='flex';
     if(faqTab)  { faqTab.style.background='rgba(255,255,255,.15)'; faqTab.style.color='#fff'; faqTab.style.fontWeight='800'; }
     faqRenderCatTabs();
     faqRender(document.getElementById('snp-faq-search')?.value||'');
+  } else if(tab === 'landing') {
+    if(landingHeader) landingHeader.style.display='';
+    if(landingList)   landingList.style.display='flex';
+    if(landingTab)  { landingTab.style.background='rgba(255,255,255,.15)'; landingTab.style.color='#fff'; landingTab.style.fontWeight='800'; }
+    snpRenderLanding('');
   }
 }
 
@@ -16844,6 +16867,50 @@ function faqSetCat(cat) {
   _faqCat = cat;
   faqRenderCatTabs();
   faqRender(document.getElementById('snp-faq-search')?.value||'');
+}
+
+function snpRenderLanding(q='') {
+  const el = document.getElementById('snp-landing-list'); if(!el) return;
+  q = (q||document.getElementById('snp-landing-search')?.value||'').toLowerCase().trim();
+
+  if(!_landingData.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:#94a3b8">
+      <div style="font-size:24px;margin-bottom:8px">⏳</div>
+      <div style="font-size:12px;margin-bottom:8px">불러오는 중...</div>
+    </div>`;
+    // 데이터 로드 후 재렌더링
+    loadLandingData().then(()=>{
+      if(_landingData.length) snpRenderLanding(q);
+      else {
+        el.innerHTML=`<div style="padding:20px;text-align:center;color:#94a3b8;font-size:11px">
+          데이터를 불러올 수 없어요.<br>GAS URL을 확인해주세요.
+        </div>`;
+      }
+    });
+    return;
+  }
+
+  const filtered = q
+    ? _landingData.filter(d=> d.name.toLowerCase().includes(q)||(d.extra||'').toLowerCase().includes(q))
+    : _landingData.slice(0,30);
+
+  if(!filtered.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px">검색 결과 없음</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.slice(0,40).map(d=>{
+    const shortUrl = d.url.replace(/https?:\/\/(www\.)?/,'').slice(0,35);
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px">
+      <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:3px">${escHtml(d.name)}</div>
+      ${d.extra?`<div style="font-size:10px;color:#94a3b8;margin-bottom:4px">${escHtml(d.extra.slice(0,50))}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:#2563eb;font-family:'DM Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortUrl}</span>
+        <button onclick="copyLandingUrl('${escHtml(d.url)}')" style="border:none;background:#f1f5f9;color:#475569;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0">복사</button>
+        <a href="${escHtml(d.url)}" target="_blank" style="border:none;background:#2563eb;color:#fff;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0">열기</a>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function faqRender(q='') {
@@ -19088,17 +19155,17 @@ async function loadLandingData(force=false){
   const statusEl = document.getElementById('landing-status');
   const listEl   = document.getElementById('landing-list');
 
-  // 캐시 확인
-  if(!force && _landingData.length){
-    renderLandingList();
-    return;
-  }
+  // 로컬 캐시 먼저 확인
+  if(!force && _landingData.length) { renderLandingList(); return; }
 
-  // 로컬 캐시
   if(!force){
     try{
       const cached = localStorage.getItem('landing_cache');
-      if(cached){ _landingData = JSON.parse(cached); renderLandingList(); return; }
+      if(cached){
+        _landingData = JSON.parse(cached);
+        renderLandingList();
+        return;
+      }
     }catch(e){}
   }
 
@@ -19108,11 +19175,12 @@ async function loadLandingData(force=false){
   }
 
   if(statusEl){ statusEl.style.display='block'; statusEl.style.background='rgba(37,99,235,.07)'; statusEl.style.color='var(--accent)'; statusEl.textContent='⏳ 불러오는 중...'; }
-  if(listEl) listEl.innerHTML='';
 
   try{
-    const res = await fetch(`${_landingGasUrl}?action=getLanding`);
-    const json = await res.json();
+    // GAS는 리디렉션이 있으므로 redirect:follow 필요
+    const res = await fetch(_landingGasUrl, { redirect: 'follow' });
+    const text = await res.text();
+    const json = JSON.parse(text);
     if(json.ok && json.data){
       _landingData = json.data;
       localStorage.setItem('landing_cache', JSON.stringify(_landingData));
@@ -19120,10 +19188,11 @@ async function loadLandingData(force=false){
       setTimeout(()=>{ if(statusEl) statusEl.style.display='none'; }, 3000);
       renderLandingList();
     } else {
-      throw new Error(json.error||'불러오기 실패');
+      throw new Error(json.error||'서버 오류');
     }
   }catch(e){
-    if(statusEl){ statusEl.textContent='⚠️ 불러오기 실패: '+e.message; statusEl.style.color='var(--red)'; }
+    console.error('[Landing]', e);
+    if(statusEl){ statusEl.textContent='⚠️ 불러오기 실패: '+e.message; statusEl.style.color='var(--red)'; statusEl.style.display='block'; }
   }
 }
 
