@@ -2080,12 +2080,14 @@ function scheduleSyncPush(callDate){
 
 let _dirtyCallDates = new Set();
 let _dirtyConfig = false;
+let _lastPushAt = 0;
+let _localSavedAt = null;
 
 function markCallDirty(date){ _dirtyCallDates.add(date||todayStr()); }
 function markConfigDirty(){ _dirtyConfig = true; }
 
-// ── 안정적 fetch (타임아웃 + 재시도) ──
-async function fbFetch(url, options={}, timeout=10000){
+// ── fetch ──
+async function fbFetch(url, options={}){
   return fetch(url, options);
 }
 
@@ -2096,18 +2098,18 @@ async function syncPush(showToast=false){
   try{
     const base=_syncUrl.replace(/\/+$/,'');
     if(_dirtyConfig||showToast){
+      _localSavedAt = new Date().toISOString();
       const cfg={branches:S.branches,staff:S.staff,procedures:S.procedures,
         channels:S.channels,roles:S.roles,incentive:S.incentive,
-        _deletedIds:S._deletedIds||[],savedAt:new Date().toISOString()};
+        _deletedIds:S._deletedIds||[],savedAt:_localSavedAt};
       const r=await fbFetch(base+'/mclinic.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
-      if(r.ok) _dirtyConfig=false;
+      if(r.ok){ _dirtyConfig=false; _lastPushAt=Date.now(); }
     }
     for(const ds of [..._dirtyCallDates]){
       const r=await fbFetch(base+`/mclinic/calls/${ds}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.calls[ds]||[])});
       if(r.ok) _dirtyCallDates.delete(ds);
     }
     _lastSyncedAt=new Date().toISOString();
-    _lastPushAt=Date.now();
     try{localStorage.setItem('mclinic_sync_last',_lastSyncedAt);}catch(e){}
     updateSyncUI('ok');
     if(showToast) toast('☁️ 저장됨');
@@ -2119,11 +2121,10 @@ async function syncPush(showToast=false){
 }
 
 // ── PULL ────────────────────────────────
-let _lastPushAt = 0; // push 완료 시각
-
 async function syncPull(){
   if(!_syncUrl) return;
-  if(_isSyncing) return; // push 중이면 skip
+  if(_isSyncing) return;
+  if((Date.now()-_lastPushAt) < 15000){ updateSyncUI('ok'); return; }
   updateSyncUI('syncing');
   const base=_syncUrl.replace(/\/+$/,'');
   try{
@@ -2132,20 +2133,19 @@ async function syncPull(){
     const data=await r.json();
     if(!data) throw new Error('empty');
 
-    // push 완료 후 10초 이내 또는 _dirtyConfig=true면 설정 덮어쓰기 금지
-    const recentPush = (Date.now() - _lastPushAt) < 10000;
-    if(!_dirtyConfig && !recentPush){
+    // 서버 savedAt이 로컬 push보다 최신일 때만 설정 반영
+    const serverSavedAt = data.savedAt||'';
+    const canOverwrite = !_dirtyConfig && (!_localSavedAt || serverSavedAt >= _localSavedAt);
+    if(canOverwrite){
       ['branches','staff','procedures','channels','roles'].forEach(k=>{
         if(data[k]?.length) S[k]=data[k];
       });
       if(data.incentive) S.incentive=data.incentive;
     }
-    // deletedIds 병합
     if(data._deletedIds?.length){
       if(!S._deletedIds) S._deletedIds=[];
       S._deletedIds=[...new Set([...S._deletedIds,...data._deletedIds])].slice(-500);
     }
-    // calls 병합
     if(data.calls){
       const del=new Set(S._deletedIds||[]);
       Object.keys(data.calls).forEach(ds=>{
@@ -2156,9 +2156,7 @@ async function syncPull(){
         });
       });
     }
-    // 구버전 data.calls 호환
     if(data.data?.calls) mergeRemoteData(data.data);
-
     pruneLocalCalls(LOCAL_DAYS);
     try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
     _lastSyncedAt=new Date().toISOString();
@@ -2168,9 +2166,9 @@ async function syncPull(){
     const actPage=document.querySelector('.page.act');
     if(actPage){const pid=actPage.id.replace('page-','');try{go(pid,document.querySelector(`.si[data-page="${pid}"]`),true);}catch(e){}}
   }catch(err){
-    // 네트워크 일시 오류 - UI 오류 표시 없이 조용히 재시도
+    updateSyncUI('error');
     console.warn('sync error:', err.message);
-    setTimeout(()=>{ if(_syncUrl&&!_isSyncing) syncPull(); }, 15000);
+    setTimeout(()=>{ if(_syncUrl&&!_isSyncing) syncPull(); }, 30000);
   }
 }
 
