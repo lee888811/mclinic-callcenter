@@ -937,23 +937,11 @@ td:first-child{text-align:left;padding-left:13px}
         <button class="period-btn" id="pmpt-gu" onclick="setPmPttype('구환(신규상담)',this)">구환(신규상담)</button>
         <button class="period-btn" id="pmpt-rem" onclick="setPmPttype('잔여시술',this)">잔여시술</button>
       </div>
-      <div id="proc-matrix-content"></div>
-
       <!-- 시술×지점 예약 현황 표 -->
       <div class="card" style="margin-top:14px">
         <div class="ch2" style="margin-bottom:8px;flex-wrap:wrap;gap:8px">
           <span class="slbl" style="margin:0">📋 시술×지점 예약 현황</span>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-            <button class="period-btn act" id="dpb-today" onclick="setDailyProcPeriod('today',this)">당일</button>
-            <button class="period-btn" id="dpb-week" onclick="setDailyProcPeriod('week',this)">최근 7일</button>
-            <button class="period-btn" id="dpb-month" onclick="setDailyProcPeriod('month',this)">최근 1달</button>
-            <button class="period-btn" id="dpb-custom" onclick="setDailyProcPeriod('custom',this)">직접선택</button>
-            <div id="dp-custom-range" style="display:none;align-items:center;gap:5px">
-              <input type="date" id="dp-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
-              <span style="font-size:11px;color:var(--text3)">~</span>
-              <input type="date" id="dp-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderDailyProcTable()">
-            </div>
-          </div>
+          <span id="dp-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
         </div>
         <div id="dp-proc-filter" style="margin-bottom:6px;padding:10px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
           <!-- 상위 시술 선택 -->
@@ -980,7 +968,10 @@ td:first-child{text-align:left;padding-left:13px}
           <div id="dp-br-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
         </div>
         <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
+        <div id="branch-call-table" style="overflow-x:auto;font-size:11px;margin-top:16px"></div>
       </div>
+
+      <div id="proc-matrix-content" style="margin-top:14px"></div>
     </div>
 
     <!-- 📈 월간 보고 -->
@@ -4378,6 +4369,9 @@ function setPmPeriod(period, el){
     if(tEl) tEl.value=t;
   }
   renderProcMatrix();
+  // 예약 현황 표도 같은 기간으로 업데이트
+  _dailyProcPeriod=period;
+  renderDailyProcTable();
 }
 function setPmPttype(val, el){
   _pmPttype=val;
@@ -6402,7 +6396,12 @@ function dpToggleBr(bid) {
 }
 
 function renderDailyProcTable(){
-  const {from,to}=getPeriodRange(_dailyProcPeriod,'dp-from','dp-to');
+  // 상단 기간 선택과 연동
+  _dailyProcPeriod = _pmPeriod;
+  const {from,to}=getPeriodDates(_pmPeriod,'pm-date-from','pm-date-to');
+  // 기간 라벨 업데이트
+  const lbl=document.getElementById('dp-period-label');
+  if(lbl) lbl.textContent=periodLabel(from,to);
   const dates=getDateRange(from,to).filter(d=>(S.calls[d]||[]).some(c=>c.type!=='out'));
   const el=document.getElementById('daily-proc-table');
   if(!el) return;
@@ -6563,6 +6562,108 @@ function renderDailyProcTable(){
 
   html+='</tbody></table>';
   el.innerHTML=html;
+
+  // ── 지점별 콜수 테이블 ──
+  renderBranchCallTable(from, to);
+}
+
+function renderBranchCallTable(from, to){
+  const el=document.getElementById('branch-call-table');
+  if(!el) return;
+
+  const selectedBrs = _selectedBids;
+  const branches = S.branches.filter(b=>!selectedBrs||selectedBrs.size===0||selectedBrs.has(b.id));
+  const dates = getDateRange(from,to).filter(ds=>(S.calls[ds]||[]).some(c=>c.type!=='out'));
+
+  if(!dates.length){ el.innerHTML=''; return; }
+
+  // 날짜 표시 포맷 (M/D 요일)
+  const DAY_KO=['일','월','화','수','목','금','토'];
+  function fmtDate(ds){
+    const d=new Date(ds+'T00:00:00');
+    return `${d.getMonth()+1}/${d.getDate()}(${DAY_KO[d.getDay()]})`;
+  }
+
+  // 각 날짜×지점 집계
+  const brCols = branches.map(b=>({b, bc:bclr(b.id)}));
+
+  // 합계용
+  const totals = {}; // bid → {shin,gu,total}
+  branches.forEach(b=>{ totals[b.id]={shin:0,gu:0,total:0}; });
+  let grandShin=0, grandGu=0, grandTotal=0;
+
+  const rows = dates.map(ds=>{
+    const calls = getAnalysisCalls(ds);
+    let rowShin=0, rowGu=0, rowTotal=0;
+    const cells = brCols.map(({b,bc})=>{
+      const bc_calls=calls.filter(c=>c.bid===b.id);
+      const shin=bc_calls.filter(c=>c.pttype==='신환').length;
+      const gu=bc_calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+      const total=bc_calls.length;
+      totals[b.id].shin+=shin; totals[b.id].gu+=gu; totals[b.id].total+=total;
+      rowShin+=shin; rowGu+=gu; rowTotal+=total;
+      if(!total) return `<td colspan="3" style="padding:5px 6px;border:1px solid var(--border);text-align:center;color:var(--text3);font-size:10px;">-</td>`;
+      return `
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${shin||'-'}</td>
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:#7c3aed">${gu||'-'}</td>
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;font-family:'DM Mono',monospace;color:var(--accent)">${total}</td>`;
+    }).join('');
+    grandShin+=rowShin; grandGu+=rowGu; grandTotal+=rowTotal;
+    return `<tr>
+      <td style="padding:5px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap">${fmtDate(ds)}</td>
+      ${cells}
+      <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${rowShin||'-'}</td>
+      <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:#7c3aed">${rowGu||'-'}</td>
+      <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06);color:var(--accent)">${rowTotal||'-'}</td>
+    </tr>`;
+  }).join('');
+
+  // 합계 행
+  const totalCells = brCols.map(({b})=>{
+    const t=totals[b.id];
+    return `
+      <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06);color:var(--green)">${t.shin||'-'}</td>
+      <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06);color:#7c3aed">${t.gu||'-'}</td>
+      <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06);color:var(--accent)">${t.total||'-'}</td>`;
+  }).join('');
+
+  // 헤더 - 지점별 3열(신환/구환/총)
+  const brHeaders = brCols.map(({b,bc})=>`
+    <th colspan="3" style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;color:${bc}">${b.name}</th>`).join('');
+  const subHeaders = brCols.map(()=>`
+    <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--green);font-weight:700">신환</th>
+    <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:#7c3aed;font-weight:700">구환</th>
+    <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--accent);font-weight:700">총</th>`).join('');
+
+  el.innerHTML=`
+    <div class="slbl" style="margin-bottom:8px;margin-top:16px">🏥 날짜×지점별 콜 현황</div>
+    <div style="overflow-x:auto">
+    <table style="border-collapse:collapse;font-size:11px;min-width:400px">
+      <thead>
+        <tr style="background:var(--s2)">
+          <th rowspan="2" style="padding:7px 10px;border:1px solid var(--border);text-align:left;font-size:11px;color:#0f172a;font-weight:700;white-space:nowrap">날짜</th>
+          ${brHeaders}
+          <th colspan="3" style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;color:#0f172a">합계</th>
+        </tr>
+        <tr style="background:var(--s2)">
+          ${subHeaders}
+          <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--green);font-weight:700">신환</th>
+          <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:#7c3aed;font-weight:700">구환</th>
+          <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--accent);font-weight:700">총</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr style="background:rgba(37,99,235,.04)">
+          <td style="padding:6px 8px;border:1px solid var(--border);font-weight:900;color:#0f172a;font-size:11px">합계</td>
+          ${totalCells}
+          <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;color:var(--green)">${grandShin||'-'}</td>
+          <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;color:#7c3aed">${grandGu||'-'}</td>
+          <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.1);color:var(--accent)">${grandTotal||'-'}</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>`;
 }
 
 // ── 시술별 추이 날짜 필터 ──
