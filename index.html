@@ -2107,6 +2107,7 @@ async function syncPush(showToast=false){
       if(r.ok) _dirtyCallDates.delete(ds);
     }
     _lastSyncedAt=new Date().toISOString();
+    _lastPushAt=Date.now();
     try{localStorage.setItem('mclinic_sync_last',_lastSyncedAt);}catch(e){}
     updateSyncUI('ok');
     if(showToast) toast('☁️ 저장됨');
@@ -2118,8 +2119,11 @@ async function syncPush(showToast=false){
 }
 
 // ── PULL ────────────────────────────────
+let _lastPushAt = 0; // push 완료 시각
+
 async function syncPull(){
   if(!_syncUrl) return;
+  if(_isSyncing) return; // push 중이면 skip
   updateSyncUI('syncing');
   const base=_syncUrl.replace(/\/+$/,'');
   try{
@@ -2128,8 +2132,9 @@ async function syncPull(){
     const data=await r.json();
     if(!data) throw new Error('empty');
 
-    // 설정 반영
-    if(!_dirtyConfig){
+    // push 완료 후 10초 이내 또는 _dirtyConfig=true면 설정 덮어쓰기 금지
+    const recentPush = (Date.now() - _lastPushAt) < 10000;
+    if(!_dirtyConfig && !recentPush){
       ['branches','staff','procedures','channels','roles'].forEach(k=>{
         if(data[k]?.length) S[k]=data[k];
       });
@@ -3715,6 +3720,7 @@ function delST(id){
 function addST(){
   const name=prompt('직원 이름:');if(!name?.trim())return;
   S.staff.push({id:'s'+uid(),name:name.trim(),role:S.roles[0]||'상담원',pw:''});
+  markConfigDirty();
   localStorage.setItem('mclinic_v2',JSON.stringify(S));
   syncPush(true);
   renderStaffMgmt();renderSidebar();
