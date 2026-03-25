@@ -89,6 +89,8 @@ td:first-child{text-align:left;padding-left:13px}
 
 /* CALL TYPE TABS */
 .call-type-tabs{display:flex;gap:7px;margin-top:6px}
+.call-tab.act-miss{background:#6b7280;border-color:#6b7280;color:#fff;font-weight:700}
+.call-tab.act-ad{background:#f59e0b;border-color:#f59e0b;color:#fff;font-weight:700}
 .call-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s}
 .call-tab.act-in{background:rgba(8,145,178,.1);border-color:var(--cyan);color:var(--cyan)}
 .call-tab.act-cb{background:rgba(5,150,105,.1);border-color:var(--green);color:var(--green)}
@@ -386,7 +388,7 @@ td:first-child{text-align:left;padding-left:13px}
       <div class="ceo-section-label">📋 일별 상담 이력</div>
       <div class="tbl">
         <table>
-          <thead><tr><th style="text-align:left">날짜</th><th>수신콜</th><th>콜백</th><th>발신콜</th><th>신환(신규상담)</th><th>구환(신규상담)</th><th>예약취소</th><th>미예약종료</th></tr></thead>
+          <thead><tr><th style="text-align:left">날짜</th><th>수신콜</th><th>콜백</th><th>발신콜</th><th>신환(신규상담)</th><th>구환(신규상담)</th><th style="color:#0891b2">잔여시술</th><th>예약취소</th><th>미예약종료</th></tr></thead>
           <tbody id="ceo-tbl-body"></tbody>
         </table>
       </div>
@@ -1273,10 +1275,12 @@ td:first-child{text-align:left;padding-left:13px}
     <!-- 전화 상세 (전화 전용) -->
     <div id="modal-phone-section">
       <div class="ml">전화 유형</div>
-      <div class="call-type-tabs">
+      <div class="call-type-tabs" style="flex-wrap:wrap">
         <div class="call-tab act-in" id="ctab-in" onclick="setCallType('in')">📞 수신(인콜)</div>
         <div class="call-tab" id="ctab-cb" onclick="setCallType('cb')">🔄 콜백</div>
         <div class="call-tab" id="ctab-out" onclick="setCallType('out')">📤 발신(아웃콜)</div>
+        <div class="call-tab" id="ctab-miss" onclick="setCallType('miss')">📵 오발신</div>
+        <div class="call-tab" id="ctab-ad" onclick="setCallType('ad')">📢 광고</div>
       </div>
       <div id="cb-info-wrap" style="display:none;margin-top:8px;padding:9px 12px;background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.2);border-radius:8px;font-size:11px;color:var(--green)">
         🔄 <strong>콜백</strong>이란? 인콜 수신 후 지점 확인·안내를 위해 상담원이 고객에게 다시 거는 전화입니다.
@@ -1344,6 +1348,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="ml">지점 *</div>
     <div class="branch-pills" id="modal-branch-pills"></div>
 
+    <div id="below-branch-wrap">
     <div class="ml">환자 구분</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="신환" checked onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--green)"> 🆕 신환(신규상담)</label>
@@ -1395,11 +1400,15 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
-    <div class="proc-section-lbl">예약 시술 선택 <span style="font-size:9px;color:var(--text3)">(탭할 때마다 +1 · 0이 되면 해제)</span></div>
+    <div id="proc-section-wrap">
+    <div class="proc-section-lbl">예약 시술 선택 <span style="font-size:9px;color:var(--text3)" id="proc-section-hint">(한 번=선택 · 두 번=취소)</span></div>
     <div class="proc-grid" id="modal-proc-grid"></div>
+    </div>
 
     <div class="ml">메모 (선택)</div>
     <textarea class="minp" id="cf-memo" rows="2" placeholder="특이사항..." style="resize:none;margin-top:4px"></textarea>
+
+    </div><!-- /below-branch-wrap -->
 
     <!-- VOC 입력 (선택) -->
     <div style="margin-top:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
@@ -1696,6 +1705,17 @@ let S={
   calls:{},
 };
 try{const v=localStorage.getItem('mclinic_v2');if(v)S=JSON.parse(v);}catch(e){}
+// sheetUrls: S에 없으면 localStorage에서 복원
+if(!S.sheetUrls) S.sheetUrls={};
+(S.branches||[]).forEach(b=>{
+  if(!S.sheetUrls[b.id]){
+    const u=localStorage.getItem(`mclinic_sheet_url_${b.id}`);
+    if(u) S.sheetUrls[b.id]=u;
+  } else {
+    // S.sheetUrls → localStorage 동기화
+    localStorage.setItem(`mclinic_sheet_url_${b.id}`,S.sheetUrls[b.id]);
+  }
+});
 ['calls','procedures','incentive','channels'].forEach(k=>{
   if(!S[k]) S[k]=(k==='calls'?{}:k==='incentive'?{1:{success:0},2:{success:0},3:{success:1000},4:{success:2000},5:{success:3000}}:[]);
 if(!S.roles||!S.roles.length) S.roles=['팀장','주임','대리'];
@@ -2021,11 +2041,15 @@ function saveSyncSettings(){
       const v=el.value.trim();
       if(v) localStorage.setItem(`mclinic_sheet_url_${b.id}`,v);
       else localStorage.removeItem(`mclinic_sheet_url_${b.id}`);
+      if(!S.sheetUrls) S.sheetUrls={};
+      S.sheetUrls[b.id]=v||'';
     }
   });
+  autoSave(); markConfigDirty();
   closeModal('modal-sync');
   updateSyncUI();
   startSyncPoll();
+  syncPush(false); // 시트 URL 변경 즉시 서버 반영
   syncPull().then(()=>toast('☁️ 동기화 활성화됨'));
 }
 
@@ -2037,7 +2061,7 @@ function openSyncSettings(){
   const wrap=document.getElementById('sheet-url-inputs');
   if(wrap){
     wrap.innerHTML=S.branches.map(b=>{
-      const saved=localStorage.getItem(`mclinic_sheet_url_${b.id}`)||'';
+      const saved=S.sheetUrls?.[b.id]||localStorage.getItem(`mclinic_sheet_url_${b.id}`)||'';
       const cl=bclr(b.id);
       return `<div style="margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:${cl};margin-bottom:3px">${b.name}점</div>
@@ -2105,6 +2129,8 @@ async function syncPush(showToast=false){
       _localSavedAt = new Date().toISOString();
       const cfg={branches:S.branches,staff:S.staff,procedures:S.procedures,
         channels:S.channels,roles:S.roles,incentive:S.incentive,
+        masterPw:S.masterPw||'',
+        sheetUrls:S.sheetUrls||{},
         _deletedIds:S._deletedIds||[],savedAt:_localSavedAt};
       const r=await fbFetch(base+'/mclinic.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
       if(r.ok){ _dirtyConfig=false; _lastPushAt=Date.now(); }
@@ -2145,6 +2171,15 @@ async function syncPull(){
         if(data[k]?.length) S[k]=data[k];
       });
       if(data.incentive) S.incentive=data.incentive;
+      if(data.masterPw) S.masterPw=data.masterPw;
+      if(data.sheetUrls && typeof data.sheetUrls==='object'){
+        S.sheetUrls=data.sheetUrls;
+        // localStorage도 동기화
+        Object.entries(data.sheetUrls).forEach(([bid,url])=>{
+          if(url) localStorage.setItem(`mclinic_sheet_url_${bid}`,url);
+          else localStorage.removeItem(`mclinic_sheet_url_${bid}`);
+        });
+      }
     }
     if(data._deletedIds?.length){
       if(!S._deletedIds) S._deletedIds=[];
@@ -2233,42 +2268,45 @@ async function testSyncConnection(){
 
 function getDayCalls(ds){return S.calls[ds]||[];}
 // 분석 탭 전용: 발신(아웃콜) 제외
-function getAnalysisCalls(ds){ return (S.calls[ds]||[]).filter(c=>c.type!=='out'); }
+function getAnalysisCalls(ds){ return (S.calls[ds]||[]).filter(c=>c.type!=='out'&&c.type!=='miss'&&c.type!=='ad'); }
 function getAllAnalysisCalls(){ 
-  return Object.values(S.calls||{}).flat().filter(c=>c.type!=='out'); 
+  return Object.values(S.calls||{}).flat().filter(c=>c.type!=='out'&&c.type!=='miss'&&c.type!=='ad'); 
 }
 function getDaySummary(ds){
   // 분석용: 발신(아웃콜) 제외
-  const calls=getDayCalls(ds).filter(c=>c.type!=='out');
-  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,cancel=0,noappt=0;
+  const calls=getDayCalls(ds).filter(c=>c.type!=='out'&&c.type!=='miss'&&c.type!=='ad');
+  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
   const proc={};
   calls.forEach(c=>{
     if(c.medium==='chat') chat++; else phone++;
     if(c.type==='in') incall++;
     else if(c.type==='cb') callback++;
     if(c.pttype==='신환') shin++;
-    else if(c.pttype==='구환'||c.pttype==='구환(신규상담)'||c.pttype==='잔여시술') gu++;
+    else if(c.pttype==='잔여시술') rem++;
+    else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') gu++;
     cancel+=+c.cancel||0; noappt+=+c.noappt||0;
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total:calls.length,incall,callback,outcall:0,phone,chat,shin,gu,cancel,noappt,proc};
+  return {total:calls.length,incall,callback,outcall:0,phone,chat,shin,gu,rem,cancel,noappt,proc};
 }
 // 인센티브 전용: 발신 포함 전체
 function getDaySummaryFull(ds){
   const calls=getDayCalls(ds);
-  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,cancel=0,noappt=0;
+  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
   const proc={};
   calls.forEach(c=>{
     if(c.medium==='chat') chat++; else phone++;
     if(c.type==='in') incall++;
     else if(c.type==='cb') callback++;
     else if(c.type==='out') outcall++;
+    // 오발신/광고는 별도 카운트 (분석 제외)
     if(c.pttype==='신환') shin++;
-    else if(c.pttype==='구환'||c.pttype==='구환(신규상담)'||c.pttype==='잔여시술') gu++;
+    else if(c.pttype==='잔여시술') rem++;
+    else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') gu++;
     cancel+=+c.cancel||0; noappt+=+c.noappt||0;
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total:calls.length,incall,callback,outcall,phone,chat,shin,gu,cancel,noappt,proc};
+  return {total:calls.length,incall,callback,outcall,phone,chat,shin,gu,rem,cancel,noappt,proc};
 }
 
 // ═══════════════════════════════════
@@ -2306,15 +2344,15 @@ function getDateRange(from, to){
 
 function getSummaryForRange(from, to){
   const dates=getDateRange(from,to);
-  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,cancel=0,noappt=0;
+  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
   const proc={};
   dates.forEach(ds=>{
     const s=getDaySummary(ds);
     total+=s.total; incall+=s.incall; callback+=s.callback||0; outcall+=s.outcall;
-    shin+=s.shin; gu+=s.gu; cancel+=s.cancel; noappt+=s.noappt;
+    shin+=s.shin; gu+=s.gu; rem+=s.rem||0; cancel+=s.cancel; noappt+=s.noappt;
     Object.entries(s.proc||{}).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total,incall,callback,outcall,shin,gu,cancel,noappt,proc,days:dates.length};
+  return {total,incall,callback,outcall,shin,gu,rem,cancel,noappt,proc,days:dates.length};
 }
 
 function getCallsForRange(from, to){
@@ -2492,7 +2530,8 @@ function renderStaffInputPage(sid){
   const callback=calls.filter(c=>c.type==='cb').length;
   const outcall=calls.filter(c=>c.type==='out').length;
   const shin=calls.filter(c=>c.pttype==='신환').length;
-  const gu=calls.filter(c=>c.pttype==='구환').length;
+  const gu=calls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
+  const rem=calls.filter(c=>c.pttype==='잔여시술').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=calls.reduce((a,c)=>a+(+c.noappt||0),0);
   const sc=sclr(sid);
@@ -2533,6 +2572,7 @@ function renderStaffInputPage(sid){
       <div class="kpi" style="--kc:var(--purple)"><div class="kl">발신 콜</div><div class="kv">${outcall}</div></div>
       <div class="kpi" style="--kc:#0e9f6e"><div class="kl">신환(신규상담)</div><div class="kv">${shin}</div></div>
       <div class="kpi" style="--kc:#7c3aed"><div class="kl">구환(신규상담)</div><div class="kv">${gu}</div></div>
+      <div class="kpi" style="--kc:#0891b2"><div class="kl">잔여시술</div><div class="kv">${rem}</div></div>
       <div class="kpi" style="--kc:var(--red)"><div class="kl">예약취소</div><div class="kv">${cancel}</div></div>
       <div class="kpi" style="--kc:var(--amber)"><div class="kl">미예약종료</div><div class="kv">${noappt}</div></div>
     </div>
@@ -2553,13 +2593,17 @@ function renderCallEntry(c){
   const isChat=c.medium==='chat';
   const isCb=c.type==='cb';
   const isOut=c.type==='out';
+  const isMiss=c.type==='miss';
+  const isAd=c.type==='ad';
   const ptMap={'신환':'🆕 신환(신규상담)','구환(신규상담)':'🔄 구환(신규상담)','잔여시술':'🗓 잔여시술','구환':'🔄 구환(신규상담)','일반':'💬 일반문의'};
-  const ptclr=c.pttype==='신환'?'var(--green)':c.pttype==='일반'?'var(--cyan)':'#7c3aed';
+  const ptclr=c.pttype==='신환'?'var(--green)':c.pttype==='잔여시술'?'#0891b2':c.pttype==='일반'?'var(--cyan)':'#7c3aed';
   const typeIco=isChat?'💬':isOut?'📤':isCb?'🔄':'📞';
   const typeBg=isChat?'rgba(8,145,178,.1)':isOut?'rgba(124,58,237,.1)':isCb?'rgba(5,150,105,.1)':'rgba(8,145,178,.1)';
   const typeLabel=isChat
     ? '<span style="font-size:10px;color:var(--cyan);font-weight:600;background:rgba(8,145,178,.1);padding:2px 7px;border-radius:10px">채팅상담</span>'
     : isOut?`<span class="ce-degree">${c.degree}차 발신 · ${c.booked?'✅예약성공':'❌미예약'}</span>`
+    : isMiss?'<span style="font-size:10px;color:#6b7280;font-weight:600;background:rgba(107,114,128,.1);padding:2px 7px;border-radius:10px">📵 오발신</span>'
+    : isAd?'<span style="font-size:10px;color:#f59e0b;font-weight:600;background:rgba(245,158,11,.1);padding:2px 7px;border-radius:10px">📢 광고</span>'
     : isCb?'<span style="font-size:10px;color:var(--green);font-weight:600;background:rgba(5,150,105,.1);padding:2px 7px;border-radius:10px">콜백</span>'
     : '<span style="font-size:10px;color:var(--cyan);font-weight:600">수신콜</span>';
 
@@ -2738,6 +2782,11 @@ function openCallModal(sid){
   _chatChannel='';
   renderPhoneChannelFields('ch0');
   setCallType('in');setDegree(3);
+  // 오발신/광고 탭 초기화
+  const missEl2=document.getElementById('ctab-miss');
+  const adEl2=document.getElementById('ctab-ad');
+  if(missEl2) missEl2.className='call-tab';
+  if(adEl2) adEl2.className='call-tab';
   _callBid=S.branches[0]?.id||null;
   _callPttype='신환';
   document.querySelectorAll('input[name=pttype]').forEach(r=>r.checked=(r.value==='신환'));
@@ -2851,8 +2900,26 @@ function setCallType(t){
   document.getElementById('ctab-in').className='call-tab'+(t==='in'?' act-in':'');
   document.getElementById('ctab-cb').className='call-tab'+(t==='cb'?' act-cb':'');
   document.getElementById('ctab-out').className='call-tab'+(t==='out'?' act-out':'');
+  const missEl=document.getElementById('ctab-miss');
+  const adEl=document.getElementById('ctab-ad');
+  if(missEl) missEl.className='call-tab'+(t==='miss'?' act-miss':'');
+  if(adEl) adEl.className='call-tab'+(t==='ad'?' act-ad':'');
   document.getElementById('out-degree-wrap').style.display=t==='out'?'block':'none';
   document.getElementById('cb-info-wrap').style.display=t==='cb'?'block':'none';
+  // 오발신/광고 선택 시 지점 아래 섹션 비활성화
+  const isSimple=(t==='miss'||t==='ad');
+  const belowWrap=document.getElementById('below-branch-wrap');
+  const branchWrap=document.getElementById('modal-branch-pills');
+  if(belowWrap){
+    belowWrap.style.opacity=isSimple?'0.3':'1';
+    belowWrap.style.pointerEvents=isSimple?'none':'auto';
+  }
+  if(branchWrap){
+    branchWrap.style.opacity=isSimple?'0.3':'1';
+    branchWrap.style.pointerEvents=isSimple?'none':'auto';
+  }
+  // 오발신/광고일 때 지점 선택 label 색상 표시
+  const brLabel=document.querySelector('#modal-phone-section~.ml');
   toggleSubFields();
 }
 function setDegree(d){
@@ -2911,6 +2978,20 @@ function selectCancelReason(el,reason){
 function toggleSubFields(){
   const sf=document.getElementById('modal-sub-fields');
   if(sf) sf.style.display=_callPttype==='일반'?'none':'block';
+  // 잔여시술 선택 시 시술 섹션 비활성화
+  const wrap=document.getElementById('proc-section-wrap');
+  const hint=document.getElementById('proc-section-hint');
+  if(wrap){
+    const isRem=_callPttype==='잔여시술';
+    wrap.style.opacity=isRem?'0.35':'1';
+    wrap.style.pointerEvents=isRem?'none':'auto';
+    if(hint) hint.textContent=isRem?'(잔여시술은 시술 선택 불필요)':'(한 번=선택 · 두 번=취소)';
+    if(isRem){
+      // 기존 선택 초기화
+      Object.keys(_procSel).forEach(k=>delete _procSel[k]);
+      renderModalProcGrid();
+    }
+  }
 }
 let _procSubOpen = {}; // { pid: true/false } 하위 펼침 상태
 
@@ -2954,8 +3035,8 @@ function renderModalProcGrid(){
 }
 
 function toggleProc(pid){
-  _procSel[pid]=(_procSel[pid]||0)+1;
-  if(_procSel[pid]>9) _procSel[pid]=0;
+  const cur=_procSel[pid]||0;
+  _procSel[pid]=cur>=1?0:1;
   renderModalProcGrid();
 }
 
@@ -2966,12 +3047,13 @@ function toggleProcSub(pid){
 
 function toggleSubProc(pid, idx){
   const key = pid+':'+idx;
-  _procSel[key]=(_procSel[key]||0)+1;
-  if(_procSel[key]>9) _procSel[key]=0;
+  const cur=_procSel[key]||0;
+  _procSel[key]=cur>=1?0:1;
   renderModalProcGrid();
 }
 function confirmCall(){
-  if(!_callBid){toast('⚠️ 지점을 선택해주세요');return;}
+  const isSimpleType=(_callType==='miss'||_callType==='ad');
+  if(!_callBid && !isSimpleType){toast('⚠️ 지점을 선택해주세요');return;}
   // 채팅 채널 수집 (채팅 모드일 때만)
   const chData={};
   if(_callMedium==='chat'){
@@ -3039,7 +3121,7 @@ function renderBrSum(){
   let html='';
   S.branches.forEach(b=>{
     const bc=calls.filter(c=>c.bid===b.id), cl=bclr(b.id);
-    const shin=bc.filter(c=>c.pttype==='신환').length,gu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+    const shin=bc.filter(c=>c.pttype==='신환').length,gu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length,rem=bc.filter(c=>c.pttype==='잔여시술').length;
     const inc=bc.filter(c=>c.type==='in').length,cb=bc.filter(c=>c.type==='cb').length,out=bc.filter(c=>c.type==='out').length;
     const cancel=bc.reduce((a,c)=>a+(+c.cancel||0),0),noappt=bc.reduce((a,c)=>a+(+c.noappt||0),0);
     const pSum={};bc.forEach(c=>{if(c.procs)Object.entries(c.procs).forEach(([pid,n])=>{pSum[pid]=(pSum[pid]||0)+n;});});
@@ -3051,7 +3133,8 @@ function renderBrSum(){
         <td style="color:var(--green)">${sc.filter(c=>c.type==='cb').length}</td>
         <td>${sc.filter(c=>c.type==='out').length}</td>
         <td style="color:var(--green)">${sc.filter(c=>c.pttype==='신환').length}</td>
-        <td style="color:#7c3aed">${sc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length}</td></tr>`;
+        <td style="color:#7c3aed">${sc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length}</td>
+        <td style="color:#0891b2">${sc.filter(c=>c.pttype==='잔여시술').length}</td></tr>`;
     }).filter(Boolean).join('');
     html+=`<div class="card" style="margin-bottom:14px">
       <div class="ch2">
@@ -3070,11 +3153,12 @@ function renderBrSum(){
           <div class="kstrip">
             <div class="kpi" style="--kc:var(--green)"><div class="kl">신환(신규상담)</div><div class="kv">${shin}</div></div>
             <div class="kpi" style="--kc:#7c3aed"><div class="kl">구환(신규상담)</div><div class="kv">${gu}</div></div>
+            <div class="kpi" style="--kc:#0891b2"><div class="kl">잔여시술</div><div class="kv">${rem||0}</div></div>
             <div class="kpi" style="--kc:var(--red)"><div class="kl">예약취소</div><div class="kv">${cancel}</div></div>
             <div class="kpi" style="--kc:var(--amber)"><div class="kl">미예약종료</div><div class="kv">${noappt}</div></div>
           </div>
           ${sRows?`<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
-            <thead><tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">직원</th><th>수신콜</th><th style="color:var(--green)">콜백</th><th>발신콜</th><th>신환(신규상담)</th><th>구환(신규상담)</th></tr></thead>
+            <thead><tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">직원</th><th>수신콜</th><th style="color:var(--green)">콜백</th><th>발신콜</th><th>신환(신규상담)</th><th>구환(신규상담)</th><th style="color:#0891b2">잔여시술</th></tr></thead>
             <tbody>${sRows}</tbody></table>`
             :'<div style="color:var(--text3);font-size:12px;padding:8px 0">입력 없음</div>'}
         </div>
@@ -3184,8 +3268,8 @@ function getWeekDates(off=0){
   return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return localDateStr(x);});
 }
 function weekSum(dates){
-  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,days=0;
-  dates.forEach(ds=>{const s=getDaySummary(ds);if(s.total){total+=s.total;incall+=s.incall;callback+=s.callback||0;outcall+=s.outcall;shin+=s.shin;gu+=s.gu;days++;}});
+  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,rem=0,days=0;
+  dates.forEach(ds=>{const s=getDaySummary(ds);if(s.total){total+=s.total;incall+=s.incall;callback+=s.callback||0;outcall+=s.outcall;shin+=s.shin;gu+=s.gu;rem+=(s.rem||0);days++;}});
   return {total,incall,callback,outcall,shin,gu,days};
 }
 function getMonthSums(){
@@ -3199,7 +3283,7 @@ function getMonthSums(){
     const mk=ds.slice(0,7);if(!months[mk])return;
     const s=getDaySummary(ds);if(!s.total)return;
     months[mk].total+=s.total;months[mk].incall+=s.incall;months[mk].callback+=s.callback||0;months[mk].outcall+=s.outcall;
-    months[mk].shin+=s.shin;months[mk].gu+=s.gu;months[mk].days++;
+    months[mk].shin+=s.shin;months[mk].gu+=s.gu;months[mk].rem=(months[mk].rem||0)+(s.rem||0);months[mk].days++;
   });
   return Object.values(months);
 }
@@ -3246,6 +3330,7 @@ function renderCEO(){
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">전체</div><div class="ceo-bc-sv" style="color:${cl}">${bc.length}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">신환</div><div class="ceo-bc-sv" style="color:var(--green)">${bc.filter(c=>c.pttype==='신환').length}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">구환</div><div class="ceo-bc-sv" style="color:#7c3aed">${bc.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length}</div></div>
+        <div class="ceo-bc-stat"><div class="ceo-bc-sl">잔여</div><div class="ceo-bc-sv" style="color:#0891b2">${bc.filter(c=>c.pttype==='잔여시술').length}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">미예약</div><div class="ceo-bc-sv" style="color:var(--amber)">${noappt}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">예약취소</div><div class="ceo-bc-sv" style="color:var(--red)">${cancel}</div></div>
         <div class="ceo-bc-stat" style="visibility:hidden"></div>
@@ -3267,7 +3352,7 @@ function renderCEO(){
   document.getElementById('ceo-weekly').innerHTML=`
     <div class="ceo-wcard">
       <div class="ceo-wcard-title">이번주 vs 지난주</div>
-      ${wRow('총 상담건수',tw.total,lw.total)}${wRow('수신 콜',tw.incall,lw.incall)}${wRow('발신 콜',tw.outcall,lw.outcall)}${wRow('신환(신규상담)',tw.shin,lw.shin)}${wRow('구환(신규상담)',tw.gu,lw.gu)}${wRow('집계일수',tw.days,lw.days)}
+      ${wRow('총 상담건수',tw.total,lw.total)}${wRow('수신 콜',tw.incall,lw.incall)}${wRow('발신 콜',tw.outcall,lw.outcall)}${wRow('신환(신규상담)',tw.shin,lw.shin)}${wRow('구환(신규상담)',tw.gu,lw.gu)}${wRow('잔여시술',tw.rem||0,lw.rem||0)}${wRow('집계일수',tw.days,lw.days)}
     </div>
     <div class="ceo-wcard">
       <div class="ceo-wcard-title">일평균 <span style="font-size:9px">(영업일 기준)</span></div>
@@ -4243,9 +4328,9 @@ function renderChannelPage(){
   const container=document.getElementById('channel-content');
 
   // aggregate channel data
-  const totalByChannel={}, shinByChannel={}, guByChannel={}, branchByChannel={};
+  const totalByChannel={}, shinByChannel={}, guByChannel={}, remByChannel={}, branchByChannel={};
   S.channels.forEach(ch=>{
-    totalByChannel[ch.id]=0; shinByChannel[ch.id]=0; guByChannel[ch.id]=0;
+    totalByChannel[ch.id]=0; shinByChannel[ch.id]=0; guByChannel[ch.id]=0; remByChannel[ch.id]=0;
     branchByChannel[ch.id]={};
     S.branches.forEach(b=>{ branchByChannel[ch.id][b.id]=0; });
   });
@@ -4257,7 +4342,8 @@ function renderChannelPage(){
         if(!n||!totalByChannel.hasOwnProperty(cid)) return;
         totalByChannel[cid]=(totalByChannel[cid]||0)+n;
         if(c.pttype==='신환') shinByChannel[cid]=(shinByChannel[cid]||0)+n;
-        if(c.pttype==='구환') guByChannel[cid]=(guByChannel[cid]||0)+n;
+        if(c.pttype==='구환'||c.pttype==='구환(신규상담)') guByChannel[cid]=(guByChannel[cid]||0)+n;
+        if(c.pttype==='잔여시술') remByChannel[cid]=(remByChannel[cid]||0)+n;
         if(branchByChannel[cid]) branchByChannel[cid][c.bid]=(branchByChannel[cid][c.bid]||0)+n;
       });
     }
@@ -4267,7 +4353,8 @@ function renderChannelPage(){
       if(totalByChannel.hasOwnProperty(cid)){
         totalByChannel[cid]=(totalByChannel[cid]||0)+1;
         if(c.pttype==='신환') shinByChannel[cid]=(shinByChannel[cid]||0)+1;
-        if(c.pttype==='구환') guByChannel[cid]=(guByChannel[cid]||0)+1;
+        if(c.pttype==='구환'||c.pttype==='구환(신규상담)') guByChannel[cid]=(guByChannel[cid]||0)+1;
+        if(c.pttype==='잔여시술') remByChannel[cid]=(remByChannel[cid]||0)+1;
         if(branchByChannel[cid]) branchByChannel[cid][c.bid]=(branchByChannel[cid][c.bid]||0)+1;
       }
     }
@@ -4294,6 +4381,7 @@ function renderChannelPage(){
       <div style="display:flex;gap:10px;margin-top:6px">
         <span style="font-size:10px;color:var(--green);font-weight:700">신규 ${shinByChannel[ch.id]||0}</span>
         <span style="font-size:10px;color:#7c3aed;font-weight:700">재방문 ${guByChannel[ch.id]||0}</span>
+        <span style="font-size:10px;color:#0891b2;font-weight:700">잔여 ${remByChannel[ch.id]||0}</span>
       </div>
     </div>`;
   });
@@ -4414,7 +4502,8 @@ function renderProcMatrix(){
       if(matrix[pid][c.bid]){
         matrix[pid][c.bid].total+=cnt;
         if(c.pttype==='신환') matrix[pid][c.bid].shin+=cnt;
-        if(c.pttype==='구환'||c.pttype==='구환(신규상담)'||c.pttype==='잔여시술') matrix[pid][c.bid].gu+=cnt;
+        if(c.pttype==='잔여시술') matrix[pid][c.bid].rem=(matrix[pid][c.bid].rem||0)+cnt;
+        else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') matrix[pid][c.bid].gu+=cnt;
       }
     });
   });
@@ -4451,7 +4540,7 @@ function renderProcMatrix(){
       const pct=brTotals[b.id]>0?Math.round(d.total/brTotals[b.id]*100):0;
       html+=`<td>
         <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${d.total||'-'}</div>
-        ${d.total>0&&_pmPttype==='all'?`<div style="font-size:10px;color:var(--text3)"><span style="color:var(--green)">신${d.shin}</span> <span style="color:#7c3aed">구${d.gu}</span></div>`:''}
+        ${d.total>0&&_pmPttype==='all'?`<div style="font-size:10px;color:var(--text3)"><span style="color:var(--green)">신${d.shin}</span> <span style="color:#7c3aed">구${d.gu}</span> <span style="color:#0891b2">잔${d.rem||0}</span></div>`:''}
         ${d.total>0?`<div style="height:3px;background:var(--s3);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${bclr(b.id)};border-radius:2px"></div></div>`:''}
       </td>`;
     });
@@ -4505,16 +4594,17 @@ function exportProcMatrixCSV(){
       if(matrix[pid][c.bid]){
         matrix[pid][c.bid].total+=cnt;
         if(c.pttype==='신환') matrix[pid][c.bid].shin+=cnt;
-        if(c.pttype==='구환'||c.pttype==='구환(신규상담)'||c.pttype==='잔여시술') matrix[pid][c.bid].gu+=cnt;
+        if(c.pttype==='잔여시술') matrix[pid][c.bid].rem=(matrix[pid][c.bid].rem||0)+cnt;
+        else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') matrix[pid][c.bid].gu+=cnt;
       }
     });
   });
 
   const brNames=S.branches.map(b=>b.name);
-  const headers=['시술',...S.branches.flatMap(b=>[b.name+'(합계)',b.name+'(신환)',b.name+'(구환)']),'총합계'];
+  const headers=['시술',...S.branches.flatMap(b=>[b.name+'(합계)',b.name+'(신환)',b.name+'(구환)',b.name+'(잔여)']),'총합계'];
   const rows=[headers];
   S.procedures.filter(p=>matrix[p.id].total>0).forEach(p=>{
-    rows.push([p.name,...S.branches.flatMap(b=>[matrix[p.id][b.id].total,matrix[p.id][b.id].shin,matrix[p.id][b.id].gu]),matrix[p.id].total]);
+    rows.push([p.name,...S.branches.flatMap(b=>[matrix[p.id][b.id].total,matrix[p.id][b.id].shin,matrix[p.id][b.id].gu,matrix[p.id][b.id].rem||0]),matrix[p.id].total]);
   });
   const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
@@ -4636,7 +4726,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const phoneCalls=allCalls.filter(c=>!c.medium||c.medium==='phone');
   const chatCalls=allCalls.filter(c=>c.medium==='chat');
   const shin=allCalls.filter(c=>c.pttype==='신환').length;
-  const gu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+  const gu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+  const rem=allCalls.filter(c=>c.pttype==='잔여시술').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const out=phoneCalls.filter(c=>c.type==='out').length;
@@ -4647,10 +4738,11 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     const bc=allCalls.filter(c=>c.bid===b.id);
     if(!bc.length) return null;
     const bShin=bc.filter(c=>c.pttype==='신환').length;
-    const bGu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+    const bGu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    const bRem=bc.filter(c=>c.pttype==='잔여시술').length;
     const bCancel=bc.reduce((a,c)=>a+(+c.cancel||0),0);
     const bBook=bc.reduce((a,c)=>a+(+c.today||0),0);
-    return {name:b.name,total:bc.length,shin:bShin,gu:bGu,cancel:bCancel,booked:bBook,color:bclr(b.id)};
+    return {name:b.name,total:bc.length,shin:bShin,gu:bGu,rem:bRem,cancel:bCancel,booked:bBook,color:bclr(b.id)};
   }).filter(Boolean);
   const pCntAll={},pCntShin={},pCntGu={};
   allCalls.forEach(c=>{
@@ -4670,12 +4762,12 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+=dateLabelStr+'\n'+'─'.repeat(28)+'\n\n';
   txt+='📊 전체 상담 현황\n';
   txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${incall+cb+out}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
-  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n예약 취소  ${cancel}건\n미예약 종료 ${noappt}건\n`;
+  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n예약 취소  ${cancel}건\n미예약 종료 ${noappt}건\n`;
   txt+='─'.repeat(28)+'\n\n🏥 지점별 현황\n';
-  branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 예약 ${b.booked}\n`; });
+  branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0} · 예약 ${b.booked}\n`; });
   if(topProcs.length){
     txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 TOP\n';
-    topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu})\n`; });
+    topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu}·잔여 ${p.rem||0})\n`; });
   }
   txt+='\n'+'─'.repeat(28)+'\n이상 보고드립니다. 🙏';
 
@@ -4832,7 +4924,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const phoneCalls=calls.filter(c=>!c.medium||c.medium==='phone');
   const chatCalls=calls.filter(c=>c.medium==='chat');
   const shin=calls.filter(c=>c.pttype==='신환').length;
-  const gu=calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+  const gu=calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+  const rem=calls.filter(c=>c.pttype==='잔여시술').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
@@ -4847,24 +4940,26 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     const phoneN=phoneCalls.filter(c=>(c.channel||'ch0')===ch.id).length;
     const total=chatN+phoneN;
     const shin_ch=calls.filter(c=>c.pttype==='신환'&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
-    const gu_ch=calls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술')&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
-    return total>0?{icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch}:null;
+    const gu_ch=calls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
+    const rem_ch=calls.filter(c=>c.pttype==='잔여시술'&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
+    return total>0?{icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch,rem:rem_ch}:null;
   }).filter(Boolean);
 
   // 시술별 집계
-  const pCntAll={},pCntShin={},pCntGu={};
+  const pCntAll={},pCntShin={},pCntGu={},pCntRem={};
   calls.forEach(c=>{
     if(!c.procs) return;
     Object.entries(c.procs).forEach(([pid,n])=>{
       pCntAll[pid]=(pCntAll[pid]||0)+n;
       if(c.pttype==='신환') pCntShin[pid]=(pCntShin[pid]||0)+n;
-      else if(c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술') pCntGu[pid]=(pCntGu[pid]||0)+n;
+      else if(c.pttype==='잔여시술') pCntRem[pid]=(pCntRem[pid]||0)+n;
+      else if(c.pttype==='구환(신규상담)'||c.pttype==='구환') pCntGu[pid]=(pCntGu[pid]||0)+n;
     });
   });
   const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,8)
     .map(([pid,n])=>{
       const p=S.procedures.find(x=>x.id===pid);
-      return p?{icon:p.icon,name:p.name,n,shin:pCntShin[pid]||0,gu:pCntGu[pid]||0}:null;
+      return p?{icon:p.icon,name:p.name,n,shin:pCntShin[pid]||0,gu:pCntGu[pid]||0,rem:pCntRem[pid]||0}:null;
     }).filter(Boolean);
 
   // 텍스트 보고서
@@ -4874,7 +4969,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     : '  (채팅 상담 없음)';
   const procLines=topProcs.map((p,i)=>{
     let line=`  ${i+1}. ${p.name}  ${p.n}건`;
-    if(p.shin||p.gu) line+=`  (신환 ${p.shin} · 구환 ${p.gu})`;
+    if(p.shin||p.gu||p.rem) line+=`  (신환 ${p.shin} · 구환 ${p.gu} · 잔여 ${p.rem||0})`;
     return line;
   }).join('\n');
 
@@ -4902,11 +4997,12 @@ ${dateStr}
 ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.trim()).join('\n') : ''}
   └ 채팅 상담  ${chatCalls.length}건
   ──────────────────────
-  신환(신규)   ${shin}건${chatChData.length?`
+  신환(신규)   ${shin}건
+  구환         ${gu}건
+  잔여시술     ${rem||0}건${chatChData.length?`
 
 📡 채널별 인입 현황
-${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu})`).join('\n')}`:''}
-  구환         ${gu}건
+${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
   예약 취소    ${cancel}건
   미예약 종료  ${noappt}건
 ${topProcs.length?`
@@ -4915,7 +5011,7 @@ ${procLines}`:''}${vocSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 이상 보고드립니다. 🙏`;
 
-  const brSum={total:calls.length,incall,callback:cb,outcall:0,phone:phoneCalls.length,chat:chatCalls.length,shin,gu,cancel,noappt};
+  const brSum={total:calls.length,incall,callback:cb,outcall:0,phone:phoneCalls.length,chat:chatCalls.length,shin,gu,rem:rem||0,cancel,noappt};
 
   container.innerHTML=`
     <div style="margin-bottom:16px">
@@ -5262,7 +5358,7 @@ function exportCeoCSV(){
   dates.forEach(ds=>{
     const s=getDaySummary(ds);
     const d=new Date(ds+'T00:00:00');
-    rows.push([ds,DAYS[d.getDay()],s.total,s.incall,s.outcall,s.shin,s.gu,s.cancel,s.noappt]);
+    rows.push([ds,DAYS[d.getDay()],s.total,s.incall,s.outcall,s.shin,s.gu,s.rem||0,s.cancel,s.noappt]);
   });
   const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
@@ -7043,22 +7139,22 @@ let _trendBrSelected = null; // null = 전체, 또는 branch id set
 
 function renderTrendBrChart(monthDefs){
   const brColors = S.branches.map(b=>bclr(b.id));
-
-  // 처음 진입 시 전체 선택 초기화
   if(!_trendBrSelected) _trendBrSelected = new Set(S.branches.map(b=>b.id));
 
-  // legend + 체크박스
+  // legend
   document.getElementById('trend-br-legend').innerHTML =
     S.branches.map((b,i)=>{
-      const checked=_trendBrSelected.has(b.id)?'checked':'';
-      return `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;padding:3px 7px;border-radius:6px;background:${_trendBrSelected.has(b.id)?brColors[i]+'22':'var(--s2)'};border:1px solid ${_trendBrSelected.has(b.id)?brColors[i]:'var(--border)'}">
-        <input type="checkbox" ${checked} style="accent-color:${brColors[i]};width:13px;height:13px" onchange="toggleTrendBr('${b.id}')">
-        <span style="font-weight:600;color:${_trendBrSelected.has(b.id)?brColors[i]:'var(--text3)'}">${b.name}</span>
+      const on=_trendBrSelected.has(b.id);
+      return `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;padding:3px 8px;border-radius:6px;background:${on?brColors[i]+'22':'var(--s2)'};border:1px solid ${on?brColors[i]:'var(--border)'}">
+        <input type="checkbox" ${on?'checked':''} style="accent-color:${brColors[i]};width:13px;height:13px" onchange="toggleTrendBr('${b.id}')">
+        <span style="font-weight:600;font-size:12px;color:${on?brColors[i]:'var(--text3)'}">${b.name}</span>
       </label>`;
     }).join('');
 
   const activeBrs = S.branches.filter(b=>_trendBrSelected.has(b.id));
   const activeBrColors = activeBrs.map(b=>bclr(b.id));
+  const nBr = activeBrs.length || 1;
+  const nMo = monthDefs.length || 1;
 
   const data = monthDefs.map(m=>{
     const calls = getMonthAnalysisCalls(m.key);
@@ -7067,40 +7163,63 @@ function renderTrendBrChart(monthDefs){
     return {label:m.label, byBr, total, key:m.key};
   });
 
-  const maxTotal = Math.max(1, ...data.map(d=>d.total));
-  const W=560, H=200, PL=36, PB=24, PT=14, PR=12;
+  // ── 상단: 지점별 그룹 막대 ──
+  const maxVal = Math.max(1, ...data.flatMap(d=>d.byBr));
+  const W=600, H=200, PL=36, PB=26, PT=14, PR=10;
   const iH=H-PT-PB, iW=W-PL-PR;
-  const barW=Math.min(52, Math.floor(iW/Math.max(1,monthDefs.length)*0.6));
-  const xi=i=>PL+PR+(iW/(Math.max(1,monthDefs.length)))*i + (iW/Math.max(1,monthDefs.length)-barW)/2;
+  const groupW = iW/nMo;
+  const gap = 3;
+  const barW = Math.min(28, Math.max(8, (groupW*0.8)/nBr - gap));
+  const groupX = i => PL + groupW*i + groupW/2 - (barW*nBr + gap*(nBr-1))/2;
+  const barX = (i,bi) => groupX(i) + bi*(barW+gap);
+  const barY = v => PT + iH - (v/maxVal)*iH;
 
-  let bars='', labels='', totalLabels='', gridLines='', tooltipRects='';
-  [0,.5,1].forEach(f=>{
-    const yy=(PT+iH-f*iH).toFixed(1);
-    gridLines+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="1"/>
-      <text x="${PL-4}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${Math.round(maxTotal*f)}</text>`;
+  let grid='', bars='', vals='', xlbls='', lines='';
+
+  // 그리드
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const yy = (PT + iH - f*iH).toFixed(1);
+    const v = Math.round(maxVal*f);
+    grid += `<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="${f===0||f===1?1.5:0.7}" stroke-dasharray="${f===0||f===1?'':'4,3'}"/>`;
+    if(f===0||f===0.5||f===1) grid += `<text x="${PL-5}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;
   });
 
+  // 막대
   data.forEach((d,i)=>{
-    const cx=(xi(i)+barW/2).toFixed(1);
-    let yOffset=PT+iH;
     activeBrs.forEach((b,bi)=>{
-      const h=d.byBr[bi]/maxTotal*iH;
-      if(h<0.5) return;
-      yOffset-=h;
-      bars+=`<rect x="${xi(i).toFixed(1)}" y="${yOffset.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" fill="${activeBrColors[bi]}" rx="2" opacity="0.88"/>`;
+      const v = d.byBr[bi];
+      const x = barX(i,bi).toFixed(1);
+      const y = barY(v).toFixed(1);
+      const h = Math.max(0, (v/maxVal)*iH).toFixed(1);
+      const cl = activeBrColors[bi];
+      // 막대 (radius top)
+      bars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${cl}" opacity="0.85" rx="3">
+        <title>${d.label} ${b.name}: ${v}건</title></rect>`;
+      // 수치 (막대 위)
+      if(v>0) vals += `<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-4).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${cl}">${v}</text>`;
     });
-    labels+=`<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text3)">${d.label}</text>`;
-    if(d.total>0) totalLabels+=`<text x="${cx}" y="${(PT+iH-d.total/maxTotal*iH-6).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--text)">${d.total}</text>`;
+    // 월 레이블
+    const cx = (groupX(i)+(barW*nBr+gap*(nBr-1))/2).toFixed(1);
+    xlbls += `<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text2)">${d.label}</text>`;
+  });
 
-    // hover 투명 rect + tooltip
-    const tipLines=activeBrs.map((b,bi)=>`${b.name}: ${d.byBr[bi]}건`).join('&#10;')+'&#10;합계: '+d.total+'건';
-    tooltipRects+=`<rect x="${xi(i).toFixed(1)}" y="${PT}" width="${barW}" height="${iH}" fill="transparent" rx="2">
-      <title>${d.label}&#10;${tipLines}</title></rect>`;
+  // ── 지점별 컬러 라인 (추이 연결) ──
+  activeBrs.forEach((b,bi)=>{
+    let path='', dots='';
+    data.forEach((d,i)=>{
+      const v = d.byBr[bi];
+      const cx = (barX(i,bi) + barW/2).toFixed(1);
+      const cy = barY(v).toFixed(1);
+      path += `${i===0?'M':'L'}${cx},${cy} `;
+      dots += `<circle cx="${cx}" cy="${cy}" r="3" fill="${activeBrColors[bi]}" stroke="#fff" stroke-width="1.5" opacity="0.7"/>`;
+    });
+    lines += `<path d="${path.trim()}" fill="none" stroke="${activeBrColors[bi]}" stroke-width="1.5" stroke-dasharray="4,3" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>`;
+    lines += dots;
   });
 
   document.getElementById('trend-br-chart').innerHTML=`
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:320px;overflow:visible;font-family:'DM Mono',monospace">
-      ${gridLines}${bars}${totalLabels}${labels}${tooltipRects}
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:340px;overflow:visible;font-family:'DM Mono',monospace">
+      ${grid}${bars}${lines}${vals}${xlbls}
     </svg>`;
 }
 
@@ -7119,7 +7238,7 @@ function renderTrendPtChart(monthDefs){
   const data = monthDefs.map(m=>{
     const calls = getMonthAnalysisCalls(m.key);
     const shin = calls.filter(c=>c.pttype==='신환').length;
-    const gu = calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+    const gu = calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
     return {label:m.label, shin, gu, total:calls.length};
   });
 
@@ -7447,7 +7566,8 @@ function renderTrendProcBrChart(){
   }).join('');
 
   const totalShin=allCalls.filter(c=>c.pttype==='신환').length;
-  const totalGu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환'||c.pttype==='잔여시술').length;
+  const totalGu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+  const totalRem=allCalls.filter(c=>c.pttype==='잔여시술').length;
 
   document.getElementById('trend-proc-br-chart').innerHTML=`
     <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
