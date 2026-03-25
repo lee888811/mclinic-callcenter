@@ -2579,7 +2579,7 @@ function renderCallEntry(c){
     </div>` : '';
   const procTags=c.procs?Object.entries(c.procs).filter(([,n])=>n>0).map(([pid,n])=>{
     const p=S.procedures.find(x=>x.id===pid);
-    return p?`<span class="ce-proc-tag">${p.icon} ${p.name}${n>1?` ×${n}`:''}</span>`:'';
+    return p?`<span class="ce-proc-tag">${p.name}${n>1?` ×${n}`:''}</span>`:'';
   }).join(''):'';
   const stats=[];
   if(c.pttype!=='일반'){
@@ -2900,7 +2900,7 @@ function renderModalProcGrid(){
       <div style="display:flex;align-items:center;gap:0;border-radius:20px;border:1.5px solid ${totalCnt>0?clr:'var(--border)'};overflow:hidden;background:${totalCnt>0?`${clr}18`:'var(--s2)'}">
         <div onclick="toggleProc('${p.id}')"
           style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${totalCnt>0?'700':'500'};color:${totalCnt>0?clr:'var(--text2)'};position:relative">
-          ${p.icon||''} ${p.name}
+          ${p.name}
           ${cnt>0?`<span style="position:absolute;top:-6px;right:-6px;background:${clr};color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${cnt}</span>`:''}
         </div>
         ${hasSubs?`<div onclick="toggleProcSub('${p.id}')"
@@ -3053,7 +3053,7 @@ function renderBrSum(){
               const p=S.procedures.find(x=>x.id===pid);
               const maxN=topP[0][1]||1;
               return p?`<div class="proc-rank-row">
-                <span style="font-size:16px">${p.icon}</span>
+                <span style="font-size:16px"></span>
                 <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
                 <div class="prr-bar-wrap"><div class="prr-bar" style="width:${Math.round(n/maxN*100)}%;background:${cl}"></div></div>
                 <span class="prr-cnt" style="color:${cl}">${n}</span>
@@ -3273,7 +3273,7 @@ function renderCEO(){
     ?`<div class="proc-rank-list">${topP.map(([pid,n])=>{
         const p=S.procedures.find(x=>x.id===pid);
         return p?`<div class="proc-rank-row">
-          <span style="font-size:16px">${p.icon}</span>
+          <span style="font-size:16px"></span>
           <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
           <div class="prr-bar-wrap"><div class="prr-bar" style="width:${Math.round(n/maxPC*100)}%;background:var(--accent)"></div></div>
           <span class="prr-cnt" style="color:var(--accent)">${n}</span>
@@ -3798,7 +3798,7 @@ function renderProcBulkPreview(){
         <th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)">하위 항목</th>
       </tr></thead>
       <tbody>${_procBulkParsed.map(p=>`<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:4px 8px">${p.icon}</td>
+        <td style="padding:4px 8px"></td>
         <td style="padding:4px 8px;font-weight:700">${p.name}</td>
         <td style="padding:4px 8px;color:var(--text3)">${p.cat||'-'}</td>
         <td style="padding:4px 8px;color:var(--text3);font-size:10px">${p.subs.map(s=>s.name).join(', ')||'-'}</td>
@@ -4027,7 +4027,7 @@ function renderIncentive(){
       const branch=S.branches.find(b=>b.id===c.bid);
       const bname=branch?branch.name+'점':'';
       const procNames=c.procs
-        ? Object.keys(c.procs).map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?`${p.icon||''} ${p.name}`:null;}).filter(Boolean).join(', ')
+        ? Object.keys(c.procs).map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?`${p.name}`:null;}).filter(Boolean).join(', ')
         : '';
       _incDetailMap[c.id]={
         name:c.outPtname||'', phone:c.outPtphone||'',
@@ -4370,7 +4370,7 @@ function renderProcMatrix(){
 
   activeProcs.forEach(p=>{
     html+=`<tr>
-      <td><span style="font-size:14px">${p.icon}</span> <strong style="font-size:12px">${p.name}</strong></td>`;
+      <td><span style="font-size:14px"></span> <strong style="font-size:12px">${p.name}</strong></td>`;
     S.branches.map(b=>{
       const d=matrix[p.id][b.id];
       const pct=brTotals[b.id]>0?Math.round(d.total/brTotals[b.id]*100):0;
@@ -4399,7 +4399,7 @@ function renderProcMatrix(){
   activeProcs.forEach((p,i)=>{
     const tot=matrix[p.id].total;
     html+=`<div class="proc-rank-row">
-      <span style="font-size:16px;min-width:22px">${p.icon}</span>
+      <span style="font-size:16px;min-width:22px"></span>
       <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
       <div style="display:flex;gap:6px;margin-right:8px">
         ${S.branches.map(b=>{
@@ -4600,7 +4600,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 예약 ${b.booked}\n`; });
   if(topProcs.length){
     txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 TOP\n';
-    topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.icon} ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu})\n`; });
+    topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu})\n`; });
   }
   txt+='\n'+'─'.repeat(28)+'\n이상 보고드립니다. 🙏';
 
@@ -4713,7 +4713,7 @@ function drawReportCanvasAll(dateStr, sum, branchSubs, topProcs){
     } else if(row.t==='pr'){
       const p=row.p;
       f(11,400); ctx.fillStyle='#1a202c'; ctx.textAlign='left';
-      ctx.fillText(`${row.rank}. ${p.icon} ${p.name}`,PAD,y+rh-7);
+      ctx.fillText(`${row.rank}. ${p.name}`,PAD,y+rh-7);
       f(11,700); ctx.fillStyle='#2563eb'; ctx.textAlign='right';
       ctx.fillText(`${p.n}건`,W-PAD,y+rh-7);
       f(10,400); ctx.fillStyle='#94a3b8'; ctx.textAlign='right';
@@ -4793,7 +4793,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     ? chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu})`).join('\n')
     : '  (채팅 상담 없음)';
   const procLines=topProcs.map((p,i)=>{
-    let line=`  ${i+1}. ${p.icon} ${p.name}  ${p.n}건`;
+    let line=`  ${i+1}. ${p.name}  ${p.n}건`;
     if(p.shin||p.gu) line+=`  (신환 ${p.shin} · 구환 ${p.gu})`;
     return line;
   }).join('\n');
@@ -4995,7 +4995,7 @@ function drawReportCanvas(dateStr, sum, chData, topProcs){
       ctx.fillText(`${row.rank}.`, PAD, y+17);
       ctx.fillStyle='#1a202c';
       ctx.font='12px "Apple SD Gothic Neo","Noto Sans KR",sans-serif';
-      ctx.fillText(`${p.icon} ${p.name}`, PAD+18, y+17);
+      ctx.fillText(`${p.name}`, PAD+18, y+17);
       ctx.fillStyle='#2563eb';
       ctx.font='bold 12px "DM Mono",monospace';
       ctx.textAlign='right';
@@ -5103,8 +5103,8 @@ function exportDailyProcSheet(){
   // 시술 헤더 (시술별로 신환/구환 2컬럼)
   const procHeaders=[];
   procs.forEach(p=>{
-    procHeaders.push(`${p.icon}${p.name}_신환`);
-    procHeaders.push(`${p.icon}${p.name}_구환`);
+    procHeaders.push(`${p.name}_신환`);
+    procHeaders.push(`${p.name}_구환`);
   });
   const header1=['날짜','요일','지점',...procHeaders,'신환합계','구환합계','총합계'];
 
@@ -6167,7 +6167,7 @@ function renderDpProcPills(allProcs, usedPids) {
           background:${selected ? clr : 'transparent'};
           color:${selected ? '#fff' : clr};
           cursor:pointer;transition:all .15s;white-space:nowrap">
-        ${p.icon||''} ${p.name}
+        ${p.name}
       </button>${hasSubs ? `<button onclick="dpToggleSubs('${p.id}')"
         title="하위 카테고리"
         style="padding:2px 6px;border:none;border-left:1px solid ${clr}44;font-size:10px;
@@ -6394,7 +6394,7 @@ function renderDailyProcTable(){
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap">구분</th>
         ${cols.map(col=>{
           const clr=clrFor(col);
-          return `<th style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr}">${col.icon} ${col.name}</th>`;
+          return `<th style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:#0f172a">${col.name}</th>`;
         }).join('')}
         <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;font-weight:700;background:rgba(37,99,235,.06)">합계</th>
       </tr>
@@ -6445,7 +6445,7 @@ function renderDailyProcTable(){
 
       html+=`<tr style="border-bottom:1px solid var(--border)">
         ${firstBr?`<td rowspan="${dateRowspan}" style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;vertical-align:middle;background:var(--s2);white-space:nowrap">${dateLabel2}</td>`:''}
-        <td rowspan="2" style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;vertical-align:middle;color:${bc};">${b.name}</td>
+        <td rowspan="2" style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;vertical-align:middle;color:#0f172a;">${b.name}</td>
         <td style="padding:4px 8px;border:1px solid var(--border);text-align:center;font-size:10px;font-weight:700;color:var(--green);background:rgba(5,150,105,.05)">신환</td>
         ${brShin.map(v=>`<td style="padding:4px 8px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;color:${v>0?'var(--accent)':'var(--text3)'}">${v||0}</td>`).join('')}
         <td style="padding:4px 8px;border:1px solid var(--border);text-align:center;font-weight:700;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06)">${brShinTotal}</td>
@@ -6511,7 +6511,7 @@ function renderTrendProcChartByPeriod(){
   }
   document.getElementById('trend-proc-filter').innerHTML=S.procedures.map(p=>{
     const sel=_trendProcs.includes(p.id);
-    return `<button onclick="toggleTrendProc('${p.id}')" style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">${p.icon} ${p.name}</button>`;
+    return `<button onclick="toggleTrendProc('${p.id}')" style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">${p.name}</button>`;
   }).join('');
 
   if(!_trendProcs.length){
@@ -6585,7 +6585,7 @@ function renderTrendProcChartByPeriod(){
   const legend=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">`+
     _trendProcs.map((pid,pi)=>{
       const p=S.procedures.find(x=>x.id===pid);
-      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${p?.icon||''} ${p?.name||pid}</span>`;
+      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${p?.name||pid}</span>`;
     }).join('')+'</div>';
 
   document.getElementById('trend-proc-chart').innerHTML=legend+`
@@ -6787,7 +6787,7 @@ function renderTrendProcFilter(monthDefs){
   document.getElementById('trend-proc-filter').innerHTML=S.procedures.map(p=>{
     const sel=_trendProcs.includes(p.id);
     return `<button onclick="toggleTrendProc('${p.id}')" style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">
-      ${p.icon} ${p.name}</button>`;
+      ${p.name}</button>`;
   }).join('');
   renderTrendProcChart(monthDefs);
 }
@@ -6842,7 +6842,7 @@ function renderTrendProcChart(monthDefs){
   const legend=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">`+
     _trendProcs.map((pid,pi)=>{
       const p=S.procedures.find(x=>x.id===pid);
-      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${p?.icon||''} ${p?.name||pid}</span>`;
+      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${p?.name||pid}</span>`;
     }).join('')+'</div>';
 
   document.getElementById('trend-proc-chart').innerHTML=legend+`
@@ -6989,7 +6989,7 @@ function renderTrendProcBrChart(){
     const shinPct=Math.round(d.shin/d.total*100);
     return `<div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-        <span style="font-size:12px;font-weight:600">${p?.icon||''} ${p?.name||pid}</span>
+        <span style="font-size:12px;font-weight:600">${p?.name||pid}</span>
         <span style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:${cl}">${d.total}건
           <span style="font-size:10px;color:var(--green)">(신환 ${d.shin})</span>
           <span style="font-size:10px;color:#7c3aed">(구환 ${d.gu})</span>
@@ -12014,7 +12014,7 @@ function initCmpSection(){
     const cl = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length];
     return `<button id="cmp-pr-${p.id}" onclick="cmpToggleProc('${p.id}')"
       style="padding:3px 10px;border-radius:10px;border:1.5px solid ${cl};background:transparent;color:${cl};font-size:11px;font-weight:600;cursor:pointer">
-      ${p.icon||''} ${p.name}
+      ${p.name}
     </button>`;
   }).join('');
 
@@ -12199,7 +12199,7 @@ function renderCmpChart(){
         const diff=b-a, pct=a>0?Math.round(diff/a*100):0;
         const col=diff>0?'#059669':diff<0?'#dc2626':'#94a3b8';
         return `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:7px 8px;font-weight:600">${p.icon||''} ${p.name}</td>
+          <td style="padding:7px 8px;font-weight:600">${p.name}</td>
           <td style="padding:7px 8px;text-align:right;color:#2563eb;font-weight:700">${a}</td>
           <td style="padding:7px 8px;text-align:right;color:#7c3aed;font-weight:700">${b}</td>
           <td style="padding:7px 8px;text-align:right;color:${col};font-weight:700">${diff>0?'+':''}${diff} (${pct>0?'+':''}${pct}%)</td>
@@ -12254,7 +12254,7 @@ function renderVocProcPills(){
     const cl = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
     return `<button onclick="vocToggleProc('${p.id}')" id="voc-pr-${p.id}"
       style="padding:2px 9px;border-radius:10px;border:1.5px solid ${cl};background:${sel?cl:'transparent'};color:${sel?'#fff':cl};font-size:10px;font-weight:600;cursor:pointer">
-      ${p.icon||''} ${p.name}
+      ${p.name}
     </button>`;
   }).join('');
 }
@@ -12350,7 +12350,7 @@ function renderVocPage(){
   listEl.innerHTML = vocs.map(v=>{
     const tc = typeColor[v.type]||'#94a3b8';
     const sc = statusColor[v.status]||'#94a3b8';
-    const prNames = (v.procs||[]).map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?`${p.icon||''} ${p.name}`:pid; }).join(', ');
+    const prNames = (v.procs||[]).map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?`${p.name}`:pid; }).join(', ');
     return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ${tc}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
         <span style="background:${tc}18;color:${tc};border:1px solid ${tc}33;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700">${v.type==='긍정'?'😊':'😤'} ${v.type}</span>
@@ -12519,7 +12519,7 @@ function renderMktProcChart(calls){
   el.innerHTML=entries.length
     ? entries.map(([pid,n],i)=>{
         const p=S.procedures?.find(x=>x.id===pid);
-        const label=p?(p.icon?p.icon+' ':'')+p.name:pid;
+        const label=p?p.name:pid;
         const colors=['#2563eb','#059669','#d97706','#7c3aed','#db2777','#0891b2','#dc2626','#94a3b8'];
         return mktBar(label,n,max,colors[i%colors.length],'건');
       }).join('')
