@@ -969,6 +969,16 @@ td:first-child{text-align:left;padding-left:13px}
         </div>
         <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
         <div id="branch-call-table" style="overflow-x:auto;font-size:11px;margin-top:16px"></div>
+        <!-- 과거 엑셀 업로드 -->
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button onclick="downloadBranchCallTemplate()" style="padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">📥 CSV 양식 다운로드</button>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">
+            📂 과거 엑셀 업로드
+            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importBranchCallExcel(this)">
+          </label>
+          <span id="branch-excel-label" style="font-size:11px;color:var(--text3)"></span>
+          <button id="branch-excel-clear" onclick="clearBranchCallExcel()" style="display:none;padding:5px 10px;background:var(--red-light,#fef2f2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✕ 삭제</button>
+        </div>
       </div>
 
       <div id="proc-matrix-content" style="margin-top:14px"></div>
@@ -6573,44 +6583,75 @@ function renderBranchCallTable(from, to){
 
   const selectedBrs = _selectedBids;
   const branches = S.branches.filter(b=>!selectedBrs||selectedBrs.size===0||selectedBrs.has(b.id));
-  const dates = getDateRange(from,to).filter(ds=>(S.calls[ds]||[]).some(c=>c.type!=='out'));
 
-  if(!dates.length){ el.innerHTML=''; return; }
+  // Firebase 데이터 날짜 목록
+  const fbDates = getDateRange(from,to).filter(ds=>(S.calls[ds]||[]).some(c=>c.type!=='out'));
 
-  // 날짜 표시 포맷 (M/D 요일)
+  // 엑셀 데이터 날짜 목록 (기간 내)
+  const excelDates = _branchExcelData
+    ? [...new Set(_branchExcelData.filter(r=>r.date>=from&&r.date<=to).map(r=>r.date))]
+    : [];
+
+  // 전체 날짜 합집합 (정렬)
+  const allDates = [...new Set([...fbDates, ...excelDates])].sort();
+
+  if(!allDates.length){ el.innerHTML=''; return; }
+
   const DAY_KO=['일','월','화','수','목','금','토'];
   function fmtDate(ds){
     const d=new Date(ds+'T00:00:00');
     return `${d.getMonth()+1}/${d.getDate()}(${DAY_KO[d.getDay()]})`;
   }
 
-  // 각 날짜×지점 집계
   const brCols = branches.map(b=>({b, bc:bclr(b.id)}));
-
-  // 합계용
-  const totals = {}; // bid → {shin,gu,total}
+  const totals = {};
   branches.forEach(b=>{ totals[b.id]={shin:0,gu:0,total:0}; });
   let grandShin=0, grandGu=0, grandTotal=0;
 
-  const rows = dates.map(ds=>{
-    const calls = getAnalysisCalls(ds);
+  const rows = allDates.map(ds=>{
+    const fbCalls = getAnalysisCalls(ds);
     let rowShin=0, rowGu=0, rowTotal=0;
+
     const cells = brCols.map(({b,bc})=>{
-      const bc_calls=calls.filter(c=>c.bid===b.id);
-      const shin=bc_calls.filter(c=>c.pttype==='신환').length;
-      const gu=bc_calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
-      const total=bc_calls.length;
+      // Firebase 데이터
+      const bc_calls = fbCalls.filter(c=>c.bid===b.id);
+      let shin = bc_calls.filter(c=>c.pttype==='신환').length;
+      let gu = bc_calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+
+      // 엑셀 데이터 병합
+      if(_branchExcelData){
+        const exRow = _branchExcelData.find(r=>r.date===ds&&r.bid===b.id);
+        if(exRow){
+          shin += exRow.shin||0;
+          gu += exRow.gu||0;
+        }
+      }
+
+      const total = shin + gu;
       totals[b.id].shin+=shin; totals[b.id].gu+=gu; totals[b.id].total+=total;
       rowShin+=shin; rowGu+=gu; rowTotal+=total;
-      if(!total) return `<td colspan="3" style="padding:5px 6px;border:1px solid var(--border);text-align:center;color:var(--text3);font-size:10px;">-</td>`;
+
+      // 엑셀 출처 표시
+      const hasExcel = _branchExcelData?.some(r=>r.date===ds&&r.bid===b.id);
+      const cellStyle = hasExcel ? 'background:rgba(245,158,11,.05)' : '';
+
+      if(!total) return `<td colspan="3" style="padding:5px 6px;border:1px solid var(--border);text-align:center;color:var(--text3);font-size:10px;${cellStyle}">-</td>`;
       return `
-        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${shin||'-'}</td>
-        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:#7c3aed">${gu||'-'}</td>
-        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;font-family:'DM Mono',monospace;color:var(--accent)">${total}</td>`;
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green);${cellStyle}">${shin||'-'}</td>
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:#7c3aed;${cellStyle}">${gu||'-'}</td>
+        <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;font-family:'DM Mono',monospace;color:var(--accent);${cellStyle}">${total}</td>`;
     }).join('');
+
     grandShin+=rowShin; grandGu+=rowGu; grandTotal+=rowTotal;
-    return `<tr>
-      <td style="padding:5px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap">${fmtDate(ds)}</td>
+
+    // 엑셀 출처 행 표시
+    const isExcelOnly = !fbDates.includes(ds);
+    const rowStyle = isExcelOnly ? 'background:rgba(245,158,11,.04)' : '';
+
+    return `<tr style="${rowStyle}">
+      <td style="padding:5px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap">
+        ${fmtDate(ds)}${isExcelOnly?'<span style="font-size:9px;color:var(--amber,#d97706);margin-left:3px">엑셀</span>':''}
+      </td>
       ${cells}
       <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${rowShin||'-'}</td>
       <td style="padding:5px 6px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:#7c3aed">${rowGu||'-'}</td>
@@ -6618,7 +6659,6 @@ function renderBranchCallTable(from, to){
     </tr>`;
   }).join('');
 
-  // 합계 행
   const totalCells = brCols.map(({b})=>{
     const t=totals[b.id];
     return `
@@ -6627,7 +6667,6 @@ function renderBranchCallTable(from, to){
       <td style="padding:6px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;background:rgba(37,99,235,.06);color:var(--accent)">${t.total||'-'}</td>`;
   }).join('');
 
-  // 헤더 - 지점별 3열(신환/구환/총)
   const brHeaders = brCols.map(({b,bc})=>`
     <th colspan="3" style="padding:7px 8px;border:1px solid var(--border);text-align:center;font-size:11px;font-weight:800;color:${bc}">${b.name}</th>`).join('');
   const subHeaders = brCols.map(()=>`
@@ -6635,8 +6674,13 @@ function renderBranchCallTable(from, to){
     <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:#7c3aed;font-weight:700">구환</th>
     <th style="padding:5px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--accent);font-weight:700">총</th>`).join('');
 
+  const excelNote = _branchExcelData ? `<span style="font-size:10px;color:var(--amber,#d97706);margin-left:8px">※ <span style="background:rgba(245,158,11,.1);padding:1px 5px;border-radius:4px;">엑셀</span> 표시 = 업로드된 과거 데이터</span>` : '';
+
   el.innerHTML=`
-    <div class="slbl" style="margin-bottom:8px;margin-top:16px">🏥 날짜×지점별 콜 현황</div>
+    <div style="display:flex;align-items:center;margin-bottom:8px;margin-top:4px;gap:6px;flex-wrap:wrap">
+      <div class="slbl" style="margin:0">🏥 날짜×지점별 콜 현황</div>
+      ${excelNote}
+    </div>
     <div style="overflow-x:auto">
     <table style="border-collapse:collapse;font-size:11px;min-width:400px">
       <thead>
@@ -6665,8 +6709,142 @@ function renderBranchCallTable(from, to){
     </table>
     </div>`;
 }
+function downloadBranchCallTemplate(){
+  const branches = S.branches.map(b=>b.name).join(', ');
+  const today = new Date();
+  const sample = [0,1,2].map(i=>{
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().slice(0,10);
+    return S.branches.map(b=>`${ds},${b.name},0,0`).join('\n');
+  }).join('\n');
 
-// ── 시술별 추이 날짜 필터 ──
+  const csv = '\uFEFF' +
+    '날짜,지점,신환,구환\n' +
+    `# 날짜 형식: YYYY-MM-DD (예: 2026-03-25)\n` +
+    `# 지점명: ${branches}\n` +
+    `# 신환/구환: 숫자로 입력\n` +
+    sample;
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '콜현황_업로드양식.csv';
+  a.click();
+  toast('📥 CSV 양식 다운로드됨');
+}
+
+// ── 과거 엑셀 업로드 (날짜×지점별 콜 현황) ──
+let _branchExcelData = null; // [{date:'2026-03-01', bid:'b_gn', shin:3, gu:1}]
+
+function importBranchCallExcel(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  const loadXLSX = (cb) => {
+    if(window.XLSX){ cb(); return; }
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=cb; document.head.appendChild(s);
+  };
+
+  loadXLSX(()=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+        if(!rows.length){ toast('⚠️ 데이터가 없어요'); return; }
+
+        // 컬럼명 자동 매핑 (유연하게)
+        const keys = Object.keys(rows[0]);
+        const findCol = (...candidates) => keys.find(k=>candidates.some(c=>k.replace(/\s/g,'').toLowerCase().includes(c)));
+
+        const dateCol = findCol('날짜','date','일자');
+        const branchCol = findCol('지점','branch','점');
+        const shinCol = findCol('신환','신규','new');
+        const guCol = findCol('구환','기존','old');
+
+        if(!dateCol||!branchCol){ toast('⚠️ 날짜/지점 컬럼을 찾을 수 없어요'); input.value=''; return; }
+
+        _branchExcelData = [];
+        rows.forEach(row=>{
+          // 날짜 파싱
+          let dateStr = '';
+          const rawDate = row[dateCol];
+          if(rawDate instanceof Date){
+            dateStr = rawDate.toISOString().slice(0,10);
+          } else if(typeof rawDate==='string'){
+            // 2026-03-01 또는 2026/03/01 또는 03/01 형태
+            const m = String(rawDate).match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+            if(m) dateStr=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+            else {
+              // M/D 형태면 현재 연도 추가
+              const m2=String(rawDate).match(/(\d{1,2})[\/\-](\d{1,2})/);
+              if(m2) dateStr=`${new Date().getFullYear()}-${m2[1].padStart(2,'0')}-${m2[2].padStart(2,'0')}`;
+            }
+          } else if(typeof rawDate==='number'){
+            // 엑셀 날짜 숫자
+            const d = new Date(Math.round((rawDate-25569)*86400*1000));
+            dateStr = d.toISOString().slice(0,10);
+          }
+          if(!dateStr) return;
+
+          // 지점명 → bid 매핑
+          const brName = String(row[branchCol]||'').replace('점','').trim();
+          const branch = S.branches.find(b=>b.name===brName||b.name.includes(brName)||brName.includes(b.name));
+          if(!branch) return;
+
+          const shin = parseInt(row[shinCol]||0)||0;
+          const gu = parseInt(row[guCol]||0)||0;
+
+          _branchExcelData.push({date:dateStr, bid:branch.id, shin, gu});
+        });
+
+        if(!_branchExcelData.length){ toast('⚠️ 매핑된 데이터가 없어요. 지점명을 확인해주세요'); input.value=''; return; }
+
+        // 로컬스토리지 저장
+        try{ localStorage.setItem('mclinic_branch_excel', JSON.stringify(_branchExcelData)); }catch(e){}
+
+        const lbl=document.getElementById('branch-excel-label');
+        const clrBtn=document.getElementById('branch-excel-clear');
+        if(lbl) lbl.textContent=`✅ ${file.name} (${_branchExcelData.length}행 로드됨)`;
+        if(clrBtn) clrBtn.style.display='inline-block';
+        toast(`✅ 엑셀 로드 완료 (${_branchExcelData.length}행)`);
+        renderDailyProcTable();
+      }catch(err){
+        toast('⚠️ 파일 읽기 실패: '+err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    input.value='';
+  });
+}
+
+function clearBranchCallExcel(){
+  _branchExcelData = null;
+  try{ localStorage.removeItem('mclinic_branch_excel'); }catch(e){}
+  const lbl=document.getElementById('branch-excel-label');
+  const clrBtn=document.getElementById('branch-excel-clear');
+  if(lbl) lbl.textContent='';
+  if(clrBtn) clrBtn.style.display='none';
+  renderDailyProcTable();
+}
+
+function loadBranchExcelFromStorage(){
+  try{
+    const raw=localStorage.getItem('mclinic_branch_excel');
+    if(raw){
+      _branchExcelData=JSON.parse(raw);
+      const lbl=document.getElementById('branch-excel-label');
+      const clrBtn=document.getElementById('branch-excel-clear');
+      if(lbl&&_branchExcelData?.length) lbl.textContent=`✅ 저장된 엑셀 (${_branchExcelData.length}행)`;
+      if(clrBtn&&_branchExcelData?.length) clrBtn.style.display='inline-block';
+    }
+  }catch(e){}
+}
+
 function setTrendProcPeriod(period, el){
   _trendProcPeriod=period;
   document.querySelectorAll('[id^=tppb-]').forEach(b=>b.classList.remove('act'));
@@ -13487,6 +13665,7 @@ function notesImport(input){
 
 loadSyncSettings();
 initNotes();
+loadBranchExcelFromStorage();
 initAuth(); // renderSidebar는 initAuth → onLoginSuccess → applyPermissions 내부에서 호출됨
 </script>
 </body>
