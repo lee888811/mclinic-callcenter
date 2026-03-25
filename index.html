@@ -1798,8 +1798,11 @@ function initAuth(){
     fetch(base+'/mclinic.json')
       .then(r=>r.json())
       .then(json=>{
-        if(json&&json.data){
-          mergeRemoteData(json.data);
+        if(json){
+          // staff/branches 등 최신 설정 반영 (data 구버전 키 무시)
+          ['branches','staff','procedures','channels','roles'].forEach(k=>{
+            if(json[k]?.length) S[k]=json[k];
+          });
           try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
         }
         // 아직 로그인 전이면 직원 목록 다시 그리기
@@ -2156,8 +2159,7 @@ async function syncPull(){
         });
       });
     }
-    // 구버전 data.calls 호환 (설정은 무시, calls만 병합)
-    if(data.data?.calls) mergeRemoteData({calls:data.data.calls});
+    // 구버전 data 키 완전 무시 (data.staff 등으로 덮어쓰기 방지)
     pruneLocalCalls(LOCAL_DAYS);
     try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
     _lastSyncedAt=new Date().toISOString();
