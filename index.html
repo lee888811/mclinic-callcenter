@@ -2156,7 +2156,8 @@ async function syncPull(){
         });
       });
     }
-    if(data.data?.calls) mergeRemoteData(data.data);
+    // 구버전 data.calls 호환 (설정은 무시, calls만 병합)
+    if(data.data?.calls) mergeRemoteData({calls:data.data.calls});
     pruneLocalCalls(LOCAL_DAYS);
     try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
     _lastSyncedAt=new Date().toISOString();
@@ -2175,6 +2176,7 @@ async function syncPull(){
 function mergeRemoteData(remote){
   if(!remote) return;
   const deletedIds=new Set(S._deletedIds||[]);
+  // calls만 병합 (설정은 덮어쓰지 않음)
   if(remote.calls){
     Object.keys(remote.calls).forEach(ds=>{
       if(!S.calls[ds]) S.calls[ds]=[];
@@ -2184,8 +2186,6 @@ function mergeRemoteData(remote){
       });
     });
   }
-  ['branches','staff','procedures','channels','roles'].forEach(k=>{if(remote[k]?.length)S[k]=remote[k];});
-  if(remote.incentive) S.incentive=remote.incentive;
   if(remote._deletedIds?.length){
     if(!S._deletedIds) S._deletedIds=[];
     S._deletedIds=[...new Set([...S._deletedIds,...remote._deletedIds])].slice(-500);
