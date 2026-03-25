@@ -333,6 +333,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>지점근무현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
+    <div class="si" data-page="mymemo" onclick="go('mymemo',this)"><span class="sico">📝</span>내 메모장</div>
     <div class="sdiv"></div>
     <div class="sg">관리</div>
     <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>직원근무현황</div>
@@ -1318,6 +1319,70 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="closing-report-content"></div>
     </div>
 
+    <!-- 개인 메모장 -->
+    <div class="page" id="page-mymemo">
+      <div class="ph">
+        <div>
+          <div class="pt">📝 내 메모장</div>
+          <div class="ps" id="mymemo-subtitle">본인만 볼 수 있는 개인 메모</div>
+        </div>
+        <div class="pbtns">
+          <button class="btn btn-p btn-sm" onclick="openMyMemoAdd()">＋ 메모 추가</button>
+        </div>
+      </div>
+
+      <!-- 검색 -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+        <input id="mymemo-search" class="minp" placeholder="🔍 메모 검색..." oninput="renderMyMemos()" style="flex:1;font-size:13px">
+        <select id="mymemo-sort" class="minp" style="width:110px;font-size:12px" onchange="renderMyMemos()">
+          <option value="newest">최신순</option>
+          <option value="oldest">오래된순</option>
+          <option value="alpha">가나다순</option>
+        </select>
+      </div>
+
+      <!-- 카운트 -->
+      <div id="mymemo-count" style="font-size:11px;color:var(--text3);margin-bottom:10px"></div>
+
+      <!-- 목록 -->
+      <div id="mymemo-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: 직원 개인 메모 (인라인) -->
+<div class="modal" id="modal-simemo" style="z-index:650">
+  <div class="mbox" style="width:460px">
+    <div class="mt" id="simemo-modal-title">📝 메모 추가</div>
+    <div class="ml">제목 *</div>
+    <input class="minp" id="simemo-title-inp" placeholder="메모 제목" maxlength="100" onkeydown="if(event.key==='Enter')document.getElementById('simemo-content-inp').focus()">
+    <div class="ml">내용</div>
+    <textarea id="simemo-content-inp" class="minp" rows="7" placeholder="내용을 자유롭게 적어보세요..." style="resize:vertical;line-height:1.6;font-size:13px"></textarea>
+    <div class="ml">태그 <span style="color:var(--text3);font-weight:400">(쉼표 구분, 선택)</span></div>
+    <input class="minp" id="simemo-tags-inp" placeholder="예: 공지, 중요, 업무">
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-simemo')">취소</button>
+      <button class="btn btn-p" onclick="saveSiMemo()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 개인 메모 추가/편집 -->
+<div class="modal" id="modal-mymemo" style="z-index:600">
+  <div class="mbox" style="width:480px">
+    <div class="mt" id="mymemo-modal-title">📝 메모 추가</div>
+    <input type="hidden" id="mymemo-edit-id">
+    <div class="ml">제목 *</div>
+    <input class="minp" id="mymemo-title-inp" placeholder="메모 제목" maxlength="100">
+    <div class="ml">내용</div>
+    <textarea id="mymemo-content-inp" class="minp" rows="8" placeholder="메모 내용을 입력하세요..." style="resize:vertical;line-height:1.6;font-size:13px"></textarea>
+    <div class="ml">태그 <span style="color:var(--text3);font-weight:400">(쉼표로 구분, 선택)</span></div>
+    <input class="minp" id="mymemo-tags-inp" placeholder="예: 업무, 공지, 중요">
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-mymemo')">취소</button>
+      <button class="btn btn-p" onclick="saveMyMemo()">저장</button>
+    </div>
   </div>
 </div>
 
@@ -2691,6 +2756,7 @@ function go(pid,el){
   else if(pid==='notes') renderNotes();
   else if(pid==='marketing') initMarketingPage();
   else if(pid==='voc') initVocPage();
+  else if(pid==='mymemo') loadMyMemos();
 }
 function goSI(sid,el){
   // 본인 또는 관리자만 접근 가능
@@ -2812,7 +2878,8 @@ function renderStaffInputPage(sid){
   const goalShin= goals.shin||0;
   const goalOut = goals.outCall||0;
   const inPct   = goalIn>0  ? Math.min(100,Math.round(inTotal/goalIn*100)) : null;
-  const shinPct = goalShin>0? Math.min(100,Math.round(shin/goalShin*100))  : null;
+  const shinGuTotal = shin + gu;
+  const shinPct = goalShin>0? Math.min(100,Math.round(shinGuTotal/goalShin*100))  : null;
   const outPct  = goalOut>0 ? Math.min(100,Math.round(outcall/goalOut*100)): null;
 
   // ── 팀 내 순위 (당일 기준) ──
@@ -2847,6 +2914,25 @@ function renderStaffInputPage(sid){
       </div>
       <div class="pbtns">
         <button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')">＋ 콜 기록</button>
+      </div>
+    </div>
+
+    <!-- 개인 메모장 -->
+    <div id="si-mymemo-wrap-${sid}" style="margin-bottom:16px">
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <!-- 메모장 헤더 -->
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px">
+            📝 <span>내 메모장</span>
+            <span id="si-memo-count-${sid}" style="font-size:10px;font-weight:600;color:var(--text3);background:var(--s2);padding:1px 6px;border-radius:10px"></span>
+          </span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="si-memo-search-${sid}" placeholder="검색..." style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);width:110px" oninput="renderSiMemos('${sid}')">
+            <button onclick="openSiMemoAdd('${sid}')" style="border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;cursor:pointer">＋ 추가</button>
+          </div>
+        </div>
+        <!-- 메모 목록 -->
+        <div id="si-memo-list-${sid}" style="padding:10px 12px;display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto"></div>
       </div>
     </div>
 
@@ -2885,8 +2971,8 @@ function renderStaffInputPage(sid){
         </div>`:''}
         ${goalShin?`<div>
           <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:12px;color:var(--text2)">🆕 신환</span>
-            <span style="font-size:12px;font-weight:700;color:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#ef4444'}">${shin} / ${goalShin} (${shinPct}%)</span>
+            <span style="font-size:12px;color:var(--text2)">🆕 신환+구환(신규)</span>
+            <span style="font-size:12px;font-weight:700;color:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#ef4444'}">${shinGuTotal} / ${goalShin} (${shinPct}%)</span>
           </div>
           <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${shinPct}%;background:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#3b82f6'};border-radius:4px;transition:width .5s"></div>
@@ -3002,6 +3088,9 @@ function renderStaffInputPage(sid){
           </div>`
         :calls.slice().reverse().map(c=>renderCallEntry(c)).join('')}
     </div>`;
+
+  // 개인 메모장 로드
+  loadSiMemos(sid);
 }
 
 
@@ -4812,8 +4901,7 @@ function renderPerf() {
       <!-- 통계 -->
       <div>
         ${statRow('📞','인콜',inCall,goalIn,'#3b82f6')}
-        ${statRow('🆕','신환',shin,goalShin,'#059669')}
-        ${statRow('🔄','구환',gu,0,'#7c3aed')}
+        ${statRow('🆕','신환+구환(신규)',shin+gu,goalShin,'#059669')}
         ${statRow('🗓','잔여',rem,0,'#0891b2')}
         ${statRow('📅','예약',booked,0,'#8b5cf6')}
         ${statRow('📤','아웃콜',outTotal,goalOut,'#ec4899')}
@@ -4953,7 +5041,7 @@ function openPerfGoalModal() {
               style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;box-sizing:border-box">
           </div>
           <div>
-            <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">신환 목표</label>
+            <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">신환+구환(신규) 목표</label>
             <input type="number" id="sg-${s.id}-shin" min="0" value="${g.shin||''}" placeholder="${sug.shin||0}"
               style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;box-sizing:border-box">
           </div>
@@ -18182,6 +18270,267 @@ function notesImport(input){
 }
 
 
+
+// ═══════════════════════════════════
+// 직원 입력 페이지 내 개인 메모장 (인라인)
+// ═══════════════════════════════════
+const _siMemoCache = {}; // sid → 메모 배열 캐시
+let _siMemoEditId = null;
+let _siMemoTargetSid = null;
+
+function siMemoFirebasePath(sid){
+  if(!sid || !_syncUrl) return null;
+  const safeSid = sid.replace(/[.#$\[\]]/g,'_');
+  return `${_syncUrl}/personalMemos/${safeSid}.json`;
+}
+
+async function loadSiMemos(sid){
+  // 본인 또는 관리자만
+  if(!_currentUser) return;
+  if(!hasPermission('admin') && _currentUser.sid !== sid) return;
+
+  const path = siMemoFirebasePath(sid);
+  if(!path){ _siMemoCache[sid]=[]; renderSiMemos(sid); return; }
+  try{
+    const res = await fetch(path);
+    if(res.ok){
+      const data = await res.json();
+      _siMemoCache[sid] = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+    } else { _siMemoCache[sid]=[]; }
+  }catch(e){ _siMemoCache[sid]=[]; }
+  renderSiMemos(sid);
+}
+
+async function pushSiMemos(sid){
+  const path = siMemoFirebasePath(sid); if(!path) return;
+  try{ await fetch(path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_siMemoCache[sid]||[])}); }
+  catch(e){ console.warn('[SiMemo] 저장 실패',e); }
+}
+
+function renderSiMemos(sid){
+  const listEl = document.getElementById('si-memo-list-'+sid);
+  const countEl = document.getElementById('si-memo-count-'+sid);
+  if(!listEl) return;
+
+  const q = (document.getElementById('si-memo-search-'+sid)?.value||'').toLowerCase();
+  const memos = _siMemoCache[sid]||[];
+  let list = [...memos].sort((a,b)=>a.updatedAt>b.updatedAt?-1:1);
+  if(q) list = list.filter(m=>(m.title+m.content+(m.tags||[]).join('')).toLowerCase().includes(q));
+
+  if(countEl) countEl.textContent = memos.length+'개';
+
+  if(!list.length){
+    listEl.innerHTML=`<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">${q?'검색 결과 없음':'메모가 없습니다. ＋ 추가를 눌러보세요'}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(m=>{
+    const date = m.updatedAt ? new Date(m.updatedAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    const previewRaw = (m.content||'').replace(/\n/g,' ');
+    const preview = previewRaw.length>60 ? previewRaw.slice(0,60)+'…' : previewRaw;
+    const tags = (m.tags||[]).map(t=>`<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(37,99,235,.1);color:var(--accent);font-weight:600">${escHtml(t)}</span>`).join('');
+    return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;display:flex;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openSiMemoEdit('${sid}','${m.id}')">
+        <div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:2px">${escHtml(m.title)}</div>
+        ${preview?`<div style="font-size:11px;color:var(--text2);line-height:1.5">${escHtml(preview)}</div>`:''}
+        <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap">
+          ${tags}
+          <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-left:auto">${date}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+        <button onclick="openSiMemoEdit('${sid}','${m.id}')" style="border:none;background:none;color:var(--accent);font-size:12px;cursor:pointer;padding:2px 4px" title="수정">✏️</button>
+        <button onclick="deleteSiMemo('${sid}','${m.id}')" style="border:none;background:none;color:var(--red);font-size:12px;cursor:pointer;padding:2px 4px" title="삭제">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSiMemoAdd(sid){
+  _siMemoEditId = null;
+  _siMemoTargetSid = sid;
+  document.getElementById('simemo-modal-title').textContent = '📝 메모 추가';
+  document.getElementById('simemo-title-inp').value = '';
+  document.getElementById('simemo-content-inp').value = '';
+  document.getElementById('simemo-tags-inp').value = '';
+  document.getElementById('modal-simemo').classList.add('open');
+  setTimeout(()=>document.getElementById('simemo-title-inp').focus(),100);
+}
+
+function openSiMemoEdit(sid, id){
+  const m = (_siMemoCache[sid]||[]).find(x=>x.id===id); if(!m) return;
+  _siMemoEditId = id;
+  _siMemoTargetSid = sid;
+  document.getElementById('simemo-modal-title').textContent = '📝 메모 수정';
+  document.getElementById('simemo-title-inp').value = m.title||'';
+  document.getElementById('simemo-content-inp').value = m.content||'';
+  document.getElementById('simemo-tags-inp').value = (m.tags||[]).join(', ');
+  document.getElementById('modal-simemo').classList.add('open');
+  setTimeout(()=>document.getElementById('simemo-title-inp').focus(),100);
+}
+
+async function saveSiMemo(){
+  const title = document.getElementById('simemo-title-inp').value.trim();
+  if(!title){ toast('⚠️ 제목을 입력하세요'); return; }
+  const sid = _siMemoTargetSid; if(!sid) return;
+  const content = document.getElementById('simemo-content-inp').value.trim();
+  const tagsRaw = document.getElementById('simemo-tags-inp').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(t=>t.trim()).filter(Boolean) : [];
+  const now = new Date().toISOString();
+
+  if(!_siMemoCache[sid]) _siMemoCache[sid]=[];
+
+  if(_siMemoEditId){
+    const idx = _siMemoCache[sid].findIndex(x=>x.id===_siMemoEditId);
+    if(idx>=0) _siMemoCache[sid][idx] = {..._siMemoCache[sid][idx], title, content, tags, updatedAt:now};
+  } else {
+    _siMemoCache[sid].unshift({id:'sm'+Date.now(), title, content, tags, createdAt:now, updatedAt:now});
+  }
+  closeModal('modal-simemo');
+  renderSiMemos(sid);
+  await pushSiMemos(sid);
+  toast(_siMemoEditId?'✅ 메모 수정됨':'✅ 메모 추가됨');
+  _siMemoEditId=null; _siMemoTargetSid=null;
+}
+
+async function deleteSiMemo(sid, id){
+  const m = (_siMemoCache[sid]||[]).find(x=>x.id===id); if(!m) return;
+  showConfirmToast(`🗑 "${m.title.slice(0,20)}" 삭제할까요?`, async ()=>{
+    _siMemoCache[sid] = (_siMemoCache[sid]||[]).filter(x=>x.id!==id);
+    renderSiMemos(sid);
+    await pushSiMemos(sid);
+    toast('🗑 삭제됨');
+  });
+}
+
+// ═══════════════════════════════════
+// 개인 메모장 (My Memo - 별도 페이지)
+// ═══════════════════════════════════
+let _myMemos = []; // 현재 로그인 직원의 메모 목록
+
+function myMemoFirebasePath(){
+  if(!_currentUser || !_currentUser.sid) return null;
+  const sid = _currentUser.sid.replace(/[.#$\[\]]/g,'_');
+  return `${_syncUrl}/personalMemos/${sid}.json`;
+}
+
+async function loadMyMemos(){
+  const path = myMemoFirebasePath();
+  if(!path){ _myMemos=[]; renderMyMemos(); return; }
+  try{
+    const res = await fetch(path);
+    if(res.ok){
+      const data = await res.json();
+      _myMemos = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+    }
+  }catch(e){ console.warn('[MyMemo] 로드 실패', e); }
+  renderMyMemos();
+}
+
+async function pushMyMemos(){
+  const path = myMemoFirebasePath();
+  if(!path) return;
+  try{
+    await fetch(path, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(_myMemos)});
+  }catch(e){ console.warn('[MyMemo] 저장 실패', e); }
+}
+
+function openMyMemoAdd(){
+  document.getElementById('mymemo-modal-title').textContent = '📝 메모 추가';
+  document.getElementById('mymemo-edit-id').value = '';
+  document.getElementById('mymemo-title-inp').value = '';
+  document.getElementById('mymemo-content-inp').value = '';
+  document.getElementById('mymemo-tags-inp').value = '';
+  document.getElementById('modal-mymemo').classList.add('open');
+  setTimeout(()=>document.getElementById('mymemo-title-inp').focus(),100);
+}
+
+function openMyMemoEdit(id){
+  const m = _myMemos.find(x=>x.id===id); if(!m) return;
+  document.getElementById('mymemo-modal-title').textContent = '📝 메모 수정';
+  document.getElementById('mymemo-edit-id').value = id;
+  document.getElementById('mymemo-title-inp').value = m.title||'';
+  document.getElementById('mymemo-content-inp').value = m.content||'';
+  document.getElementById('mymemo-tags-inp').value = (m.tags||[]).join(', ');
+  document.getElementById('modal-mymemo').classList.add('open');
+  setTimeout(()=>document.getElementById('mymemo-title-inp').focus(),100);
+}
+
+async function saveMyMemo(){
+  const title = document.getElementById('mymemo-title-inp').value.trim();
+  if(!title){ toast('⚠️ 제목을 입력하세요'); return; }
+  const content = document.getElementById('mymemo-content-inp').value.trim();
+  const tagsRaw = document.getElementById('mymemo-tags-inp').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(t=>t.trim()).filter(Boolean) : [];
+  const editId = document.getElementById('mymemo-edit-id').value;
+  const now = new Date().toISOString();
+
+  if(editId){
+    const idx = _myMemos.findIndex(x=>x.id===editId);
+    if(idx>=0) _myMemos[idx] = {..._myMemos[idx], title, content, tags, updatedAt:now};
+  } else {
+    _myMemos.unshift({id:'mm'+Date.now(), title, content, tags, createdAt:now, updatedAt:now});
+  }
+  closeModal('modal-mymemo');
+  renderMyMemos();
+  await pushMyMemos();
+  toast(editId ? '✅ 메모 수정됨' : '✅ 메모 추가됨');
+}
+
+async function deleteMyMemo(id){
+  const m = _myMemos.find(x=>x.id===id); if(!m) return;
+  showConfirmToast(`🗑 "${m.title.slice(0,20)}" 삭제할까요?`, async ()=>{
+    _myMemos = _myMemos.filter(x=>x.id!==id);
+    renderMyMemos();
+    await pushMyMemos();
+    toast('🗑 삭제됨');
+  });
+}
+
+function renderMyMemos(){
+  const q = (document.getElementById('mymemo-search')?.value||'').toLowerCase();
+  const sort = document.getElementById('mymemo-sort')?.value || 'newest';
+  const name = _currentUser?.name || '';
+  if(document.getElementById('mymemo-subtitle'))
+    document.getElementById('mymemo-subtitle').textContent = name ? `${name}님의 개인 메모장 · 본인만 열람 가능` : '본인만 볼 수 있는 개인 메모';
+
+  let list = [..._myMemos];
+  if(q) list = list.filter(m=>(m.title+m.content+(m.tags||[]).join('')).toLowerCase().includes(q));
+  if(sort==='oldest') list.sort((a,b)=>a.createdAt>b.createdAt?1:-1);
+  else if(sort==='alpha') list.sort((a,b)=>a.title.localeCompare(b.title,'ko'));
+  else list.sort((a,b)=>a.updatedAt>b.updatedAt?-1:1);
+
+  const countEl = document.getElementById('mymemo-count');
+  if(countEl) countEl.textContent = q ? `검색 결과: ${list.length}개` : `전체 ${_myMemos.length}개`;
+
+  const el = document.getElementById('mymemo-list'); if(!el) return;
+  if(!list.length){
+    el.innerHTML=`<div style="text-align:center;padding:48px 0;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:8px">📝</div>
+      <div style="font-size:13px">${q?'검색 결과가 없습니다':'아직 메모가 없어요. 추가해 보세요!'}</div>
+    </div>`; return;
+  }
+
+  el.innerHTML = list.map(m=>{
+    const date = m.updatedAt ? new Date(m.updatedAt).toLocaleDateString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    const preview = (m.content||'').replace(/\n/g,' ').slice(0,80);
+    const tags = (m.tags||[]).map(t=>`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(37,99,235,.1);color:var(--accent);font-weight:600">${escHtml(t)}</span>`).join('');
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.07)'" onmouseout="this.style.boxShadow=''">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+        <div style="font-size:14px;font-weight:800;color:#0f172a;flex:1;cursor:pointer" onclick="openMyMemoEdit('${m.id}')">${escHtml(m.title)}</div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button onclick="openMyMemoEdit('${m.id}')" style="border:none;background:var(--s2);color:var(--text2);font-size:11px;padding:3px 9px;border-radius:6px;cursor:pointer;font-weight:600">수정</button>
+          <button onclick="deleteMyMemo('${m.id}')" style="border:none;background:rgba(220,38,38,.08);color:var(--red);font-size:11px;padding:3px 9px;border-radius:6px;cursor:pointer;font-weight:600">삭제</button>
+        </div>
+      </div>
+      ${preview?`<div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px;white-space:pre-wrap;cursor:pointer" onclick="openMyMemoEdit('${m.id}')">${escHtml(preview)}${(m.content||'').length>80?'…':''}</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${tags}</div>
+        <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${date}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 loadSyncSettings();
 initNotes();
