@@ -1671,26 +1671,6 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="proc-grid" id="modal-proc-grid"></div>
     </div>
 
-    <!-- 고객 정보 (재방문율 추적용) -->
-    <div style="margin-top:10px;padding:10px 12px;background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.15);border-radius:9px">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:700;color:#3b82f6">👤 고객 정보</span>
-        <span style="font-size:10px;color:var(--text3)">(선택 · 재방문율 분석에 활용)</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div>
-          <label style="font-size:10px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">고객명</label>
-          <input type="text" id="cf-ptname" placeholder="이름 입력" autocomplete="off"
-            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box">
-        </div>
-        <div>
-          <label style="font-size:10px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">연락처</label>
-          <input type="tel" id="cf-ptphone" placeholder="010-0000-0000" autocomplete="off"
-            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box;font-family:'DM Mono',monospace">
-        </div>
-      </div>
-    </div>
-
     <div class="ml">메모 (선택)</div>
     <textarea class="minp" id="cf-memo" rows="2" placeholder="특이사항..." style="resize:none;margin-top:4px"></textarea>
 
@@ -3364,8 +3344,6 @@ function openEditModal(cid, sid, ds){
   // 환자 구분
   _callPttype=c.pttype||'신환';
   document.querySelectorAll('input[name=pttype]').forEach(r=>r.checked=(r.value===_callPttype));
-  const eptn=document.getElementById('cf-ptname'); if(eptn) eptn.value=c.ptname||'';
-  const eptp=document.getElementById('cf-ptphone'); if(eptp) eptp.value=c.ptphone?c.ptphone.replace(/(\d{3})(\d{3,4})(\d{4})/,'$1-$2-$3'):'';
   // 예약/취소/미예약
   const fToday=document.getElementById('cf-today'); if(fToday) fToday.value=c.today||0;
   const fCancel=document.getElementById('cf-cancel'); if(fCancel) fCancel.value=c.cancel||0;
@@ -3582,8 +3560,6 @@ function confirmCall(){
     medium:_callMedium,
     channel:_callMedium==='phone'?_phoneChannel:'',
     bid:_callBid, type:_callType, degree:_callDegree, pttype:_callPttype,
-    ptname: document.getElementById('cf-ptname')?.value.trim()||'',
-    ptphone: document.getElementById('cf-ptphone')?.value.replace(/[^0-9]/g,'')||'',
     today:+document.getElementById('cf-today').value||0,
     cancel:+document.getElementById('cf-cancel').value||0,
     cancelReason:document.getElementById('cf-cancel-reason')?.value||'',
