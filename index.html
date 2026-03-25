@@ -334,6 +334,8 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>지점근무현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
     <div class="si" data-page="mymemo" onclick="go('mymemo',this)"><span class="sico">📝</span>내 메모장</div>
+    <div class="si" data-page="roster" onclick="go('roster',this)"><span class="sico">📅</span>직원 근태관리</div>
+    <div class="si" data-page="duty" onclick="go('duty',this)"><span class="sico">📋</span>분담업무</div>
     <div class="sdiv"></div>
     <div class="sg">관리</div>
     <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>직원근무현황</div>
@@ -963,6 +965,56 @@ td:first-child{text-align:left;padding-left:13px}
 
       <!-- 카드 목록 -->
       <div id="notes-list" style="display:flex;flex-direction:column;gap:8px"></div>
+
+      <!-- 랜딩페이지 탭 구분선 -->
+      <div style="margin-top:24px;border-top:2px solid var(--border);padding-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:15px;font-weight:800;color:#0f172a">🔗 랜딩페이지</span>
+            <span id="landing-count-badge" style="font-size:10px;font-weight:700;background:var(--accent);color:#fff;border-radius:12px;padding:2px 8px;display:none"></span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input id="landing-search" class="minp" placeholder="🔍 시술명 검색..." oninput="renderLandingList()" style="width:180px;font-size:12px">
+            <select id="landing-sheet-filter" class="minp" onchange="renderLandingList()" style="font-size:12px;width:120px">
+              <option value="">전체 시트</option>
+            </select>
+            <button class="btn btn-g btn-sm" onclick="loadLandingData(true)">🔄 새로고침</button>
+            <button class="btn btn-g btn-sm" onclick="openLandingSettings()">⚙️ GAS 설정</button>
+          </div>
+        </div>
+        <div id="landing-status" style="display:none;font-size:11px;padding:6px 12px;border-radius:7px;margin-bottom:8px"></div>
+        <div id="landing-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+      </div>
+    </div>
+
+    <!-- ═══ 랜딩페이지 GAS 설정 모달 ═══ -->
+    <div class="modal" id="modal-landing-settings" style="z-index:700">
+      <div class="mbox" style="width:460px">
+        <div class="mt">⚙️ 랜딩페이지 GAS 설정</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7;background:var(--s2);padding:10px 12px;border-radius:8px;margin-bottom:12px">
+          구글시트에 Apps Script를 설정하면 랜딩페이지를 자동으로 불러옵니다.<br>
+          <span style="color:var(--accent);font-weight:600">GAS 코드는 제공된 landing_GAS.gs 파일을 사용하세요.</span>
+        </div>
+        <div class="ml">GAS 웹앱 URL</div>
+        <input class="minp" id="landing-gas-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:12px;margin-top:6px">
+        <div style="font-size:10px;color:var(--text3);margin-top:6px">배포 → 웹앱 → 액세스 권한: 모든 사용자</div>
+        <div class="mbtns">
+          <button class="btn btn-g" onclick="closeModal('modal-landing-settings')">취소</button>
+          <button class="btn btn-p" onclick="saveLandingSettings()">저장 후 불러오기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 랜딩페이지 빠른 검색 모달 (통화 중) ═══ -->
+    <div class="modal" id="modal-landing-search" style="z-index:750;align-items:flex-start;padding-top:30px">
+      <div class="mbox" style="width:560px;max-height:85vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:15px;font-weight:800;color:var(--text)">🔗 랜딩페이지 검색</span>
+          <button onclick="closeModal('modal-landing-search')" style="border:none;background:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
+        </div>
+        <input id="landing-modal-search" class="minp" placeholder="시술명 입력 (예: 보톡스, 필러, 리프팅...)" oninput="renderLandingModal()" style="font-size:14px;margin-bottom:12px">
+        <div id="landing-modal-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
     </div>
 
     <!-- ═══ 노트 편집 모달 ═══ -->
@@ -1321,7 +1373,6 @@ td:first-child{text-align:left;padding-left:13px}
 
     <!-- 개인 메모장 -->
     <div class="page" id="page-mymemo">
-      <div class="ph">
         <div>
           <div class="pt">📝 내 메모장</div>
           <div class="ps" id="mymemo-subtitle">본인만 볼 수 있는 개인 메모</div>
@@ -1348,6 +1399,267 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="mymemo-list" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
 
+    <!-- 분담업무 -->
+    <div class="page" id="page-duty">
+      <div class="ph">
+        <div>
+          <div class="pt">📋 이달의 분담업무</div>
+          <div class="ps" id="duty-ps">분담업무/오후근무 백업 순서 : 수비 → 지영 → 지혜 → 선미</div>
+        </div>
+        <div class="pbtns" style="gap:6px">
+          <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(-1)">‹ 이전달</button>
+          <span id="duty-month-display" style="font-size:12px;font-weight:700;color:var(--text2);padding:4px 8px;background:var(--s2);border-radius:6px;border:1px solid var(--border)"></span>
+          <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(1)">다음달 ›</button>
+          <button class="btn btn-g btn-sm" onclick="dutyGoThisMonth()">이번달</button>
+          <button class="btn btn-p btn-sm" onclick="openDutyEdit()">✏️ 수정</button>
+        </div>
+      </div>
+
+      <!-- 안내 -->
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#713f12;font-weight:600">
+        Q. 분담업무 하는 방법은?<br>
+        A. 예약부 스프레드 메인 - [분담업무 메뉴얼]을 읽어주세요.
+      </div>
+
+      <div id="duty-content"></div>
+    </div>
+
+    <!-- 직원 근태관리 -->
+    <div class="page" id="page-roster">
+      <div class="ph">
+        <div>
+          <div class="pt">📅 직원 근태관리</div>
+          <div class="ps" id="roster-subtitle">예약부 월간 근태 현황</div>
+        </div>
+        <div class="pbtns" style="gap:6px">
+          <button class="btn btn-p btn-sm" id="roster-btn-patterns" onclick="openRosterPatterns()" style="display:none">👤 패턴 설정</button>
+          <button class="btn btn-g btn-sm" onclick="rosterSyncSave()">💾 저장</button>
+          <button class="btn btn-g btn-sm" onclick="openRosterSettings()">⚙️ 설정</button>
+        </div>
+      </div>
+
+      <!-- 탭 -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0">
+        <button id="roster-tab-cal" onclick="switchRosterTab('cal')" style="padding:7px 18px;border:none;background:none;font-size:13px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;cursor:pointer">📅 근무 달력</button>
+        <button id="roster-tab-leave" onclick="switchRosterTab('leave')" style="padding:7px 18px;border:none;background:none;font-size:13px;font-weight:700;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">🌴 연차 관리</button>
+      </div>
+
+      <!-- ── 달력 탭 ── -->
+      <div id="roster-tab-content-cal">
+        <div id="roster-sync-status" style="display:none;font-size:11px;padding:6px 12px;border-radius:7px;margin-bottom:10px;background:rgba(5,150,105,.08);color:var(--green);font-weight:600"></div>
+
+        <!-- 월 + 네비게이션 -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button onclick="rosterPrevMonth()" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">‹</button>
+          <div id="roster-month-label" style="font-size:18px;font-weight:800;color:#0f172a;min-width:120px;text-align:center"></div>
+          <button onclick="rosterNextMonth()" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">›</button>
+          <button onclick="rosterThisMonth()" style="padding:5px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer">오늘</button>
+          <button onclick="rosterAutoGenerate()" style="padding:5px 14px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:11px;font-weight:700;cursor:pointer" title="패턴 설정 기반으로 이번달 전체 자동 입력">🔄 패턴으로 자동채우기</button>
+          <button onclick="openRosterPatterns()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer">👤 패턴 설정</button>
+        </div>
+
+        <!-- 범례 -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:10px;font-weight:700">
+          <span style="padding:2px 8px;border-radius:5px;background:#dbeafe;color:#1d4ed8">오전</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#dcfce7;color:#15803d">오후</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#fee2e2;color:#b91c1c">휴무</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#fef9c3;color:#854d0e">연차</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#fce7f3;color:#9d174d">반차</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#ffedd5;color:#9a3412">특근</span>
+          <span style="padding:2px 8px;border-radius:5px;background:#fef08a;color:#713f12">📌 공지</span>
+        </div>
+
+        <!-- 달력 -->
+        <div style="overflow-x:auto">
+          <div id="roster-calendar" style="min-width:700px"></div>
+        </div>
+      </div>
+
+      <!-- ── 연차 관리 탭 ── -->
+      <div id="roster-tab-content-leave" style="display:none">
+        <!-- 연도 선택 -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button onclick="leaveYearMove(-1)" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">‹</button>
+          <span id="leave-year-label" style="font-size:18px;font-weight:800;color:#0f172a;min-width:80px;text-align:center"></span>
+          <button onclick="leaveYearMove(1)" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">›</button>
+          <button onclick="leaveYearMove(0)" style="padding:5px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer">올해</button>
+          <button onclick="openLeaveCarryover()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer">↩ 이월 처리</button>
+        </div>
+
+        <!-- 직원별 연차 현황 -->
+        <div id="leave-staff-cards" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: 특근 보상휴가 관리 -->
+<div class="modal" id="modal-overtime-use" style="z-index:710">
+  <div class="mbox" style="width:400px">
+    <div class="mt">🔥 특근 보상휴가 관리</div>
+    <input type="hidden" id="ot-staff-name">
+    <div id="overtime-use-content"></div>
+    <div class="mbtns" style="margin-top:14px">
+      <button class="btn btn-g" onclick="closeModal('modal-overtime-use')">취소</button>
+      <button class="btn btn-p" style="background:#9a3412;border-color:#9a3412" onclick="saveOvertimeUse()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 직원 연차 설정 -->
+<div class="modal" id="modal-leave-staff" style="z-index:700">
+  <div class="mbox" style="width:380px">
+    <div class="mt" id="leave-staff-title">🌴 연차 설정</div>
+    <input type="hidden" id="leave-staff-name">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;background:var(--s2);padding:8px 12px;border-radius:8px">
+      입사일은 <strong>직원근무현황</strong>에서 입력·수정할 수 있어요.
+    </div>
+    <div class="ml">연간 연차 <span style="font-weight:400;color:var(--text3)" id="leave-auto-hint"></span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+      <input type="number" id="leave-total-override" class="minp" min="0" max="99" placeholder="자동계산" style="width:80px;font-family:'DM Mono',monospace">
+      <span style="font-size:12px;color:var(--text3)">일 (비워두면 자동계산)</span>
+    </div>
+    <div class="ml" style="margin-top:10px">전년도 이월 연차</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+      <input type="number" id="leave-carryover" class="minp" min="0" max="99" placeholder="0" style="width:80px;font-family:'DM Mono',monospace">
+      <span style="font-size:12px;color:var(--text3)">일</span>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-leave-staff')">취소</button>
+      <button class="btn btn-p" onclick="saveLeaveStaff()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 이월 처리 -->
+<div class="modal" id="modal-leave-carryover" style="z-index:700">
+  <div class="mbox" style="width:440px">
+    <div class="mt">↩ 연도 이월 처리</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;background:var(--s2);padding:10px 12px;border-radius:8px;margin-bottom:14px">
+      잔여 연차를 다음 연도로 이월합니다.<br>
+      <span style="color:var(--red);font-weight:600">이월 후에는 현재 연도 잔여가 0으로 초기화됩니다.</span>
+    </div>
+    <div id="leave-carryover-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-leave-carryover')">취소</button>
+      <button class="btn btn-p" onclick="confirmLeaveCarryover()">이월 실행</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 분담업무 수정 -->
+<div class="modal" id="modal-duty-edit" style="z-index:700;align-items:flex-start;padding-top:20px">
+  <div class="mbox" style="width:680px;max-height:92vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="mt" style="margin:0">✏️ 분담업무 수정</div>
+      <button onclick="closeModal('modal-duty-edit')" style="border:none;background:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
+    </div>
+    <div id="duty-edit-form" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:12px;margin-top:14px">
+      <button class="btn btn-g" onclick="closeModal('modal-duty-edit')">취소</button>
+      <button class="btn btn-p" onclick="saveDutyData()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 직원 패턴 설정 -->
+<div class="modal" id="modal-roster-patterns" style="z-index:700;align-items:flex-start;padding-top:30px">
+  <div class="mbox" style="width:640px;max-height:88vh;overflow-y:auto">
+    <div class="mt">👤 직원별 주간 패턴 설정</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;background:var(--s2);padding:8px 12px;border-radius:8px;line-height:1.6">
+      각 직원의 기본 근무 패턴을 설정하면 <strong>🔄 이번달 자동생성</strong> 버튼으로 한 번에 채워집니다.<br>
+      이후 특정 날짜만 클릭해서 연차·특근 등 예외 처리하세요.
+    </div>
+    <div id="roster-pattern-list"></div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-roster-patterns')">닫기</button>
+      <button class="btn btn-p" onclick="saveRosterPatterns()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 날짜 셀 편집 -->
+<div class="modal" id="modal-roster-cell" style="z-index:700">
+  <div class="mbox" style="width:420px;max-height:90vh;overflow-y:auto">
+    <div class="mt" id="roster-cell-title">📅 근태 입력</div>
+    <input type="hidden" id="roster-cell-date">
+
+    <!-- 직원별 카드 목록 -->
+    <div id="roster-cell-staff-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+
+    <!-- 직원 추가 -->
+    <div style="border:1.5px dashed var(--border);border-radius:10px;padding:12px;background:var(--s2)">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">＋ 직원 추가</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="roster-add-staff" class="minp" style="flex:1;font-size:13px;min-width:120px"></select>
+        <div id="roster-add-type-btns" style="display:flex;gap:4px;flex-wrap:wrap">
+          <button onclick="setRosterAddType('오전',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #93c5fd;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700;cursor:pointer">오전</button>
+          <button onclick="setRosterAddType('오후',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #86efac;background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;cursor:pointer">오후</button>
+          <button onclick="setRosterAddType('휴무',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #fca5a5;background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:700;cursor:pointer">휴무</button>
+          <button onclick="setRosterAddType('연차',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #fde047;background:#fef9c3;color:#854d0e;font-size:11px;font-weight:700;cursor:pointer">연차</button>
+          <button onclick="setRosterAddType('반차',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #f9a8d4;background:#fce7f3;color:#9d174d;font-size:11px;font-weight:700;cursor:pointer">반차</button>
+          <button onclick="setRosterAddType('특근',this)" class="roster-addtype-btn" style="padding:4px 9px;border-radius:6px;border:1.5px solid #fdba74;background:#ffedd5;color:#9a3412;font-size:11px;font-weight:700;cursor:pointer">특근</button>
+        </div>
+      </div>
+      <!-- 시간 (프리셋+직접입력) -->
+      <div id="roster-add-time-wrap" style="margin-top:8px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px">
+          <button onclick="applyRosterPreset('09:00','18:00',this)" class="roster-preset-btn" style="padding:3px 9px;border-radius:6px;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer">09~18</button>
+          <button onclick="applyRosterPreset('10:00','19:00',this)" class="roster-preset-btn" style="padding:3px 9px;border-radius:6px;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer">10~19</button>
+          <button onclick="applyRosterPreset('13:00','21:00',this)" class="roster-preset-btn" style="padding:3px 9px;border-radius:6px;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer">13~21</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="text" id="roster-time-start" class="minp" style="width:80px;font-size:12px;font-family:'DM Mono',monospace;text-align:center" placeholder="09:00" maxlength="5">
+          <span style="color:var(--text3)">~</span>
+          <input type="text" id="roster-time-end" class="minp" style="width:80px;font-size:12px;font-family:'DM Mono',monospace;text-align:center" placeholder="18:00" maxlength="5">
+          <select id="roster-add-lunch" class="minp" style="width:90px;font-size:11px">
+            <option value="">점심-</option>
+            <option value="12시">12시</option>
+            <option value="1시">1시</option>
+            <option value="2시">2시</option>
+            <option value="4시">4시</option>
+          </select>
+        </div>
+      </div>
+      <input class="minp" id="roster-add-memo" placeholder="메모 (선택)" style="margin-top:6px;font-size:12px">
+      <button onclick="rosterAddStaffToCell()" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer">추가</button>
+    </div>
+
+    <!-- 공지 -->
+    <div style="margin-top:12px">
+      <div class="ml">📌 날짜 공지</div>
+      <input class="minp" id="roster-notice-inline" placeholder="예: 최소 3명 이상 근무 필수 / 강남 휴진 등..." style="margin-top:6px;font-size:12px">
+      <div id="roster-min-staff-wrap" style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <span style="font-size:12px;color:var(--text2);font-weight:600">최소 근무 인원</span>
+        <input type="number" id="roster-min-staff" min="0" max="10" placeholder="0" style="width:60px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+        <span style="font-size:11px;color:var(--text3)">명 이상</span>
+      </div>
+    </div>
+
+    <div class="mbtns" style="margin-top:14px">
+      <button class="btn btn-g" onclick="closeModal('modal-roster-cell')">닫기</button>
+      <button class="btn btn-p" onclick="saveRosterCellAll()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 근태관리 GAS 설정 -->
+<div class="modal" id="modal-roster-settings" style="z-index:700">
+  <div class="mbox" style="width:460px">
+    <div class="mt">⚙️ 근태관리 설정</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.7;background:var(--s2);padding:10px 12px;border-radius:8px;margin-bottom:12px">
+      Google Apps Script 웹 앱 URL을 입력하면 구글시트에 자동 저장됩니다.<br>
+      <span style="color:var(--accent)">GAS 배포 → 웹앱 URL 복사 후 붙여넣기</span>
+    </div>
+    <div class="ml">GAS 웹앱 URL</div>
+    <input class="minp" id="roster-gas-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:12px;margin-top:6px">
+    <div class="ml" style="margin-top:10px">스프레드시트 ID</div>
+    <input class="minp" id="roster-sheet-id" placeholder="구글시트 URL의 /d/.../ 부분" style="font-size:12px;margin-top:6px">
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-roster-settings')">취소</button>
+      <button class="btn btn-p" onclick="saveRosterSettings()">저장</button>
+    </div>
   </div>
 </div>
 
@@ -1673,6 +1985,11 @@ td:first-child{text-align:left;padding-left:13px}
 
     <div class="ml">메모 (선택)</div>
     <textarea class="minp" id="cf-memo" rows="2" placeholder="특이사항..." style="resize:none;margin-top:4px"></textarea>
+
+    <!-- 랜딩페이지 빠른 검색 버튼 -->
+    <button onclick="openLandingSearchModal()" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;border:1.5px solid #2563eb44;background:rgba(37,99,235,.05);color:#2563eb;font-size:12px;font-weight:700;cursor:pointer;text-align:left">
+      🔗 랜딩페이지 검색 <span style="font-weight:400;opacity:.7">(시술 URL 빠르게 찾기)</span>
+    </button>
 
     </div><!-- /below-branch-wrap -->
 
@@ -2733,10 +3050,12 @@ function go(pid,el){
   else if(pid==='funnel') renderFunnel();
   else if(pid==='roi') renderRoi();
   else if(pid==='branches') renderBranchMgmt();
-  else if(pid==='notes') renderNotes();
+  else if(pid==='notes'){ renderNotes(); loadLandingData(); }
   else if(pid==='marketing') initMarketingPage();
   else if(pid==='voc') initVocPage();
   else if(pid==='mymemo') loadMyMemos();
+  else if(pid==='duty'){ loadDutyData(); renderDutyPage(); }
+  else if(pid==='roster'){ rosterSyncLoad().then(()=>renderRosterCalendar()); renderRosterCalendar(); }
 }
 function goSI(sid,el){
   // 본인 또는 관리자만 접근 가능
@@ -3971,6 +4290,12 @@ function renderStaffMgmt(){
         </select>
       </td>
       <td style="padding:10px 14px">
+        <input type="text" id="sjoin-${s.id}" value="${escHtml((_leaveData[s.name]||{}).joinDate||'')}"
+          placeholder="YYYY-MM-DD" maxlength="10"
+          style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;width:110px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace"
+          oninput="staffFieldChange('${s.id}')">
+      </td>
+      <td style="padding:10px 14px">
         <div style="display:flex;align-items:center;gap:7px">
           <input type="password" placeholder="새 비밀번호" maxlength="20"
             style="width:110px;border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace"
@@ -3992,6 +4317,7 @@ function renderStaffMgmt(){
           <tr style="background:var(--s2);border-bottom:2px solid var(--border)">
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">이름</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">직책</th>
+            <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">입사일</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">비밀번호</th>
             <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">저장/삭제</th>
           </tr>
@@ -4250,10 +4576,25 @@ function staffFieldChange(sid){
 function saveStaffRow(sid){
   const nameEl=document.getElementById('sname-'+sid);
   const roleEl=document.getElementById('srole-'+sid);
+  const joinEl=document.getElementById('sjoin-'+sid);
   const s=S.staff.find(x=>x.id===sid);
   if(!s) return;
+  const oldName = s.name;
   if(nameEl) s.name=nameEl.value.trim()||s.name;
   if(roleEl) s.role=roleEl.value;
+  // 입사일 → _leaveData에 저장
+  if(joinEl){
+    const joinDate = joinEl.value.trim();
+    const targetName = s.name; // 이름 변경됐을 수 있으므로 새 이름 기준
+    if(!_leaveData[targetName]) _leaveData[targetName]={joinDate:'',totalOverride:null,carryover:{}};
+    _leaveData[targetName].joinDate = joinDate;
+    // 이름이 바뀐 경우 oldName 데이터 이전
+    if(oldName !== targetName && _leaveData[oldName]){
+      _leaveData[targetName] = {..._leaveData[oldName], joinDate};
+      delete _leaveData[oldName];
+    }
+    saveLeaveData();
+  }
   markConfigDirty();
   localStorage.setItem('mclinic_v2',JSON.stringify(S));
   syncPush(true);
@@ -9464,7 +9805,7 @@ function renderTrendProcBrChart(){
       else pData[pid].gu+=n;
     });
   });
-  const sorted=Object.entries(pData).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
+  const sorted=Object.entries(pData).filter(([pid])=>S.procedures.find(x=>x.id===pid)).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
 
   if(!sorted.length){
     document.getElementById('trend-proc-br-chart').innerHTML=`<div style="color:var(--text3);font-size:12px;padding:8px">${branch?.name}점 데이터 없음</div>`;
@@ -11719,7 +12060,7 @@ function renderTrendProcBrChart(){
       else pData[pid].gu+=n;
     });
   });
-  const sorted=Object.entries(pData).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
+  const sorted=Object.entries(pData).filter(([pid])=>S.procedures.find(x=>x.id===pid)).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
 
   if(!sorted.length){
     document.getElementById('trend-proc-br-chart').innerHTML=`<div style="color:var(--text3);font-size:12px;padding:8px">${branch?.name}점 데이터 없음</div>`;
@@ -18379,6 +18720,1266 @@ async function deleteSiMemo(sid, id){
   });
 }
 
+
+// ═══════════════════════════════════
+// 분담업무 (Duty)
+// ═══════════════════════════════════
+const DUTY_DEFAULT = {
+  backupOrder: '수비 → 지영 → 지혜 → 선미',
+  sections: [
+    {
+      id: 'duty1',
+      title: '■ 분담1',
+      staff: '오수비',
+      backup: '지혜',
+      items: [
+        '비수신 부재 / 디자인팀 비용 답변',
+        '※분담1 담당자 점심시간에는 분담3 담당자가 비수신콜만 백업합니다.',
+      ],
+      highlight: false,
+    },
+    {
+      id: 'duty2',
+      title: '■ 분담2',
+      staff: '김지영',
+      staffNote: '전화 끄고 해주세요',
+      backup: '지혜',
+      items: [
+        '카톡1/ 카톡2 [카톡 34는 한가할때만 보기] + 부평카톡채널',
+        '네이버예약/ 챗봇 - (진료일정 여원장님에 따라 네이버예약칸 막기)',
+      ],
+      highlight: false,
+    },
+    {
+      id: 'duty3',
+      title: '■ 분담3',
+      staff: '엄선미',
+      backup: '수비',
+      items: [
+        '울써세, 공휴일 예약현황 보고',
+        '씨알엠 2주 체크 / 미예약생성',
+        '점심시간 비수신백업',
+      ],
+      highlight: false,
+    },
+    {
+      id: 'duty4',
+      title: '■ 분담4',
+      staff: '',
+      backup: '',
+      items: [
+        '업무폰1+광고+ 사무실 음악 ON — 오수비 휴무시 지영/지혜',
+        '업무폰2 — 하리',
+        '업무폰3 — 선미',
+        '업무폰4 — 지영',
+        '업무폰5 — 지혜 (개통안되어서 대기중)',
+      ],
+      highlight: false,
+    },
+    {
+      id: 'duty_after6',
+      title: '■ 6시 이후',
+      staff: '',
+      backup: '',
+      items: [
+        '6시 퇴근후 남는 분담업무 오후마감자가 해주세요',
+        '담당자 없다면 > 비수신 오후마감자 / 카톡 10시조',
+      ],
+      highlight: false,
+    },
+    {
+      id: 'duty_clean',
+      title: '■ 청소',
+      staff: '엄선미',
+      staffNote: '담당자',
+      backup: '',
+      items: [
+        '청소시간: 토요일 3시~5시 / 토요일 휴무시 금요일 4~6시 사이',
+        '금 or 토 휴무시 / 2~3일 이상 연차시 미리 해주세요',
+        '콜팀사무실/비품실/대표님실/메인피시실 — 바닥쓸고 닦기 / 2주에 1회',
+        '종이 분리수거 꽉차면 버리기 / 새비닐 세팅까지',
+        '전자렌지 냉장고 커피머신기위 비품실 선반 물티슈로 닦기',
+        '주 1~2회 커피머신기 물·원두채움 / 물받침대 찌꺼기 버리기',
+      ],
+      highlight: false,
+    },
+  ]
+};
+
+let _dutyData = null;
+let _dutyMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+
+function dutyStorageKey(month){ return `duty_data_${month||_dutyMonth}`; }
+
+function loadDutyData(){
+  const key = dutyStorageKey(_dutyMonth);
+  try{
+    const saved = localStorage.getItem(key);
+    if(saved){
+      _dutyData = JSON.parse(saved);
+    } else {
+      // 새 달: 이전 달 데이터 복사해서 시작 (월만 바꿔서)
+      const prevMonth = getPrevMonth(_dutyMonth);
+      const prevSaved = localStorage.getItem(dutyStorageKey(prevMonth));
+      if(prevSaved){
+        _dutyData = JSON.parse(prevSaved);
+        _dutyData.month = _dutyMonth; // 월만 현재달로
+      } else {
+        _dutyData = JSON.parse(JSON.stringify(DUTY_DEFAULT));
+        _dutyData.month = _dutyMonth;
+      }
+    }
+  }catch(e){
+    _dutyData = JSON.parse(JSON.stringify(DUTY_DEFAULT));
+    _dutyData.month = _dutyMonth;
+  }
+}
+
+function getPrevMonth(ym){
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function dutyLocalSave(){
+  const key = dutyStorageKey(_dutyData?.month || _dutyMonth);
+  try{ localStorage.setItem(key, JSON.stringify(_dutyData)); }catch(e){}
+}
+
+const SECTION_COLORS = [
+  {bg:'#eff6ff',border:'#bfdbfe',title:'#1d4ed8'},
+  {bg:'#f0fdf4',border:'#bbf7d0',title:'#15803d'},
+  {bg:'#faf5ff',border:'#e9d5ff',title:'#7c3aed'},
+  {bg:'#fff7ed',border:'#fed7aa',title:'#c2410c'},
+  {bg:'#f8fafc',border:'#e2e8f0',title:'#475569'},
+  {bg:'#fdf2f8',border:'#fbcfe8',title:'#9d174d'},
+];
+
+function dutyMoveMonth(delta){
+  const [y,m] = _dutyMonth.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  _dutyMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  _dutyData = null;
+  loadDutyData();
+  renderDutyPage();
+}
+
+function dutyGoThisMonth(){
+  _dutyMonth = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  _dutyData = null;
+  loadDutyData();
+  renderDutyPage();
+}
+
+function renderDutyPage(){
+  const el = document.getElementById('duty-content'); if(!el) return;
+  if(!_dutyData) loadDutyData();
+
+  // 월 표시 업데이트
+  const monthDisp = document.getElementById('duty-month-display');
+  if(monthDisp) monthDisp.textContent = _dutyData.month || _dutyMonth;
+  const sub = document.getElementById('duty-ps');
+  if(sub) sub.textContent = `${_dutyData.month||_dutyMonth} · 백업순서: ${_dutyData.backupOrder||'수비 → 지영 → 지혜 → 선미'}`;
+
+  el.innerHTML = _dutyData.sections.map((sec, si) => {
+    const clr = SECTION_COLORS[si % SECTION_COLORS.length];
+    const staffLine = sec.staff
+      ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:15px;font-weight:900;color:${clr.title}">${escHtml(sec.staff)}</span>
+          ${sec.staffNote ? `<span style="font-size:11px;color:var(--text3)">${escHtml(sec.staffNote)}</span>` : ''}
+          ${sec.backup ? `<span style="font-size:11px;color:var(--text3);margin-left:4px">└ 백업 : <strong style="color:var(--text2)">${escHtml(sec.backup)}</strong></span>` : ''}
+        </div>` : '';
+
+    const itemsHtml = sec.items.map((item, ii) => {
+      const isWarn = item.startsWith('※');
+      return `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid ${clr.border}80;align-items:flex-start">
+        ${!isWarn ? `<span style="font-size:11px;font-weight:700;color:${clr.title};min-width:16px;margin-top:1px">${ii+1}</span>` : '<span style="min-width:16px"></span>'}
+        <span style="font-size:12px;line-height:1.6;color:${isWarn?'#dc2626':'var(--text2)'};font-weight:${isWarn?'600':'400'}">${escHtml(item)}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="background:${clr.bg};border:1.5px solid ${clr.border};border-radius:12px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:900;color:${clr.title};margin-bottom:8px">${escHtml(sec.title)}</div>
+      ${staffLine}
+      <div>${itemsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 수정 모달 ──
+function openDutyEdit(){
+  if(!_dutyData) loadDutyData();
+  renderDutyEditForm();
+  document.getElementById('modal-duty-edit').classList.add('open');
+}
+
+function renderDutyEditForm(){
+  const form = document.getElementById('duty-edit-form'); if(!form) return;
+
+  // 헤더: 월 + 백업순서
+  const header = `
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600">해당 월 (YYYY-MM)</div>
+          <input id="duty-month-inp" value="${escHtml(_dutyData.month||_dutyMonth)}" class="minp" style="font-size:13px;font-family:'DM Mono',monospace" placeholder="2026-03">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600">백업 순서</div>
+          <input id="duty-backup-order-inp" value="${escHtml(_dutyData.backupOrder||'')}" class="minp" style="font-size:12px" placeholder="수비 → 지영 → 지혜 → 선미">
+        </div>
+      </div>
+    </div>`;
+
+  const sections = _dutyData.sections.map((sec, si) => {
+    const clr = SECTION_COLORS[si % SECTION_COLORS.length];
+    const itemInputs = sec.items.map((item, ii) =>
+      `<div id="duty-item-row-${si}-${ii}" style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--text3);min-width:16px">${ii+1}</span>
+        <input id="duty-edit-item-${si}-${ii}" value="${escHtml(item)}" class="minp" style="flex:1;font-size:12px">
+        <button onclick="dutyDeleteItem(${si},${ii})" style="border:none;background:rgba(220,38,38,.1);color:#dc2626;border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;font-weight:700;flex-shrink:0">✕</button>
+      </div>`
+    ).join('');
+
+    return `<div id="duty-sec-${si}" style="background:${clr.bg};border:1.5px solid ${clr.border};border-radius:10px;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <input id="duty-edit-title-${si}" value="${escHtml(sec.title)}" class="minp" style="font-size:13px;font-weight:800;color:${clr.title};flex:1;margin-right:8px">
+        <button onclick="dutyDeleteSection(${si})" style="border:none;background:rgba(220,38,38,.1);color:#dc2626;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">🗑 섹션삭제</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600">담당자</div>
+          <input id="duty-edit-staff-${si}" value="${escHtml(sec.staff||'')}" class="minp" style="width:100%;font-size:13px;font-weight:700">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600">담당자 메모</div>
+          <input id="duty-edit-staffnote-${si}" value="${escHtml(sec.staffNote||'')}" class="minp" style="width:100%;font-size:12px" placeholder="예: 전화 끄고 해주세요">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600">백업</div>
+          <input id="duty-edit-backup-${si}" value="${escHtml(sec.backup||'')}" class="minp" style="width:100%;font-size:12px">
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:5px;font-weight:600">업무 항목</div>
+      <div id="duty-items-wrap-${si}">${itemInputs}</div>
+      <button onclick="dutyAddItem(${si})" style="margin-top:6px;width:100%;padding:5px;border:1.5px dashed ${clr.border};background:transparent;color:${clr.title};border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">＋ 항목 추가</button>
+    </div>`;
+  }).join('');
+
+  const addSectionBtn = `
+    <button onclick="dutyAddSection()" style="width:100%;padding:10px;border:2px dashed var(--border2);background:transparent;color:var(--text2);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">＋ 분담 섹션 추가</button>
+    <button onclick="dutyResetToDefault()" style="width:100%;padding:8px;border:1px solid var(--border);background:var(--s2);color:var(--text3);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:6px">↺ 기본값으로 초기화</button>`;
+
+  form.innerHTML = header + `<div id="duty-sections-wrap" style="display:flex;flex-direction:column;gap:10px">${sections}</div>` + addSectionBtn;
+}
+
+// 항목 추가
+function dutyAddItem(si){
+  collectDutyFormToData();
+  _dutyData.sections[si].items.push('');
+  renderDutyEditForm();
+  // 새로 추가된 마지막 input에 포커스
+  const items = document.querySelectorAll(`[id^="duty-edit-item-${si}-"]`);
+  if(items.length) items[items.length-1].focus();
+}
+
+// 항목 삭제
+function dutyDeleteItem(si, ii){
+  collectDutyFormToData();
+  _dutyData.sections[si].items.splice(ii, 1);
+  renderDutyEditForm();
+}
+
+// 섹션 추가
+function dutyAddSection(){
+  collectDutyFormToData();
+  _dutyData.sections.push({
+    id: 'duty_new_'+Date.now(),
+    title: '■ 새 분담',
+    staff: '',
+    staffNote: '',
+    backup: '',
+    items: [''],
+  });
+  renderDutyEditForm();
+  // 새 섹션으로 스크롤
+  setTimeout(()=>{
+    const last = document.getElementById(`duty-sec-${_dutyData.sections.length-1}`);
+    if(last) last.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
+}
+
+// 섹션 삭제
+function dutyDeleteSection(si){
+  if(_dutyData.sections.length <= 1){ toast('⚠️ 최소 1개 섹션은 필요해요'); return; }
+  showConfirmToast(`🗑 "${_dutyData.sections[si].title}" 섹션을 삭제할까요?`, ()=>{
+    collectDutyFormToData();
+    _dutyData.sections.splice(si, 1);
+    renderDutyEditForm();
+    toast('🗑 섹션 삭제됨');
+  });
+}
+
+// 기본값 초기화
+function dutyResetToDefault(){
+  showConfirmToast('↺ 기본값으로 초기화할까요? 현재 내용이 사라집니다.', ()=>{
+    _dutyData = JSON.parse(JSON.stringify(DUTY_DEFAULT));
+    _dutyData.month = _dutyMonth;
+    renderDutyEditForm();
+    toast('↺ 초기화됨');
+  });
+}
+
+// 폼 → _dutyData 동기화 (저장 전 중간 수집)
+function collectDutyFormToData(){
+  const monthEl = document.getElementById('duty-month-inp');
+  const orderEl = document.getElementById('duty-backup-order-inp');
+  if(monthEl) _dutyData.month = monthEl.value.trim();
+  if(orderEl) _dutyData.backupOrder = orderEl.value.trim();
+
+  _dutyData.sections.forEach((sec, si) => {
+    const titleEl   = document.getElementById(`duty-edit-title-${si}`);
+    const staffEl   = document.getElementById(`duty-edit-staff-${si}`);
+    const backupEl  = document.getElementById(`duty-edit-backup-${si}`);
+    const noteEl    = document.getElementById(`duty-edit-staffnote-${si}`);
+    if(titleEl)  sec.title    = titleEl.value;
+    if(staffEl)  sec.staff    = staffEl.value;
+    if(backupEl) sec.backup   = backupEl.value;
+    if(noteEl)   sec.staffNote= noteEl.value;
+    const itemEls = document.querySelectorAll(`[id^="duty-edit-item-${si}-"]`);
+    sec.items = Array.from(itemEls).map(el=>el.value.trim()).filter(v=>v!==undefined);
+  });
+}
+
+// 저장
+function saveDutyData(){
+  collectDutyFormToData();
+  dutyLocalSave();
+  closeModal('modal-duty-edit');
+  renderDutyPage();
+  toast('✅ 분담업무 저장됨');
+}
+
+// ═══════════════════════════════════
+// 랜딩페이지
+// ═══════════════════════════════════
+let _landingData = [];       // 전체 캐시
+let _landingGasUrl = '';
+
+function loadLandingSettings(){
+  _landingGasUrl = localStorage.getItem('landing_gas_url')||'';
+}
+
+function saveLandingSettings(){
+  const url = document.getElementById('landing-gas-url').value.trim();
+  _landingGasUrl = url;
+  localStorage.setItem('landing_gas_url', url);
+  closeModal('modal-landing-settings');
+  if(url) loadLandingData(true);
+  else toast('⚠️ GAS URL을 입력하세요');
+}
+
+function openLandingSettings(){
+  document.getElementById('landing-gas-url').value = _landingGasUrl;
+  document.getElementById('modal-landing-settings').classList.add('open');
+}
+
+async function loadLandingData(force=false){
+  const statusEl = document.getElementById('landing-status');
+  const listEl   = document.getElementById('landing-list');
+
+  // 캐시 확인
+  if(!force && _landingData.length){
+    renderLandingList();
+    return;
+  }
+
+  // 로컬 캐시
+  if(!force){
+    try{
+      const cached = localStorage.getItem('landing_cache');
+      if(cached){ _landingData = JSON.parse(cached); renderLandingList(); return; }
+    }catch(e){}
+  }
+
+  if(!_landingGasUrl){
+    if(statusEl){ statusEl.style.display='block'; statusEl.style.background='rgba(234,179,8,.1)'; statusEl.style.color='#854d0e'; statusEl.textContent='⚙️ GAS URL을 설정해주세요'; }
+    return;
+  }
+
+  if(statusEl){ statusEl.style.display='block'; statusEl.style.background='rgba(37,99,235,.07)'; statusEl.style.color='var(--accent)'; statusEl.textContent='⏳ 불러오는 중...'; }
+  if(listEl) listEl.innerHTML='';
+
+  try{
+    const res = await fetch(`${_landingGasUrl}?action=getLanding`);
+    const json = await res.json();
+    if(json.ok && json.data){
+      _landingData = json.data;
+      localStorage.setItem('landing_cache', JSON.stringify(_landingData));
+      if(statusEl){ statusEl.textContent=`✅ ${json.total}개 항목 로드됨`; statusEl.style.color='var(--green)'; }
+      setTimeout(()=>{ if(statusEl) statusEl.style.display='none'; }, 3000);
+      renderLandingList();
+    } else {
+      throw new Error(json.error||'불러오기 실패');
+    }
+  }catch(e){
+    if(statusEl){ statusEl.textContent='⚠️ 불러오기 실패: '+e.message; statusEl.style.color='var(--red)'; }
+  }
+}
+
+function renderLandingList(){
+  const q    = (document.getElementById('landing-search')?.value||'').toLowerCase();
+  const sheetF = document.getElementById('landing-sheet-filter')?.value||'';
+  const listEl = document.getElementById('landing-list');
+  const badge  = document.getElementById('landing-count-badge');
+  if(!listEl) return;
+
+  // 시트 필터 옵션 채우기
+  const sheetSel = document.getElementById('landing-sheet-filter');
+  if(sheetSel && sheetSel.options.length <= 1){
+    const sheets = [...new Set(_landingData.map(d=>d.sheet))];
+    sheets.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; sheetSel.appendChild(o); });
+  }
+
+  const filtered = _landingData.filter(d=>{
+    const matchQ = !q || d.name.toLowerCase().includes(q) || (d.extra||'').toLowerCase().includes(q);
+    const matchS = !sheetF || d.sheet === sheetF;
+    return matchQ && matchS;
+  });
+
+  if(badge){ badge.style.display='inline'; badge.textContent=`${filtered.length}개`; }
+
+  if(!filtered.length){
+    listEl.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);font-size:13px">${_landingData.length?'검색 결과 없음':'GAS URL을 설정하고 새로고침을 눌러주세요'}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.slice(0,60).map(d=>{
+    const shortUrl = d.url.replace(/https?:\/\/(www\.)?/,'').slice(0,40);
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:#0f172a">${escHtml(d.name)}</div>
+          ${d.extra?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${escHtml(d.extra.slice(0,60))}${d.extra.length>60?'...':''}</div>`:''}
+        </div>
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--s2);color:var(--text3);white-space:nowrap;flex-shrink:0">${escHtml(d.sheet)}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <a href="${escHtml(d.url)}" target="_blank" style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortUrl}</a>
+        <button onclick="copyLandingUrl('${escHtml(d.url)}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:5px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0">복사</button>
+        <a href="${escHtml(d.url)}" target="_blank" style="border:none;background:var(--accent);color:#fff;border-radius:5px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0">열기 →</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(filtered.length > 60){
+    listEl.innerHTML += `<div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--text3);font-size:11px">... 검색어를 입력하면 더 정확하게 찾을 수 있어요 (전체 ${filtered.length}개 중 60개 표시)</div>`;
+  }
+}
+
+// 콜 모달에서 빠른 검색
+function openLandingSearchModal(){
+  const el = document.getElementById('modal-landing-search');
+  if(!el) return;
+  const searchEl = document.getElementById('landing-modal-search');
+  if(searchEl){ searchEl.value=''; searchEl.focus(); }
+  renderLandingModal();
+  el.classList.add('open');
+}
+
+function renderLandingModal(){
+  const q = (document.getElementById('landing-modal-search')?.value||'').toLowerCase().trim();
+  const listEl = document.getElementById('landing-modal-list');
+  if(!listEl) return;
+
+  if(!_landingData.length){
+    listEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">랜딩페이지 데이터가 없어요.<br>수가표·병원정보 페이지 → ⚙️ GAS 설정 후 불러오기 해주세요.</div>`;
+    return;
+  }
+
+  if(!q){
+    listEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">시술명을 입력하세요</div>`;
+    return;
+  }
+
+  const filtered = _landingData.filter(d=>
+    d.name.toLowerCase().includes(q)||(d.extra||'').toLowerCase().includes(q)
+  ).slice(0,20);
+
+  if(!filtered.length){
+    listEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">검색 결과 없음</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(d=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:9px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:800;color:#0f172a">${escHtml(d.name)}</div>
+        ${d.extra?`<div style="font-size:10px;color:var(--text3);margin-top:1px">${escHtml(d.extra.slice(0,50))}</div>`:''}
+        <div style="font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.url.replace(/https?:\/\/(www\.)?/,'').slice(0,45)}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onclick="copyLandingUrl('${escHtml(d.url)}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">복사</button>
+        <a href="${escHtml(d.url)}" target="_blank" style="border:none;background:var(--accent);color:#fff;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none">열기 →</a>
+      </div>
+    </div>`).join('');
+}
+
+function copyLandingUrl(url){
+  navigator.clipboard.writeText(url).then(()=>toast('✅ URL 복사됨')).catch(()=>{
+    const el=document.createElement('textarea');
+    el.value=url; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    toast('✅ URL 복사됨');
+  });
+}
+
+// ═══════════════════════════════════
+// 직원 근태관리 (Roster)
+// ═══════════════════════════════════
+let _rosterYear  = new Date().getFullYear();
+let _rosterMonth = new Date().getMonth();
+let _rosterData  = {}; // { 'YYYY-MM-DD': { entries:[{staff,type,start,end,lunch,memo}], notice:'', minStaff:0 } }
+let _rosterPatterns = {}; // { staffName: { 0:null, 1:{type,start,end,lunch}, ... } } 0=일, 1=월, ...
+let _rosterGasUrl   = '';
+let _rosterSheetId  = '';
+let _rosterCellDate = null;
+let _rosterAddType  = '오전';
+
+const ROSTER_TYPE_STYLE = {
+  '오전':   {bg:'#dbeafe',color:'#1d4ed8',border:'#93c5fd'},
+  '오후':   {bg:'#dcfce7',color:'#15803d',border:'#86efac'},
+  '풀타임': {bg:'#ede9fe',color:'#6d28d9',border:'#c4b5fd'},
+  '휴무':   {bg:'#fee2e2',color:'#b91c1c',border:'#fca5a5'},
+  '연차':   {bg:'#fef9c3',color:'#854d0e',border:'#fde047'},
+  '반차':   {bg:'#fce7f3',color:'#9d174d',border:'#f9a8d4'},
+  '특근':   {bg:'#ffedd5',color:'#9a3412',border:'#fdba74'},
+};
+
+const DOW_KR = ['일','월','화','수','목','금','토'];
+
+function loadRosterSettings(){
+  try{
+    _rosterGasUrl    = localStorage.getItem('roster_gas_url')||'';
+    _rosterSheetId   = localStorage.getItem('roster_sheet_id')||'';
+    const saved      = localStorage.getItem('roster_data');
+    const savedPat   = localStorage.getItem('roster_patterns');
+    if(saved)    _rosterData     = JSON.parse(saved);
+    if(savedPat) _rosterPatterns = JSON.parse(savedPat);
+  }catch(e){}
+}
+
+function saveRosterSettings(){
+  const url = document.getElementById('roster-gas-url').value.trim();
+  const sid = document.getElementById('roster-sheet-id').value.trim();
+  _rosterGasUrl  = url;
+  _rosterSheetId = sid;
+  localStorage.setItem('roster_gas_url', url);
+  localStorage.setItem('roster_sheet_id', sid);
+  closeModal('modal-roster-settings');
+  toast('✅ 설정 저장됨');
+}
+
+function openRosterSettings(){
+  document.getElementById('roster-gas-url').value  = _rosterGasUrl;
+  document.getElementById('roster-sheet-id').value = _rosterSheetId;
+  document.getElementById('modal-roster-settings').classList.add('open');
+}
+
+function rosterPrevMonth(){
+  _rosterMonth--;
+  if(_rosterMonth<0){_rosterMonth=11;_rosterYear--;}
+  renderRosterCalendar();
+}
+function rosterNextMonth(){
+  _rosterMonth++;
+  if(_rosterMonth>11){_rosterMonth=0;_rosterYear++;}
+  renderRosterCalendar();
+}
+function rosterThisMonth(){
+  const now=new Date();
+  _rosterYear=now.getFullYear(); _rosterMonth=now.getMonth();
+  renderRosterCalendar();
+}
+
+// ── 패턴 설정 모달 ──
+function openRosterPatterns(){
+  const el = document.getElementById('roster-pattern-list'); if(!el) return;
+  const staffNames = S.staff.map(s=>s.name);
+  el.innerHTML = staffNames.map(name=>{
+    const pat = _rosterPatterns[name]||{};
+    const presets = [
+      {v:'',label:'없음',bg:'#f1f5f9',clr:'#64748b'},
+      {v:'오전',label:'오전',bg:'#dbeafe',clr:'#1d4ed8'},
+      {v:'오후',label:'오후',bg:'#dcfce7',clr:'#15803d'},
+      {v:'휴무',label:'휴무',bg:'#fee2e2',clr:'#b91c1c'},
+    ];
+    const dayBtns = [0,1,2,3,4,5,6].map(dow=>{
+      const cur = pat[dow]?.type||'';
+      return `<div style="text-align:center">
+        <div style="font-size:9px;color:var(--text3);font-weight:700;margin-bottom:3px">${DOW_KR[dow]}</div>
+        <select onchange="setRosterPatternDay('${name}',${dow},this.value)" style="width:54px;padding:3px 2px;border:1px solid var(--border);border-radius:6px;background:var(--s2);color:var(--text);font-size:10px;font-weight:700">
+          ${presets.map(p=>`<option value="${p.v}" ${cur===p.v?'selected':''}>${p.label}</option>`).join('')}
+        </select>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px">👤 ${name}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${dayBtns}</div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text2);font-weight:600">기본 시간</span>
+        <input type="text" id="rpat-start-${name.replace(/\s/g,'_')}" value="${pat.defaultStart||'09:00'}" placeholder="09:00" maxlength="5" style="width:75px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--s2);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;text-align:center">
+        <span style="color:var(--text3)">~</span>
+        <input type="text" id="rpat-end-${name.replace(/\s/g,'_')}" value="${pat.defaultEnd||'18:00'}" placeholder="18:00" maxlength="5" style="width:75px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--s2);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;text-align:center">
+        <select id="rpat-lunch-${name.replace(/\s/g,'_')}" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--s2);color:var(--text);font-size:11px">
+          <option value="" ${!pat.defaultLunch?'selected':''}>점심-</option>
+          <option value="12시" ${pat.defaultLunch==='12시'?'selected':''}>12시</option>
+          <option value="1시" ${pat.defaultLunch==='1시'?'selected':''}>1시</option>
+          <option value="2시" ${pat.defaultLunch==='2시'?'selected':''}>2시</option>
+          <option value="4시" ${pat.defaultLunch==='4시'?'selected':''}>4시</option>
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-roster-patterns').classList.add('open');
+}
+
+function setRosterPatternDay(name, dow, val){
+  if(!_rosterPatterns[name]) _rosterPatterns[name]={};
+  if(val==='') delete _rosterPatterns[name][dow];
+  else _rosterPatterns[name][dow] = {type:val};
+}
+
+function saveRosterPatterns(){
+  S.staff.forEach(s=>{
+    const key = s.name.replace(/\s/g,'_');
+    if(!_rosterPatterns[s.name]) _rosterPatterns[s.name]={};
+    const startEl = document.getElementById(`rpat-start-${key}`);
+    const endEl   = document.getElementById(`rpat-end-${key}`);
+    const lunchEl = document.getElementById(`rpat-lunch-${key}`);
+    if(startEl) _rosterPatterns[s.name].defaultStart = startEl.value;
+    if(endEl)   _rosterPatterns[s.name].defaultEnd   = endEl.value;
+    if(lunchEl) _rosterPatterns[s.name].defaultLunch = lunchEl.value;
+  });
+  try{ localStorage.setItem('roster_patterns', JSON.stringify(_rosterPatterns)); }catch(e){}
+  closeModal('modal-roster-patterns');
+  toast('✅ 패턴 저장됨');
+}
+
+// ── 자동 생성 ──
+function rosterAutoGenerate(){
+  const yr=_rosterYear, mo=_rosterMonth;
+  const lastDate = new Date(yr,mo+1,0).getDate();
+  let count=0;
+  for(let d=1;d<=lastDate;d++){
+    const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow=new Date(ds+'T00:00:00').getDay();
+    // 기존 데이터 있으면 entries는 유지하고 패턴으로 보완
+    if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:'',minStaff:0};
+    const existingStaff = new Set((_rosterData[ds].entries||[]).map(e=>e.staff));
+
+    S.staff.forEach(s=>{
+      const pat = _rosterPatterns[s.name];
+      if(!pat) return;
+      const dayPat = pat[dow];
+      if(!dayPat || !dayPat.type) return;
+      if(existingStaff.has(s.name)) return; // 이미 있으면 스킵
+      _rosterData[ds].entries.push({
+        staff: s.name,
+        type:  dayPat.type,
+        start: pat.defaultStart||'09:00',
+        end:   pat.defaultEnd||'18:00',
+        lunch: pat.defaultLunch||'',
+        memo:  '',
+      });
+      count++;
+    });
+  }
+  rosterLocalSave();
+  renderRosterCalendar();
+  toast(`✅ ${count}개 항목 자동생성 완료`);
+}
+
+// ── 달력 렌더 ──
+function renderRosterCalendar(){
+  const yr=_rosterYear, mo=_rosterMonth;
+  document.getElementById('roster-month-label').textContent=`${yr}년 ${mo+1}월`;
+  document.getElementById('roster-subtitle').textContent=`예약부 월간 근태 현황 · ${yr}년 ${mo+1}월`;
+
+  const firstDay=new Date(yr,mo,1).getDay();
+  const lastDate=new Date(yr,mo+1,0).getDate();
+  const DOW=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const today=todayStr();
+
+  let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>`;
+  DOW.forEach((d,i)=>{
+    const clr=i===0?'#ef4444':i===6?'#3b82f6':'#374151';
+    html+=`<th style="padding:6px 4px;font-size:11px;font-weight:700;color:${clr};background:#f8fafc;border:1px solid #e2e8f0;text-align:center">${d}</th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+
+  let day=1, row=0;
+  while(day<=lastDate){
+    html+=`<tr>`;
+    for(let col=0;col<7;col++){
+      const isBlank=(row===0&&col<firstDay)||day>lastDate;
+      if(isBlank){ html+=`<td style="border:1px solid #e2e8f0;background:#fafafa;min-height:90px;vertical-align:top;padding:4px"></td>`; continue; }
+      const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dayData=_rosterData[ds]||{};
+      const entries=dayData.entries||[];
+      const notice=dayData.notice||'';
+      const minStaff=dayData.minStaff||0;
+      const isToday=ds===today;
+      const isSun=col===0, isSat=col===6;
+      const numClr=isSun?'#ef4444':isSat?'#3b82f6':'#374151';
+
+      const tags=entries.map((e,i)=>{
+        const st=ROSTER_TYPE_STYLE[e.type]||ROSTER_TYPE_STYLE['풀타임'];
+        const timeStr=e.start&&e.end?` ${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
+        const lunchStr=e.lunch?` 점심${e.lunch}`:'';
+        return `<div onclick="openRosterCellModal('${ds}')" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:10px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.type}${timeStr}${lunchStr}">
+          ${e.staff} <span style="font-weight:500;opacity:.8">${e.type}</span>${e.memo?` <span style="font-size:9px;opacity:.7">📝</span>`:''}
+        </div>`;
+      }).join('');
+
+      const noticeHtml=notice?`<div onclick="openRosterCellModal('${ds}')" style="margin-top:2px;padding:2px 5px;border-radius:4px;background:#fef08a;color:#713f12;border:1px solid #fde047;font-size:9px;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📌 ${escHtml(notice)}</div>`:'';
+      const minHtml=minStaff>0?`<div style="font-size:8px;color:#dc2626;font-weight:700;text-align:right;margin-top:1px">최소 ${minStaff}명↑</div>`:'';
+
+      // 인원 수 부족 경고
+      const realCount=entries.filter(e=>!['휴무','연차'].includes(e.type)).length;
+      const warnBorder=minStaff>0&&realCount<minStaff?'2px solid #ef4444':'1px solid #e2e8f0';
+
+      html+=`<td style="border:${warnBorder};background:${isToday?'#eff6ff':'#fff'};vertical-align:top;padding:4px;min-height:90px;cursor:pointer" onclick="openRosterCellModal('${ds}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:12px;font-weight:800;color:${numClr};${isToday?'background:#2563eb;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px':''}">${day}</span>
+          ${entries.length>0?`<span style="font-size:9px;color:var(--text3);font-weight:600">${realCount}명</span>`:''}
+        </div>
+        ${tags}${noticeHtml}${minHtml}
+      </td>`;
+      day++;
+    }
+    html+=`</tr>`; row++;
+    if(day>lastDate&&row>0) break;
+  }
+  html+=`</tbody></table>`;
+  document.getElementById('roster-calendar').innerHTML=html;
+}
+
+// ── 셀 모달 열기 ──
+function openRosterCellModal(ds){
+  _rosterCellDate=ds;
+  _rosterAddType='오전';
+  document.getElementById('roster-cell-title').textContent=`📅 ${ds.slice(5).replace('-','/')} (${DOW_KR[new Date(ds+'T00:00:00').getDay()]})`;
+  document.getElementById('roster-cell-date').value=ds;
+
+  // 직원 select 채우기
+  const sel=document.getElementById('roster-add-staff');
+  sel.innerHTML=S.staff.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+
+  // 시간 기본값
+  document.getElementById('roster-time-start').value='09:00';
+  document.getElementById('roster-time-end').value='18:00';
+  document.getElementById('roster-add-lunch').value='';
+  document.getElementById('roster-add-memo').value='';
+
+  // 공지
+  const dayData=_rosterData[ds]||{};
+  document.getElementById('roster-notice-inline').value=dayData.notice||'';
+  document.getElementById('roster-min-staff').value=dayData.minStaff||'';
+
+  // 프리셋 초기화
+  document.querySelectorAll('.roster-preset-btn').forEach(b=>{
+    b.style.background='var(--s1)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)';
+  });
+
+  // 추가 타입 버튼 초기화
+  document.querySelectorAll('.roster-addtype-btn').forEach(b=>{
+    b.style.opacity=b.textContent.trim()==='오전'?'1':'0.45';
+  });
+  document.getElementById('roster-add-time-wrap').style.display='block';
+
+  renderRosterCellStaffList(ds);
+  document.getElementById('modal-roster-cell').classList.add('open');
+}
+
+function renderRosterCellStaffList(ds){
+  const el=document.getElementById('roster-cell-staff-list'); if(!el) return;
+  const entries=(_rosterData[ds]||{}).entries||[];
+  if(!entries.length){ el.innerHTML=`<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">등록된 직원이 없습니다</div>`; return; }
+  el.innerHTML=entries.map((e,i)=>{
+    const st=ROSTER_TYPE_STYLE[e.type]||ROSTER_TYPE_STYLE['풀타임'];
+    const timeStr=(!['휴무','연차'].includes(e.type)&&e.start&&e.end)?`${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s1);border:1px solid var(--border);border-radius:9px">
+      <span style="padding:2px 8px;border-radius:5px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:11px;font-weight:700;white-space:nowrap">${e.type}</span>
+      <span style="font-size:13px;font-weight:700;color:#0f172a;flex:1">${e.staff}</span>
+      ${timeStr?`<span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${timeStr}</span>`:''}
+      ${e.lunch?`<span style="font-size:10px;color:var(--text3)">점심${e.lunch}</span>`:''}
+      ${e.memo?`<span style="font-size:10px;color:var(--accent)">📝${e.memo}</span>`:''}
+      <button onclick="deleteRosterEntry('${ds}',${i})" style="border:none;background:rgba(220,38,38,.08);color:#dc2626;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:700">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function setRosterAddType(type, btn){
+  _rosterAddType=type;
+  document.querySelectorAll('.roster-addtype-btn').forEach(b=>{ b.style.opacity=b===btn?'1':'0.45'; });
+  const hideTime=['휴무','연차'].includes(type);
+  document.getElementById('roster-add-time-wrap').style.display=hideTime?'none':'block';
+}
+
+function applyRosterPreset(start, end, btn){
+  document.getElementById('roster-time-start').value=start;
+  document.getElementById('roster-time-end').value=end;
+  document.querySelectorAll('.roster-preset-btn').forEach(b=>{
+    b.style.background=b===btn?'var(--accent)':'var(--s1)';
+    b.style.color=b===btn?'#fff':'var(--text2)';
+    b.style.borderColor=b===btn?'var(--accent)':'var(--border)';
+  });
+}
+
+function highlightRosterPreset(start, end){
+  document.querySelectorAll('.roster-preset-btn').forEach(b=>{
+    const lbl=b.textContent.trim().replace('~',':00~').replace('~','~')||b.textContent.trim();
+    // 간단 매칭: "09~18" 형식
+    const [ps,pe]=b.textContent.trim().split('~').map(x=>x.includes(':')?x:x+':00');
+    const match=ps===start&&pe===end;
+    b.style.background=match?'var(--accent)':'var(--s1)';
+    b.style.color=match?'#fff':'var(--text2)';
+    b.style.borderColor=match?'var(--accent)':'var(--border)';
+  });
+}
+
+function rosterAddStaffToCell(){
+  const ds=_rosterCellDate; if(!ds) return;
+  const staff=document.getElementById('roster-add-staff').value;
+  if(!staff){ toast('⚠️ 직원을 선택하세요'); return; }
+  if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:'',minStaff:0};
+  const start=document.getElementById('roster-time-start').value;
+  const end=document.getElementById('roster-time-end').value;
+  const lunch=document.getElementById('roster-add-lunch').value;
+  const memo=document.getElementById('roster-add-memo').value.trim();
+  _rosterData[ds].entries.push({staff,type:_rosterAddType,start,end,lunch,memo});
+  document.getElementById('roster-add-memo').value='';
+  renderRosterCellStaffList(ds);
+  renderRosterCalendar();
+  toast(`✅ ${staff} 추가됨`);
+}
+
+function deleteRosterEntry(ds, idx){
+  if(!_rosterData[ds]) return;
+  _rosterData[ds].entries.splice(idx,1);
+  renderRosterCellStaffList(ds);
+  renderRosterCalendar();
+  toast('🗑 삭제됨');
+}
+
+function saveRosterCellAll(){
+  const ds=document.getElementById('roster-cell-date').value; if(!ds) return;
+  if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:'',minStaff:0};
+  _rosterData[ds].notice=document.getElementById('roster-notice-inline').value.trim();
+  _rosterData[ds].minStaff=parseInt(document.getElementById('roster-min-staff').value)||0;
+  closeModal('modal-roster-cell');
+  rosterLocalSave();
+  renderRosterCalendar();
+  toast('✅ 저장됨');
+}
+
+function rosterLocalSave(){
+  try{ localStorage.setItem('roster_data',JSON.stringify(_rosterData)); }catch(e){}
+}
+
+async function rosterSyncSave(){
+  rosterLocalSave();
+  if(!_rosterGasUrl){ toast('✅ 로컬 저장 완료 (GAS URL 미설정)'); return; }
+  const statusEl=document.getElementById('roster-sync-status');
+  if(statusEl){ statusEl.style.display='block'; statusEl.textContent='⏳ 구글시트 저장 중...'; statusEl.style.color='var(--amber)'; }
+  try{
+    const yr=_rosterYear,mo=_rosterMonth;
+    const prefix=`${yr}-${String(mo+1).padStart(2,'0')}`;
+    const monthData={};
+    Object.keys(_rosterData).filter(k=>k.startsWith(prefix)).forEach(k=>{ monthData[k]=_rosterData[k]; });
+    const res=await fetch(_rosterGasUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveRoster',sheetId:_rosterSheetId,year:yr,month:mo+1,data:monthData})});
+    const result=await res.json();
+    if(result.ok){ if(statusEl){statusEl.textContent='✅ 구글시트 저장 완료';statusEl.style.color='var(--green)';} toast('✅ 구글시트 저장됨'); }
+    else throw new Error(result.error||'저장 실패');
+  }catch(e){
+    if(statusEl){statusEl.textContent='⚠️ 저장 실패: '+e.message;statusEl.style.color='var(--red)';}
+    toast('⚠️ 구글시트 저장 실패');
+  }
+  setTimeout(()=>{ if(statusEl) statusEl.style.display='none'; },4000);
+}
+
+async function rosterSyncLoad(){
+  if(!_rosterGasUrl) return;
+  const yr=_rosterYear,mo=_rosterMonth;
+  try{
+    const res=await fetch(`${_rosterGasUrl}?action=loadRoster&sheetId=${_rosterSheetId}&year=${yr}&month=${mo+1}`);
+    const result=await res.json();
+    if(result.ok&&result.data){ Object.assign(_rosterData,result.data); rosterLocalSave(); }
+  }catch(e){ console.warn('[Roster] 불러오기 실패',e); }
+}
+
+// ═══════════════════════════════════
+// 연차 관리 (Leave)
+// ═══════════════════════════════════
+let _leaveYear = new Date().getFullYear();
+// _leaveData: { staffName: { joinDate:'YYYY-MM-DD', totalOverride:null|number, carryover:{2024:0, 2025:2}, usedManual:{} } }
+let _leaveData = {};
+
+function loadLeaveData(){
+  try{
+    const saved = localStorage.getItem('leave_data');
+    if(saved) _leaveData = JSON.parse(saved);
+  }catch(e){}
+}
+
+function saveLeaveData(){
+  try{ localStorage.setItem('leave_data', JSON.stringify(_leaveData)); }catch(e){}
+}
+
+// 입사일 기준 해당 연도 연차 자동계산 (근로기준법 기준)
+function calcLeaveTotal(joinDateStr, year){
+  if(!joinDateStr) return 15;
+  const join = new Date(joinDateStr);
+  const jan1 = new Date(year, 0, 1);
+  // 입사일로부터 몇 년 지났는지 (해당 연도 1월1일 기준)
+  const yearsWorked = (jan1 - join) / (365.25 * 24 * 3600 * 1000);
+  if(yearsWorked < 0) return 0; // 아직 입사 전
+  if(yearsWorked < 1){
+    // 1년 미만: 입사월부터 해당연도 말까지 남은 월 수 × 1개 (최대 11)
+    const monthsWorked = Math.floor((jan1 - join) / (30.44 * 24 * 3600 * 1000));
+    const remaining = Math.max(0, 12 - join.getMonth() - 1);
+    return Math.min(11, remaining);
+  }
+  if(yearsWorked < 3) return 15;
+  // 3년차부터 2년마다 1일 추가, 최대 25일
+  return Math.min(25, 15 + Math.floor((yearsWorked - 1) / 2));
+}
+
+// 달력 데이터에서 해당 연도 연차/반차 사용일 집계
+function calcLeaveUsed(staffName, year){
+  let used = 0;
+  const prefix = String(year);
+  Object.keys(_rosterData).filter(k=>k.startsWith(prefix)).forEach(ds=>{
+    (_rosterData[ds].entries||[]).forEach(e=>{
+      if(e.staff !== staffName) return;
+      if(e.type === '연차') used += 1;
+      if(e.type === '반차') used += 0.5;
+    });
+  });
+  return used;
+}
+
+// 달력에서 특근 횟수 집계
+function calcOvertimeCount(staffName, year){
+  let count = 0;
+  const prefix = String(year);
+  Object.keys(_rosterData).filter(k=>k.startsWith(prefix)).forEach(ds=>{
+    (_rosterData[ds].entries||[]).forEach(e=>{
+      if(e.staff === staffName && e.type === '특근') count++;
+    });
+  });
+  return count;
+}
+
+// 특근 적립 일수: memo에 숫자 기재 시 그 값, 없으면 0 (수동)
+function calcOvertimeEarned(staffName, year){
+  let earned = 0;
+  const prefix = String(year);
+  Object.keys(_rosterData).filter(k=>k.startsWith(prefix)).sort().forEach(ds=>{
+    (_rosterData[ds].entries||[]).forEach(e=>{
+      if(e.staff !== staffName || e.type !== '특근') return;
+      const v = parseFloat(e.memo);
+      if(!isNaN(v) && v > 0) earned += v;
+    });
+  });
+  // _leaveData에 수동 추가분도 합산
+  const manualEarned = ((_leaveData[staffName]||{}).overtimeEarned||{})[year] || 0;
+  return earned + manualEarned;
+}
+
+// 특근 보상휴가 사용 일수 (_leaveData에서)
+function calcOvertimeUsed(staffName, year){
+  return ((_leaveData[staffName]||{}).overtimeUsed||{})[year] || 0;
+}
+
+// 탭 전환
+function switchRosterTab(tab){
+  const isCal = tab==='cal';
+  document.getElementById('roster-tab-content-cal').style.display   = isCal ? 'block' : 'none';
+  document.getElementById('roster-tab-content-leave').style.display = isCal ? 'none'  : 'block';
+  document.getElementById('roster-tab-cal').style.color         = isCal ? 'var(--accent)'  : 'var(--text3)';
+  document.getElementById('roster-tab-cal').style.borderBottomColor = isCal ? 'var(--accent)' : 'transparent';
+  document.getElementById('roster-tab-leave').style.color         = !isCal ? 'var(--accent)'  : 'var(--text3)';
+  document.getElementById('roster-tab-leave').style.borderBottomColor = !isCal ? 'var(--accent)' : 'transparent';
+  if(!isCal) renderLeaveTab();
+}
+
+function leaveYearMove(delta){
+  if(delta===0) _leaveYear = new Date().getFullYear();
+  else _leaveYear += delta;
+  renderLeaveTab();
+}
+
+function renderLeaveTab(){
+  document.getElementById('leave-year-label').textContent = `${_leaveYear}년`;
+  const el = document.getElementById('leave-staff-cards'); if(!el) return;
+
+  el.innerHTML = S.staff.map(s=>{
+    const ld = _leaveData[s.name] || {};
+    const joinDate   = ld.joinDate || '';
+    const autoTotal  = calcLeaveTotal(joinDate, _leaveYear);
+    const total      = (ld.totalOverride != null && ld.totalOverride !== '') ? Number(ld.totalOverride) : autoTotal;
+    const carryover  = (ld.carryover||{})[_leaveYear] || 0;
+    const leaveUsed  = calcLeaveUsed(s.name, _leaveYear);
+    const totalWithCarry = total + carryover;
+    const leaveRemain= Math.max(0, totalWithCarry - leaveUsed);
+    const leavePct   = totalWithCarry > 0 ? Math.min(100, Math.round(leaveUsed / totalWithCarry * 100)) : 0;
+    const leaveBarClr= leavePct >= 90 ? '#ef4444' : leavePct >= 70 ? '#f59e0b' : '#059669';
+
+    // 특근
+    const otCount    = calcOvertimeCount(s.name, _leaveYear);
+    const otEarned   = calcOvertimeEarned(s.name, _leaveYear);
+    const otUsed     = calcOvertimeUsed(s.name, _leaveYear);
+    const otRemain   = Math.max(0, otEarned - otUsed);
+
+    // 합산 총 잔여
+    const totalRemain = leaveRemain + otRemain;
+
+    // 연차 사용 이력
+    const leaveHistory = [];
+    const otHistory = [];
+    const prefix = String(_leaveYear);
+    Object.keys(_rosterData).filter(k=>k.startsWith(prefix)).sort().forEach(ds=>{
+      (_rosterData[ds].entries||[]).forEach(e=>{
+        if(e.staff !== s.name) return;
+        if(e.type==='연차'||e.type==='반차') leaveHistory.push({ds, type:e.type, memo:e.memo||''});
+        if(e.type==='특근'){
+          const v = parseFloat(e.memo);
+          otHistory.push({ds, earned: (!isNaN(v)&&v>0) ? v : '미기재', memo:e.memo||''});
+        }
+      });
+    });
+
+    const leaveHistHtml = leaveHistory.length ? leaveHistory.map(h=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);min-width:80px">${h.ds}</span>
+        <span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;${h.type==='연차'?'background:#fef9c3;color:#854d0e':'background:#fce7f3;color:#9d174d'}">${h.type}</span>
+        <span style="font-size:11px;color:var(--text3)">${h.type==='연차'?'−1일':'−0.5일'}</span>
+        ${h.memo?`<span style="font-size:10px;color:var(--text3)">📝${h.memo}</span>`:''}
+      </div>`).join('')
+      : `<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px">사용 이력 없음</div>`;
+
+    const otHistHtml = otHistory.length ? otHistory.map(h=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);min-width:80px">${h.ds}</span>
+        <span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:#ffedd5;color:#9a3412">특근</span>
+        <span style="font-size:11px;font-weight:700;color:#059669">+${h.earned}일</span>
+        ${typeof h.earned==='string'?`<span style="font-size:10px;color:#f59e0b">⚠️ 메모에 숫자 입력 필요</span>`:''}
+      </div>`).join('')
+      : `<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px">특근 이력 없음</div>`;
+
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+
+      <!-- 직원 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0">${s.name[0]}</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a">${s.name}</div>
+            <div style="font-size:10px;color:var(--text3)">${joinDate?`입사 ${joinDate}`:'입사일 미설정'}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="text-align:center;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px solid #2563eb44;border-radius:10px;padding:6px 14px">
+            <div style="font-size:9px;color:var(--text3);font-weight:700">합산 잔여</div>
+            <div style="font-size:20px;font-weight:900;color:#2563eb;font-family:'DM Mono',monospace">${totalRemain}일</div>
+          </div>
+          <button onclick="openLeaveStaff('${s.name}')" style="border:1px solid var(--border);background:var(--s2);color:var(--text2);border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">⚙️ 설정</button>
+        </div>
+      </div>
+
+      <!-- 연차 섹션 -->
+      <div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:10px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:800;color:#854d0e;margin-bottom:8px">🌴 연차</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+          ${[
+            ['총 연차', totalWithCarry+'일', '#0f172a'],
+            ['사용', leaveUsed+'일', leaveUsed>0?'#ef4444':'var(--text3)'],
+            ['잔여', leaveRemain+'일', leaveRemain<=3?'#ef4444':leaveRemain<=5?'#f59e0b':'#059669'],
+            ['이월', carryover>0?carryover+'일':'-', carryover>0?'#7c3aed':'var(--text3)'],
+          ].map(([l,v,c])=>`<div style="text-align:center;background:#fff9;border-radius:7px;padding:6px 2px">
+            <div style="font-size:9px;color:#92400e;font-weight:700;margin-bottom:2px">${l}</div>
+            <div style="font-size:15px;font-weight:900;color:${c};font-family:'DM Mono',monospace">${v}</div>
+          </div>`).join('')}
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:10px;color:#92400e">소진율</span>
+            <span style="font-size:10px;font-weight:700;color:${leaveBarClr}">${leavePct}%</span>
+          </div>
+          <div style="height:7px;background:#fde04788;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${leavePct}%;background:${leaveBarClr};border-radius:4px;transition:width .4s"></div>
+          </div>
+        </div>
+        <details style="cursor:pointer">
+          <summary style="font-size:10px;font-weight:700;color:#92400e;list-style:none">📋 연차 사용 이력 (${leaveHistory.length}건)</summary>
+          <div style="margin-top:6px">${leaveHistHtml}</div>
+        </details>
+      </div>
+
+      <!-- 특근 섹션 -->
+      <div style="background:#ffedd5;border:1.5px solid #fdba74;border-radius:10px;padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:800;color:#9a3412">🔥 특근 보상휴가</div>
+          <button onclick="openOvertimeUse('${s.name}')" style="border:none;background:#9a341222;color:#9a3412;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer">보상휴가 사용 기록</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+          ${[
+            ['특근 횟수', otCount+'회', '#9a3412'],
+            ['적립', otEarned+'일', otEarned>0?'#059669':'var(--text3)'],
+            ['사용', otUsed+'일', otUsed>0?'#ef4444':'var(--text3)'],
+            ['잔여', otRemain+'일', otRemain>0?'#059669':'var(--text3)'],
+          ].map(([l,v,c])=>`<div style="text-align:center;background:#fff9;border-radius:7px;padding:6px 2px">
+            <div style="font-size:9px;color:#9a3412;font-weight:700;margin-bottom:2px">${l}</div>
+            <div style="font-size:15px;font-weight:900;color:${c};font-family:'DM Mono',monospace">${v}</div>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:10px;color:#9a3412;background:#fff4;border-radius:6px;padding:5px 8px;margin-bottom:8px">
+          💡 달력에서 특근 입력 시 메모란에 적립일수 기재 (예: <strong>0.5</strong> 또는 <strong>1</strong>)
+        </div>
+        <details style="cursor:pointer">
+          <summary style="font-size:10px;font-weight:700;color:#9a3412;list-style:none">📋 특근 이력 (${otHistory.length}건)</summary>
+          <div style="margin-top:6px">${otHistHtml}</div>
+        </details>
+      </div>
+
+    </div>`;
+  }).join('');
+}
+
+
+function openOvertimeUse(name){
+  if(!_leaveData[name]) _leaveData[name]={joinDate:'',totalOverride:null,carryover:{},overtimeEarned:{},overtimeUsed:{}};
+  const ld = _leaveData[name];
+  const otEarned = calcOvertimeEarned(name, _leaveYear);
+  const otUsed   = (ld.overtimeUsed||{})[_leaveYear] || 0;
+  const otRemain = Math.max(0, otEarned - otUsed);
+  const otManual = (ld.overtimeEarned||{})[_leaveYear] || 0;
+  document.getElementById('overtime-use-content').innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:#9a3412;margin-bottom:10px">🔥 ${name} 특근 보상휴가 (${_leaveYear}년)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="text-align:center;background:#ffedd5;border-radius:8px;padding:8px">
+        <div style="font-size:9px;color:#9a3412;font-weight:700">적립</div>
+        <div style="font-size:18px;font-weight:900;color:#059669">${otEarned}일</div>
+      </div>
+      <div style="text-align:center;background:#fee2e2;border-radius:8px;padding:8px">
+        <div style="font-size:9px;color:#9a3412;font-weight:700">사용</div>
+        <div style="font-size:18px;font-weight:900;color:#ef4444">${otUsed}일</div>
+      </div>
+      <div style="text-align:center;background:#dcfce7;border-radius:8px;padding:8px">
+        <div style="font-size:9px;color:#15803d;font-weight:700">잔여</div>
+        <div style="font-size:18px;font-weight:900;color:#059669">${otRemain}일</div>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">수동 추가 적립 <span style="font-weight:400;color:var(--text3)">(달력 외 특근일수)</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="ot-manual-earned" value="${otManual}" min="0" step="0.5" style="width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+        <span style="font-size:12px;color:var(--text3)">일</span>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">보상휴가 사용 총계</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="ot-used-inp" value="${otUsed}" min="0" step="0.5" style="width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+        <span style="font-size:12px;color:var(--text3)">일</span>
+      </div>
+    </div>`;
+  document.getElementById('ot-staff-name').value = name;
+  document.getElementById('modal-overtime-use').classList.add('open');
+}
+
+function saveOvertimeUse(){
+  const name = document.getElementById('ot-staff-name').value;
+  if(!_leaveData[name]) _leaveData[name]={joinDate:'',totalOverride:null,carryover:{},overtimeEarned:{},overtimeUsed:{}};
+  const ld = _leaveData[name];
+  if(!ld.overtimeEarned) ld.overtimeEarned={};
+  if(!ld.overtimeUsed)   ld.overtimeUsed={};
+  ld.overtimeEarned[_leaveYear] = parseFloat(document.getElementById('ot-manual-earned')?.value)||0;
+  ld.overtimeUsed[_leaveYear]   = parseFloat(document.getElementById('ot-used-inp')?.value)||0;
+  saveLeaveData();
+  closeModal('modal-overtime-use');
+  renderLeaveTab();
+  toast('✅ 특근 보상휴가 저장됨');
+}
+
+function openLeaveStaff(name){
+  const ld = _leaveData[name] || {};
+  const joinDate = ld.joinDate || '';
+  document.getElementById('leave-staff-title').textContent = `🌴 ${name} 연차 설정`;
+  document.getElementById('leave-staff-name').value = name;
+  document.getElementById('leave-total-override').value = ld.totalOverride != null ? ld.totalOverride : '';
+  document.getElementById('leave-carryover').value  = (ld.carryover||{})[_leaveYear] || '';
+  // 자동계산 힌트
+  const auto = joinDate ? calcLeaveTotal(joinDate, _leaveYear) : 15;
+  const hintEl = document.getElementById('leave-auto-hint');
+  if(hintEl) hintEl.textContent = joinDate ? `(입사일 기준 자동: ${auto}일)` : '(입사일 미설정 — 직원근무현황에서 입력)';
+  document.getElementById('modal-leave-staff').classList.add('open');
+}
+
+function saveLeaveStaff(){
+  const name     = document.getElementById('leave-staff-name').value;
+  const overrideVal = document.getElementById('leave-total-override').value;
+  const carryoverVal= document.getElementById('leave-carryover').value;
+  if(!_leaveData[name]) _leaveData[name] = {joinDate:'', totalOverride:null, carryover:{}};
+  _leaveData[name].totalOverride = overrideVal !== '' ? Number(overrideVal) : null;
+  if(!_leaveData[name].carryover) _leaveData[name].carryover = {};
+  _leaveData[name].carryover[_leaveYear] = carryoverVal !== '' ? Number(carryoverVal) : 0;
+  saveLeaveData();
+  closeModal('modal-leave-staff');
+  renderLeaveTab();
+  toast('✅ 저장됨');
+}
+
+function openLeaveCarryover(){
+  const el = document.getElementById('leave-carryover-list'); if(!el) return;
+  el.innerHTML = S.staff.map(s=>{
+    const ld = _leaveData[s.name]||{};
+    const total    = (ld.totalOverride!=null&&ld.totalOverride!=='') ? Number(ld.totalOverride) : calcLeaveTotal(ld.joinDate||'', _leaveYear);
+    const carryover= (ld.carryover||{})[_leaveYear]||0;
+    const used     = calcLeaveUsed(s.name, _leaveYear);
+    const remain   = Math.max(0, total + carryover - used);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border-radius:8px">
+      <span style="font-size:13px;font-weight:700;flex:1">${s.name}</span>
+      <span style="font-size:11px;color:var(--text2)">잔여 <strong style="color:#7c3aed">${remain}일</strong> → ${_leaveYear+1}년으로 이월</span>
+      <input type="checkbox" id="carry-chk-${s.name.replace(/\s/g,'_')}" checked style="width:15px;height:15px;accent-color:var(--accent)">
+    </div>`;
+  }).join('');
+  document.getElementById('modal-leave-carryover').classList.add('open');
+}
+
+function confirmLeaveCarryover(){
+  const nextYear = _leaveYear + 1;
+  S.staff.forEach(s=>{
+    const key = s.name.replace(/\s/g,'_');
+    const chk = document.getElementById(`carry-chk-${key}`);
+    if(!chk || !chk.checked) return;
+    const ld = _leaveData[s.name]||{};
+    const total    = (ld.totalOverride!=null&&ld.totalOverride!=='') ? Number(ld.totalOverride) : calcLeaveTotal(ld.joinDate||'', _leaveYear);
+    const carryover= (ld.carryover||{})[_leaveYear]||0;
+    const used     = calcLeaveUsed(s.name, _leaveYear);
+    const remain   = Math.max(0, total + carryover - used);
+    if(!_leaveData[s.name]) _leaveData[s.name]={joinDate:'',totalOverride:null,carryover:{}};
+    if(!_leaveData[s.name].carryover) _leaveData[s.name].carryover={};
+    _leaveData[s.name].carryover[nextYear] = (_leaveData[s.name].carryover[nextYear]||0) + remain;
+  });
+  saveLeaveData();
+  closeModal('modal-leave-carryover');
+  toast(`✅ ${nextYear}년으로 이월 완료`);
+  renderLeaveTab();
+}
+
 // ═══════════════════════════════════
 // 개인 메모장 (My Memo - 별도 페이지)
 // ═══════════════════════════════════
@@ -18509,6 +20110,9 @@ function renderMyMemos(){
 }
 
 loadSyncSettings();
+loadRosterSettings();
+loadLeaveData();
+loadLandingSettings();
 initNotes();
 loadBranchExcelFromStorage();
 initAuth(); // renderSidebar는 initAuth → onLoginSuccess → applyPermissions 내부에서 호출됨
