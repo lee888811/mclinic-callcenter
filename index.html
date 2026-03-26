@@ -1514,9 +1514,7 @@ td:first-child{text-align:left;padding-left:13px}
           <div class="ps" id="roster-subtitle">예약부 월간 근태 현황</div>
         </div>
         <div class="pbtns" style="gap:6px">
-          <button class="btn btn-p btn-sm" id="roster-btn-patterns" onclick="openRosterPatterns()" style="display:none">👤 패턴 설정</button>
           <button class="btn btn-g btn-sm" onclick="rosterSyncSave()">💾 저장</button>
-          <button class="btn btn-g btn-sm" onclick="openRosterSettings()">⚙️ 설정</button>
         </div>
       </div>
 
@@ -1535,11 +1533,24 @@ td:first-child{text-align:left;padding-left:13px}
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <span style="font-size:13px;font-weight:800;color:#c2410c">📢 공지사항</span>
             <span style="font-size:11px;color:#92400e">근태 관련 공지사항을 메모해 두세요</span>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button id="roster-notice-edit-btn" onclick="rosterNoticeEdit()"
+                style="padding:3px 10px;border-radius:6px;border:1px solid #fed7aa;background:#fff;color:#c2410c;font-size:11px;font-weight:700;cursor:pointer">✏️ 수정</button>
+              <button id="roster-notice-save-btn" onclick="rosterNoticeSave()" style="display:none;
+                padding:3px 10px;border-radius:6px;border:none;background:#c2410c;color:#fff;font-size:11px;font-weight:700;cursor:pointer">💾 저장</button>
+              <button id="roster-notice-cancel-btn" onclick="rosterNoticeCancel()" style="display:none;
+                padding:3px 10px;border-radius:6px;border:1px solid #fed7aa;background:#fff;color:#92400e;font-size:11px;cursor:pointer">취소</button>
+            </div>
           </div>
+          <!-- 보기 모드 -->
+          <div id="roster-notice-view"
+            style="min-height:50px;padding:7px 10px;border:1px solid #fed7aa;border-radius:7px;background:#fff;color:#1e293b;font-size:12px;line-height:1.7;white-space:pre-wrap;cursor:pointer"
+            onclick="rosterNoticeEdit()"
+            title="클릭하여 수정"></div>
+          <!-- 편집 모드 -->
           <textarea id="roster-1si-memo"
             placeholder="예: 2026-04 1시조: 오수비&#10;공지사항을 자유롭게 입력하세요"
-            oninput="try{localStorage.setItem('roster_1si_memo',this.value);}catch(e){}"
-            style="width:100%;min-height:70px;padding:7px 10px;border:1px solid #fed7aa;border-radius:7px;background:#fff;color:#1e293b;font-size:12px;line-height:1.7;resize:vertical;box-sizing:border-box;font-family:'Noto Sans KR',sans-serif;outline:none"></textarea>
+            style="display:none;width:100%;min-height:70px;padding:7px 10px;border:1.5px solid #c2410c;border-radius:7px;background:#fff;color:#1e293b;font-size:12px;line-height:1.7;resize:vertical;box-sizing:border-box;font-family:'Noto Sans KR',sans-serif;outline:none"></textarea>
         </div>
 
         <!-- 월 + 네비게이션 -->
@@ -1548,8 +1559,13 @@ td:first-child{text-align:left;padding-left:13px}
           <div id="roster-month-label" style="font-size:18px;font-weight:800;color:#0f172a;min-width:120px;text-align:center"></div>
           <button onclick="rosterNextMonth()" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">›</button>
           <button onclick="rosterThisMonth()" style="padding:5px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer">오늘</button>
-          <button onclick="rosterAutoGenerate()" style="padding:5px 14px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:11px;font-weight:700;cursor:pointer" title="패턴 설정 기반으로 이번달 전체 자동 입력">🔄 패턴으로 자동채우기</button>
           <button onclick="openRosterPatterns()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer">👤 패턴 설정</button>
+        </div>
+
+        <!-- 직원 선택 (빠른 입력 모드) -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px">👆 직원 선택 후 날짜를 클릭하면 근무 조를 빠르게 입력할 수 있어요</div>
+          <div id="roster-quick-staff-pills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
 
         <!-- 범례 -->
@@ -1670,6 +1686,34 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-roster-patterns')">닫기</button>
       <button class="btn btn-p" onclick="saveRosterPatterns()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 날짜 공지 입력 -->
+<div class="modal" id="modal-roster-notice" style="z-index:800">
+  <div class="mbox" style="width:360px">
+    <div class="mt" id="roster-notice-title">📌 공지</div>
+    <input type="hidden" id="roster-notice-date">
+    <textarea id="roster-notice-text" class="minp" rows="3"
+      placeholder="이 날짜 공지사항을 입력하세요..."
+      style="resize:none;margin-bottom:4px"></textarea>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-roster-notice')">닫기</button>
+      <button class="btn btn-r btn-sm" onclick="deleteRosterNotice()" style="margin-right:auto">🗑 삭제</button>
+      <button class="btn btn-p" onclick="saveRosterNotice()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 빠른 근무 입력 -->
+<div class="modal" id="modal-roster-quick" style="z-index:800">
+  <div class="mbox" style="width:340px">
+    <div class="mt" id="roster-quick-title">근무 입력</div>
+    <div id="roster-quick-shift-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-roster-quick')">닫기</button>
+      <button class="btn btn-r btn-sm" onclick="rosterQuickDelete()" style="margin-right:auto">🗑 삭제</button>
     </div>
   </div>
 </div>
@@ -3276,7 +3320,13 @@ function go(pid,el){
   else if(pid==='roster'){
     rosterSyncLoad().then(()=>renderRosterCalendar()); renderRosterCalendar();
     // 1시조 순번 메모 로드
-    try{ const m=localStorage.getItem('roster_1si_memo')||''; const ta=document.getElementById('roster-1si-memo'); if(ta&&!ta.value) ta.value=m; }catch(e){}
+    try{
+      const m=localStorage.getItem('roster_1si_memo')||'';
+      const ta=document.getElementById('roster-1si-memo');
+      if(ta&&!ta.value) ta.value=m;
+      const view=document.getElementById('roster-notice-view');
+      if(view) view.textContent=m||'(공지사항 없음 - 클릭하여 입력)';
+    }catch(e){}
   }
 }
 function goSI(sid,el){
@@ -3435,7 +3485,7 @@ function renderStaffInputPage(sid){
         <div class="ps">${s.role} · 개인 콜 입력</div>
       </div>
       <div class="pbtns">
-        <button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')">＋ 콜 기록</button>
+        <button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')" style="font-size:18px;padding:12px 28px;font-weight:800;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,.3)">＋ 콜 기록</button>
       </div>
     </div>
 
@@ -9808,15 +9858,40 @@ function renderDailyProcTable(){
 
   // 헤더: 하위 카테고리 포커스 중이면 하위 항목을 컬럼으로 표시
   const focusedProc = _focusedPid ? S.procedures.find(x=>x.id===_focusedPid) : null;
-  const showSubs = focusedProc && focusedProc.subs && focusedProc.subs.length > 0;
-  const activeSubs = showSubs
-    ? focusedProc.subs.filter((_,i) => _selectedSubs===null || _selectedSubs.has(`${_focusedPid}:${i}`))
-    : [];
+  const showSubs = !!(_selectedSubs && _selectedSubs.size > 0);
 
-  // 컬럼 정의
-  const cols = showSubs && activeSubs.length > 0
-    ? activeSubs.map((s,i)=>({id:`${_focusedPid}:${focusedProc.subs.indexOf(s)}`, name:s.name, icon:s.icon||'', isSub:true, parentId:_focusedPid}))
-    : procs.map(p=>({id:p.id, name:p.name, icon:p.icon||'', isSub:false}));
+  // 컬럼 정의 — 하위 선택이 있으면 해당 하위항목들을 컬럼으로, 없으면 상위 시술 컬럼
+  let cols;
+  if(showSubs){
+    // _selectedSubs의 모든 항목을 컬럼으로 (여러 카테고리 지원)
+    cols = [..._selectedSubs].map(key=>{
+      const [pid, idxStr] = key.split(':');
+      const idx = parseInt(idxStr);
+      const parentProc = S.procedures.find(x=>x.id===pid);
+      if(!parentProc) return null;
+      const sub = parentProc.subs?.[idx];
+      if(!sub) return null;
+      return {id: key, name: sub.name, icon: sub.icon||'', isSub: true, parentId: pid, subIdx: idx};
+    }).filter(Boolean);
+  } else if(_selectedPids && _selectedPids.size > 0) {
+    // 상위 시술 선택 시: 하위 있으면 하위 전체를 컬럼으로, 없으면 상위 그대로
+    const colsArr = [];
+    [..._selectedPids].forEach(pid=>{
+      const p = S.procedures.find(x=>x.id===pid);
+      if(!p) return;
+      if(p.subs && p.subs.length > 0){
+        p.subs.forEach((s,i)=>{
+          colsArr.push({id:`${pid}:${i}`, name:s.name, icon:s.icon||'', isSub:true, parentId:pid, subIdx:i});
+        });
+      } else {
+        colsArr.push({id:p.id, name:p.name, icon:p.icon||'', isSub:false});
+      }
+    });
+    cols = colsArr;
+  } else {
+    // 전체 선택: 상위 시술 컬럼
+    cols = procs.map(p=>({id:p.id, name:p.name, icon:p.icon||'', isSub:false}));
+  }
 
   const clrFor = (col) => {
     const idx = col.isSub
@@ -9855,22 +9930,18 @@ function renderDailyProcTable(){
       Object.entries(c.procs).forEach(([pid,n])=>{
         if(!n) return;
         cols.forEach(col=>{
-          if(col.isSub) return; // 하위는 아래에서 처리
-          if(col.id!==pid) return;
-          if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
-          else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
-        });
-      });
-      // 하위 카테고리는 현재 집계 데이터가 없으므로 상위 pid 데이터로 표시
-      if(showSubs && activeSubs.length) {
-        cols.filter(col=>col.isSub).forEach(col=>{
-          if(c.procs[col.parentId]) {
-            const n = c.procs[col.parentId]||0;
-            if(n && ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
-            else if(n) brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
+          if(col.isSub){
+            // 하위항목: parentId로 매칭
+            if(col.parentId !== pid) return;
+            if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
+            else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
+          } else {
+            if(col.id !== pid) return;
+            if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
+            else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
           }
         });
-      }
+      });
     });
 
     let dateRowspan = branches.length*2;
@@ -11161,6 +11232,159 @@ const ROSTER_TYPE_STYLE={
   '반차':  {bg:'#fce7f3',color:'#9d174d',border:'#f9a8d4'},
   '특근':  {bg:'#ffedd5',color:'#9a3412',border:'#fdba74'},
 };
+// ════════════════════════════════════
+// 빠른 근무 입력 (직원 선택 → 날짜 클릭)
+// ════════════════════════════════════
+let _quickStaff = null; // 현재 선택된 직원
+
+function renderRosterQuickStaffPills(){
+  const el = document.getElementById('roster-quick-staff-pills');
+  if(!el) return;
+  el.innerHTML = S.staff.map(s=>{
+    const isAct = _quickStaff === s.name;
+    return `<button onclick="selectQuickStaff('${s.id}')"
+      style="padding:5px 14px;border-radius:20px;border:2px solid ${isAct?'var(--accent)':'var(--border)'};
+        background:${isAct?'var(--accent)':'var(--s2)'};color:${isAct?'#fff':'var(--text2)'};
+        font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">
+      ${isAct?'✓ ':' '}${escHtml(s.name)}
+    </button>`;
+  }).join('');
+}
+
+function selectQuickStaff(sid){
+  const s = S.staff.find(x=>x.id===sid);
+  if(!s) return;
+  _quickStaff = _quickStaff===s.name ? null : s.name;
+  renderRosterQuickStaffPills();
+}
+
+let _quickTargetDs = null;
+
+function openRosterQuickInput(ds){
+  if(!_quickStaff){
+    // 직원 미선택이면 기존 셀 추가 모달로
+    openRosterCellAdd(ds);
+    return;
+  }
+  _quickTargetDs = ds;
+  const d = new Date(ds+'T00:00:00');
+  const DOW = ['일','월','화','수','목','금','토'];
+  document.getElementById('roster-quick-title').textContent =
+    `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]}) · ${_quickStaff}`;
+
+  // 현재 값 확인
+  const entries = (_rosterData[ds]||{}).entries||[];
+  const cur = entries.find(e=>e.staff===_quickStaff);
+
+  const SHIFTS = [
+    {label:'9시조',   start:'09:00', end:'18:00', type:'오전', color:'#1d4ed8', bg:'#dbeafe'},
+    {label:'9시30분조',start:'09:30', end:'18:30', type:'오전', color:'#0891b2', bg:'#cffafe'},
+    {label:'10시조',  start:'10:00', end:'19:00', type:'오전', color:'#059669', bg:'#dcfce7'},
+    {label:'1시조',   start:'13:00', end:'21:00', type:'오후', color:'#7c3aed', bg:'#ede9fe'},
+    {label:'휴무',    start:'', end:'', type:'휴무', color:'#b91c1c', bg:'#fee2e2'},
+    {label:'연차',    start:'', end:'', type:'연차', color:'#854d0e', bg:'#fef9c3'},
+    {label:'반차',    start:'', end:'', type:'반차', color:'#9d174d', bg:'#fce7f3'},
+    {label:'특근',    start:'', end:'', type:'특근', color:'#9a3412', bg:'#ffedd5'},
+  ];
+
+  const btnEl = document.getElementById('roster-quick-shift-btns');
+  btnEl.innerHTML = SHIFTS.map(sh=>{
+    const isAct = cur?.shift===sh.label || (!cur?.shift && cur?.type===sh.type && sh.label==='9시조');
+    return `<button onclick="applyQuickShift('${sh.label}')"
+      style="padding:12px 8px;border-radius:10px;border:2px solid ${isAct?sh.color:sh.color+'44'};
+        background:${isAct?sh.bg:'var(--s2)'};color:${sh.color};
+        font-size:13px;font-weight:800;cursor:pointer;transition:all .15s">
+      ${sh.label}${sh.start?`<br><span style="font-size:10px;font-weight:400;opacity:.8">${sh.start}~${sh.end}</span>`:''}
+    </button>`;
+  }).join('');
+
+  document.getElementById('modal-roster-quick')?.classList.add('open');
+}
+
+function applyQuickShift(shiftLabel){
+  if(!_quickTargetDs||!_quickStaff) return;
+  const ds = _quickTargetDs;
+  const SHIFT_MAP = {
+    '9시조':    {start:'09:00',end:'18:00',type:'오전'},
+    '9시30분조':{start:'09:30',end:'18:30',type:'오전'},
+    '10시조':   {start:'10:00',end:'19:00',type:'오전'},
+    '1시조':    {start:'13:00',end:'21:00',type:'오후'},
+    '휴무':     {start:'',end:'',type:'휴무'},
+    '연차':     {start:'',end:'',type:'연차'},
+    '반차':     {start:'',end:'',type:'반차'},
+    '특근':     {start:'',end:'',type:'특근'},
+  };
+  const info = SHIFT_MAP[shiftLabel]||{start:'09:00',end:'18:00',type:'오전'};
+  if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:''};
+  const entries = _rosterData[ds].entries;
+  const idx = entries.findIndex(e=>e.staff===_quickStaff);
+  const entry = {staff:_quickStaff, type:info.type, shift:shiftLabel, start:info.start, end:info.end, lunch:'1시', memo:''};
+  if(idx>=0) entries[idx]=entry;
+  else entries.push(entry);
+  rosterLocalSave();
+  renderRosterCalendar();
+  closeModal('modal-roster-quick');
+  toast(`✅ ${_quickStaff} · ${ds.slice(5)} · ${shiftLabel}`);
+}
+
+function rosterQuickDelete(){
+  if(!_quickTargetDs||!_quickStaff) return;
+  const ds = _quickTargetDs;
+  if(!_rosterData[ds]) return;
+  _rosterData[ds].entries = _rosterData[ds].entries.filter(e=>e.staff!==_quickStaff);
+  rosterLocalSave();
+  renderRosterCalendar();
+  closeModal('modal-roster-quick');
+  toast(`🗑 ${_quickStaff} · ${ds.slice(5)} 삭제`);
+}
+
+function rosterAutoGenerate(){ toast('⚠️ 직원 선택 후 날짜를 클릭해서 입력해 주세요.'); }
+
+function loadRosterSettings(){
+  const view=document.getElementById('roster-notice-view');
+  const ta=document.getElementById('roster-1si-memo');
+  const editBtn=document.getElementById('roster-notice-edit-btn');
+  const saveBtn=document.getElementById('roster-notice-save-btn');
+  const cancelBtn=document.getElementById('roster-notice-cancel-btn');
+  if(!ta) return;
+  // 현재 저장값 로드
+  try{ ta.value=localStorage.getItem('roster_1si_memo')||''; }catch(e){}
+  if(view) view.style.display='none';
+  ta.style.display='block';
+  if(editBtn) editBtn.style.display='none';
+  if(saveBtn) saveBtn.style.display='inline-block';
+  if(cancelBtn) cancelBtn.style.display='inline-block';
+  ta.focus();
+}
+function rosterNoticeSave(){
+  const view=document.getElementById('roster-notice-view');
+  const ta=document.getElementById('roster-1si-memo');
+  const editBtn=document.getElementById('roster-notice-edit-btn');
+  const saveBtn=document.getElementById('roster-notice-save-btn');
+  const cancelBtn=document.getElementById('roster-notice-cancel-btn');
+  if(!ta) return;
+  const val=ta.value;
+  try{ localStorage.setItem('roster_1si_memo',val); }catch(e){}
+  if(view){ view.textContent=val||'(공지사항 없음 - 클릭하여 입력)'; view.style.display='block'; }
+  ta.style.display='none';
+  if(editBtn) editBtn.style.display='inline-block';
+  if(saveBtn) saveBtn.style.display='none';
+  if(cancelBtn) cancelBtn.style.display='none';
+  toast('✅ 공지사항 저장됨');
+}
+function rosterNoticeCancel(){
+  const view=document.getElementById('roster-notice-view');
+  const ta=document.getElementById('roster-1si-memo');
+  const editBtn=document.getElementById('roster-notice-edit-btn');
+  const saveBtn=document.getElementById('roster-notice-save-btn');
+  const cancelBtn=document.getElementById('roster-notice-cancel-btn');
+  if(view) view.style.display='block';
+  if(ta) ta.style.display='none';
+  if(editBtn) editBtn.style.display='inline-block';
+  if(saveBtn) saveBtn.style.display='none';
+  if(cancelBtn) cancelBtn.style.display='none';
+}
+
 function loadRosterSettings(){
   try{
     _rosterGasUrl=localStorage.getItem('roster_gas_url')||'';
@@ -11171,6 +11395,20 @@ function loadRosterSettings(){
 }
 function rosterLocalSave(){
   try{ localStorage.setItem('roster_data',JSON.stringify(_rosterData)); }catch(e){}
+  // 연차 사용 내역 스냅샷 갱신 (현재 연도)
+  const curYr=new Date().getFullYear();
+  loadLeaveDataFromStorage();
+  S.staff.forEach(s=>{
+    if(!_leaveData[s.name]) _leaveData[s.name]={};
+    if(!_leaveData[s.name].yearSnapshot) _leaveData[s.name].yearSnapshot={};
+    const used=Object.entries(_rosterData)
+      .filter(([ds])=>ds.startsWith(String(curYr)))
+      .flatMap(([,d])=>d.entries||[])
+      .filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차'))
+      .reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
+    _leaveData[s.name].yearSnapshot[curYr]=used;
+  });
+  try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
 }
 function openRosterSettings(){
   const u=document.getElementById('roster-gas-url'); if(u) u.value=_rosterGasUrl;
@@ -11213,8 +11451,8 @@ function renderRosterCalendar(){
   const lbl=`${yr}년 ${mo+1}월`;
   const el=document.getElementById('roster-month-label'); if(el) el.textContent=lbl;
   const sub=document.getElementById('roster-subtitle'); if(sub) sub.textContent=`예약부 월간 근태 현황 · ${lbl}`;
-  // 패턴 설정 버튼 표시
   const pb=document.getElementById('roster-btn-patterns'); if(pb) pb.style.display='';
+  renderRosterQuickStaffPills();
   const firstDay=new Date(yr,mo,1).getDay();
   const lastDate=new Date(yr,mo+1,0).getDate();
   const DOW=['SUN','MON','TUE','WED','THU','FRI','SAT'];
@@ -11242,15 +11480,17 @@ function renderRosterCalendar(){
       const numClr=isSun?'#ef4444':isSat?'#3b82f6':'#374151';
       const tags=entries.map((e,i)=>{
         const st=ROSTER_TYPE_STYLE[e.type]||ROSTER_TYPE_STYLE['오전'];
-        const timeStr=e.start&&e.end?` ${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
-        return `<div onclick="openRosterCellEdit('${ds}',${i})" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:10px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.type}${timeStr}">${e.staff} <span style="font-weight:500;opacity:.8">${e.type}</span></div>`;
+        const timeStr=e.start&&e.end?`${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
+        // 시간 있으면 시간, 없으면 type(휴무/연차 등)
+        const dispLabel = timeStr || e.type;
+        return `<div onclick="_quickStaff='${e.staff}';renderRosterQuickStaffPills();openRosterQuickInput('${ds}')" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:10px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.shift||e.type} ${timeStr}">${e.staff} <span style="font-weight:500;opacity:.8">${dispLabel}</span></div>`;
       }).join('');
       const noticeHtml=notice?`<div style="margin-top:2px;padding:2px 5px;border-radius:4px;background:#fef08a;color:#713f12;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📌 ${notice}</div>`:'';
       html+=`<td style="border:1px solid #e2e8f0;background:${isToday?'#eff6ff':'#fff'};vertical-align:top;padding:4px;min-height:80px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
           <span style="font-size:12px;font-weight:800;color:${numClr}${isToday?';background:#2563eb;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px':''}">${day}</span>
           <div style="display:flex;gap:2px">
-            <button onclick="openRosterCellAdd('${ds}')" style="border:none;background:rgba(37,99,235,.1);color:#2563eb;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;cursor:pointer">＋</button>
+            <button onclick="openRosterQuickInput('${ds}')" style="border:none;background:rgba(37,99,235,.1);color:#2563eb;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;cursor:pointer">＋</button>
             <button onclick="openRosterNotice('${ds}')" style="border:none;background:rgba(234,179,8,.12);color:#854d0e;border-radius:4px;padding:1px 5px;font-size:10px;cursor:pointer">📌</button>
           </div>
         </div>
@@ -11392,31 +11632,27 @@ function renderRosterPatternList(){
   const el=document.getElementById('roster-pattern-list'); if(!el) return;
   const DOW_LABELS=['일','월','화','수','목','금','토'];
   const SHIFTS=[
-    {label:'9시조', start:'09:00', end:'18:00'},
-    {label:'9시30분조', start:'09:30', end:'18:30'},
-    {label:'10시조', start:'10:00', end:'19:00'},
-    {label:'1시조', start:'13:00', end:'21:00'},
-    {label:'휴무', start:'', end:''},
-    {label:'연차', start:'', end:''},
-    {label:'반차', start:'', end:''},
-    {label:'특근', start:'', end:''},
+    {label:'9시조'}, {label:'9시30분조'}, {label:'10시조'}, {label:'1시조'},
+    {label:'휴무'}, {label:'연차'}, {label:'반차'}, {label:'특근'},
   ];
   el.innerHTML=S.staff.map(s=>{
-    const pat=_rosterPatterns[s.name]||{};
+    // ID 기반으로 먼저 찾고, 없으면 이름으로 fallback
+    const pat=_rosterPatterns[s.id]||_rosterPatterns[s.name]||{};
     return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px">${escHtml(s.name)}</div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
         ${DOW_LABELS.map((d,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0?'#ef4444':i===6?'#3b82f6':'#374151'}">${d}</div>`).join('')}
         ${[0,1,2,3,4,5,6].map(dow=>{
-          const cur=pat[dow]?.type||'9시조';
-          return `<select onchange="setRosterPatternShift('${s.name}',${dow},this.value)"
+          const cur=pat[dow]?.shift||'9시조';
+          return `<select data-sid="${s.id}" data-dow="${dow}"
+            onchange="setRosterPatternShift(this.dataset.sid,parseInt(this.dataset.dow),this.value)"
             style="width:100%;padding:3px 2px;border-radius:5px;border:1px solid var(--border);font-size:10px;font-weight:600;background:var(--s2);color:var(--text)">
             ${SHIFTS.map(sh=>`<option value="${sh.label}"${sh.label===cur?' selected':''}>${sh.label}</option>`).join('')}
           </select>`;
         }).join('')}
       </div>
       <div style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text3)">
-        💡 조별 출퇴근: 9시조 09:00~18:00 · 9시30분조 09:30~18:30 · 10시조 10:00~19:00 · 1시조 13:00~21:00
+        💡 9시조 09~18 · 9시30분조 09:30~18:30 · 10시조 10~19 · 1시조 13~21
       </div>
     </div>`;
   }).join('');
@@ -11433,10 +11669,11 @@ const SHIFT_TIMES={
   '특근':    {start:'', end:'', type:'특근'},
 };
 
-function setRosterPatternShift(name, dow, shiftLabel){
-  if(!_rosterPatterns[name]) _rosterPatterns[name]={};
+function setRosterPatternShift(sid, dow, shiftLabel){
+  if(!_rosterPatterns[sid]) _rosterPatterns[sid]={};
   const times=SHIFT_TIMES[shiftLabel]||{start:'09:00',end:'18:00',type:'오전'};
-  _rosterPatterns[name][dow]={type:times.type, shift:shiftLabel, start:times.start, end:times.end};
+  _rosterPatterns[sid][dow]={type:times.type, shift:shiftLabel, start:times.start, end:times.end};
+  try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
 }
 function saveRosterPatterns(){
   try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
@@ -11445,31 +11682,58 @@ function saveRosterPatterns(){
 }
 function applyRosterPatterns(){
   if(!confirm('이번 달 전체를 패턴으로 채울까요? 기존 데이터는 유지됩니다.')) return;
+  try{
+    const saved=localStorage.getItem('roster_patterns');
+    if(saved) _rosterPatterns=JSON.parse(saved);
+  }catch(e){}
+
+  if(!_rosterPatterns || Object.keys(_rosterPatterns).length===0){
+    toast('⚠️ 패턴 설정이 없습니다. 패턴 설정에서 먼저 설정해주세요.');
+    return;
+  }
+
   const yr=_rosterYear, mo=_rosterMonth;
   const lastDate=new Date(yr,mo+1,0).getDate();
+  let applied=0;
+
   for(let d=1;d<=lastDate;d++){
     const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow=new Date(ds+'T00:00:00').getDay();
     S.staff.forEach(s=>{
-      const pat=_rosterPatterns[s.name];
+      // ID로 먼저, 없으면 이름으로 fallback
+      const pat=_rosterPatterns[s.id]||_rosterPatterns[s.name];
       if(!pat) return;
       const dayPat=pat[dow];
-      if(!dayPat||dayPat.type==='휴무') return;
+      if(!dayPat) return;
+      const shift=dayPat.shift||'';
+      // 출근 없는 타입 스킵
+      if(['휴무','연차','반차','특근'].includes(shift)) return;
+      if(!shift) return; // 설정 안 된 경우 스킵
+      const shiftInfo=SHIFT_TIMES[shift];
+      if(!shiftInfo) return;
       if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:''};
       const existing=_rosterData[ds].entries.findIndex(e=>e.staff===s.name);
-      // 조별 시간 우선, 없으면 defaultStart/End
-      const shiftInfo=SHIFT_TIMES[dayPat.shift]||null;
-      const start=dayPat.start||shiftInfo?.start||pat.defaultStart||'09:00';
-      const end=dayPat.end||shiftInfo?.end||pat.defaultEnd||'18:00';
-      const entry={staff:s.name,type:dayPat.type||'오전',shift:dayPat.shift||'',start,end,lunch:'1시',memo:''};
+      const entry={
+        staff:s.name,
+        type:shiftInfo.type||'오전',
+        shift,
+        start:shiftInfo.start||'09:00',
+        end:shiftInfo.end||'18:00',
+        lunch:'1시',
+        memo:''
+      };
       if(existing>=0) _rosterData[ds].entries[existing]=entry;
       else _rosterData[ds].entries.push(entry);
+      applied++;
     });
   }
   rosterLocalSave();
   renderRosterCalendar();
-  toast('✅ 패턴 적용됨');
+  toast(`✅ 패턴 적용됨 (${applied}건)`);
 }
+
+// 버튼에서 호출하는 함수명
+function rosterAutoGenerate(){ applyRosterPatterns(); }
 // ════════════════════════════════════
 // 연차·특근 관리 (Leave & Overtime)
 // ════════════════════════════════════
@@ -11511,15 +11775,35 @@ function renderLeaveCards(){
   const yr=_leaveYear;
   const lbl=document.getElementById('leave-year-label');
   if(lbl) lbl.textContent=yr+'년';
+  // 현재 연도면 _rosterData에서 실시간 집계, 과거 연도면 _leaveData 스냅샷 사용
+  const curYr=new Date().getFullYear();
+  const isPastYear=(yr < curYr);
+  // 현재 연도 데이터를 스냅샷에 저장
+  if(yr===curYr){
+    S.staff.forEach(s=>{
+      if(!_leaveData[s.name]) _leaveData[s.name]={};
+      const used=Object.entries(_rosterData)
+        .filter(([ds])=>ds.startsWith(String(yr)))
+        .flatMap(([,d])=>d.entries||[])
+        .filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차'))
+        .reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
+      if(!_leaveData[s.name].yearSnapshot) _leaveData[s.name].yearSnapshot={};
+      _leaveData[s.name].yearSnapshot[yr]=used;
+    });
+    try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
+  }
   el.innerHTML=S.staff.map(s=>{
     const ld=_leaveData[s.name]||{};
     const joinDate=ld.joinDate||s.joinDate||'';
     const baseTotal=ld.totalOverride!=null?ld.totalOverride:calcAnnualLeave(joinDate);
-    const annualUsed=Object.entries(_rosterData)
-      .filter(([ds])=>ds.startsWith(String(yr)))
-      .flatMap(([,d])=>d.entries||[])
-      .filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차'))
-      .reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
+    // 과거 연도는 스냅샷, 현재 연도는 실시간
+    const annualUsed = isPastYear
+      ? (ld.yearSnapshot?.[yr] ?? 0)
+      : Object.entries(_rosterData)
+          .filter(([ds])=>ds.startsWith(String(yr)))
+          .flatMap(([,d])=>d.entries||[])
+          .filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차'))
+          .reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
     const overtimeList=(ld.overtime||[]).filter(o=>o.date&&o.date.startsWith(String(yr)));
     const otComp=overtimeList.filter(o=>o.reward==='대체휴가').length;
     const otPay=overtimeList.filter(o=>o.reward==='금전').length;
