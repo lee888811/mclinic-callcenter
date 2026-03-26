@@ -1985,31 +1985,63 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="branch-pills" id="modal-branch-pills"></div>
 
     <div id="below-branch-wrap">
-    <div class="ml">환자 구분 <span style="font-size:11px;color:var(--text3);font-weight:400">(복수 선택 가능)</span></div>
+    <div class="ml">환자 구분</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="pttype-pills">
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-신환">
-        <input type="checkbox" name="pttype_multi" value="신환" onchange="togglePttype(this)" style="accent-color:var(--green)"> 🆕 신환(신규상담)</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-구환">
-        <input type="checkbox" name="pttype_multi" value="구환(신규상담)" onchange="togglePttype(this)" style="accent-color:var(--purple)"> 🔄 구환(신규상담)</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-잔여시술">
-        <input type="checkbox" name="pttype_multi" value="잔여시술" onchange="togglePttype(this)" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-일반">
-        <input type="checkbox" name="pttype_multi" value="일반" onchange="togglePttype(this)" style="accent-color:var(--text3)"> 💬 일반문의</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-신환">
+        <input type="radio" name="pttype_single" value="신환" onchange="selectPttype(this)" checked style="accent-color:var(--green)"> 🆕 신환</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-구환">
+        <input type="radio" name="pttype_single" value="구환(신규상담)" onchange="selectPttype(this)" style="accent-color:var(--purple)"> 🔄 구환</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-잔여시술">
+        <input type="radio" name="pttype_single" value="잔여시술" onchange="selectPttype(this)" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-일반">
+        <input type="radio" name="pttype_single" value="일반" onchange="selectPttype(this)" style="accent-color:var(--text3)"> 💬 일반문의</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-예약취소">
+        <input type="radio" name="pttype_single" value="예약취소" onchange="selectPttype(this)" style="accent-color:#dc2626"> ❌ 예약취소</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-미예약">
+        <input type="radio" name="pttype_single" value="미예약" onchange="selectPttype(this)" style="accent-color:#d97706"> ⏳ 미예약</label>
+    </div>
+
+    <!-- 예약취소 사유 (예약취소 선택 시) -->
+    <div id="cancel-reason-section" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.2);border-radius:8px">
+      <label style="font-size:12px;font-weight:700;color:#dc2626;display:block;margin-bottom:8px">취소 사유</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="cancel-reason-btns">
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'💰 가격')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💰 가격</div>
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'📍 거리')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📍 거리</div>
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'📅 일정')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📅 일정</div>
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'🏥 경쟁사')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">🏥 경쟁사</div>
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'💭 단순변심')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💭 단순변심</div>
+        <div class="cancel-reason-btn" onclick="selectCancelReason(this,'❓ 기타')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">❓ 기타</div>
+      </div>
+      <input type="hidden" id="cf-cancel-reason" value="">
+    </div>
+
+    <!-- 미예약 사유 (미예약 선택 시) -->
+    <div id="noappt-reason-section" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(217,119,6,.04);border:1px solid rgba(217,119,6,.2);border-radius:8px">
+      <label style="font-size:12px;font-weight:700;color:#d97706;display:block;margin-bottom:8px">미예약 사유</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="noappt-reason-btns">
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'💰 가격')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💰 가격</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'📍 거리')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📍 거리</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'📅 일정')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📅 일정</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'🏥 경쟁사')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">🏥 경쟁사</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'💭 재고중')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💭 재고중</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'📵 연락불가')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📵 연락불가</div>
+        <div class="noappt-reason-btn" onclick="selectNoapptReason(this,'❓ 기타')" style="padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">❓ 기타</div>
+      </div>
+      <input type="text" id="cf-noappt-reason-memo" placeholder="추가 사유 메모 (선택)"
+        style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:12px;box-sizing:border-box">
+      <input type="hidden" id="cf-noappt-reason" value="">
     </div>
 
     <div id="modal-sub-fields">
-      <!-- 예약 유형 (당일/추후) -->
-      <div style="margin-top:10px;padding:10px 12px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:8px">
+      <!-- 예약 유형 (당일/추후 2개만) -->
+      <div id="booking-type-section" style="margin-top:10px;padding:10px 12px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:8px">
         <label style="font-size:12px;font-weight:700;color:#2563eb;display:block;margin-bottom:8px">📅 예약 유형</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--accent);background:rgba(37,99,235,.08);cursor:pointer;font-size:13px;font-weight:700;color:var(--accent)">
+        <div style="display:flex;gap:8px">
+          <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--accent);background:rgba(37,99,235,.08);cursor:pointer;font-size:13px;font-weight:700;color:var(--accent)">
             <input type="radio" name="booking_type" value="당일" checked style="accent-color:var(--accent)"> ⚡ 당일 예약
           </label>
-          <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
+          <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
             <input type="radio" name="booking_type" value="추후" style="accent-color:#7c3aed"> 📆 추후 예약
-          </label>
-          <label id="bklbl-none" onclick="selectBookingType('미예약')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
-            <input type="radio" name="booking_type" value="미예약" style="accent-color:#f59e0b"> ⏳ 미예약
           </label>
         </div>
         <div id="booking-date-wrap" style="display:none;margin-top:8px">
@@ -2017,47 +2049,10 @@ td:first-child{text-align:left;padding-left:13px}
           <input type="date" id="cf-booking-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;width:100%;box-sizing:border-box">
         </div>
       </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
-        <div class="cf">
-          <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">예약건수</label>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button onclick="stepNum('cf-today',-1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">−</button>
-            <input type="number" id="cf-today" min="0" placeholder="0" style="flex:1;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
-            <button onclick="stepNum('cf-today',1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">＋</button>
-          </div>
-        </div>
-      </div>
-      <div id="cancel-section" style="margin-top:10px;padding:10px 12px;background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.15);border-radius:8px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <label style="font-size:11px;font-weight:700;color:var(--red)">예약취소 건수</label>
-          <button onclick="stepNum('cf-cancel',-1)" style="width:28px;height:28px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:900;cursor:pointer;line-height:1">−</button>
-          <input type="number" id="cf-cancel" min="0" placeholder="0" style="width:52px;text-align:center;background:#fff;border:1px solid rgba(220,38,38,.3);border-radius:7px;padding:4px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)" oninput="toggleCancelReason()">
-          <button onclick="stepNum('cf-cancel',1);toggleCancelReason()" style="width:28px;height:28px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:900;cursor:pointer;line-height:1">＋</button>
-        </div>
-        <div id="cancel-reason-wrap" style="display:none">
-          <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">취소 사유 <span style="font-weight:400;color:var(--text3)">(해당 항목 선택)</span></label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px" id="cancel-reason-btns">
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'💰 가격')" data-reason="💰 가격" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💰 가격</div>
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'📍 거리')" data-reason="📍 거리" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📍 거리</div>
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'📅 일정')" data-reason="📅 일정" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">📅 일정</div>
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'🏥 경쟁사')" data-reason="🏥 경쟁사" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">🏥 경쟁사</div>
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'💭 단순변심')" data-reason="💭 단순변심" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">💭 단순변심</div>
-            <div class="cancel-reason-btn" onclick="selectCancelReason(this,'❓ 기타')" data-reason="❓ 기타" style="padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2)">❓ 기타</div>
-          </div>
-          <input type="hidden" id="cf-cancel-reason" value="">
-        </div>
-      </div>
-      <div style="margin-top:8px">
-        <div class="cf">
-          <label style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px">미예약 종료</label>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button onclick="stepNum('cf-noappt',-1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#d97706;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">−</button>
-            <input type="number" id="cf-noappt" min="0" placeholder="0" style="width:60px;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace">
-            <button onclick="stepNum('cf-noappt',1)" style="width:30px;height:34px;border-radius:7px;border:none;background:#d97706;color:#fff;font-size:18px;font-weight:900;cursor:pointer;line-height:1">＋</button>
-          </div>
-        </div>
-      </div>
+      <!-- hidden inputs for backward compat -->
+      <input type="hidden" id="cf-today" value="1">
+      <input type="hidden" id="cf-cancel" value="0">
+      <input type="hidden" id="cf-noappt" value="0">
     </div>
 
     <div id="proc-section-wrap">
@@ -2066,6 +2061,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div style="position:relative;margin-bottom:8px">
       <input type="text" id="proc-search-input" placeholder="🔍 시술명 검색..." autocomplete="off"
         oninput="filterProcGrid(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();}"
         style="width:100%;padding:8px 12px;border:1.5px solid var(--accent);border-radius:9px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box;outline:none">
     </div>
     <div class="proc-grid" id="modal-proc-grid"></div>
@@ -3519,7 +3515,7 @@ function renderStaffInputPage(sid){
             ['🔄 구환',gu,'#7c3aed'],
             ['🗓 잔여시술',rem,'#0891b2'],
             ['💬 일반문의',analysisCalls.filter(c=>c.pttype==='일반').length,'#94a3b8'],
-            ['📵 부재(비수신/미예약)',absence,'#d97706'],
+            ['부재(비수신/미예약)',absence,'#d97706'],
           ].map(([l,v,c])=>`
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:24px;color:var(--text2)">${l}</span>
@@ -3621,7 +3617,10 @@ function renderCallEntry(c){
       const reasonLabel=c.cancelReason?` <span style="color:var(--red);opacity:.8">(${c.cancelReason})</span>`:'';
       stats.push(`예약취소 <span style="color:var(--red)">${c.cancel}건</span>${reasonLabel}`);
     }
-    if(c.noappt>0) stats.push(`미예약종료 <span style="color:var(--amber)">${c.noappt}건</span>`);
+    if(c.noappt>0){
+      const reasonTxt=c.noapptReason?` (${c.noapptReason}${c.noapptMemo?' · '+c.noapptMemo:''})`:c.noapptMemo?` (${c.noapptMemo})`:'';
+      stats.push(`미예약 <span style="color:var(--amber)">${reasonTxt}</span>`);
+    }
   }
   // 채널 유입 표시
   if(c.channels){
@@ -3783,12 +3782,13 @@ function openCallModal(sid){
   if(missEl2) missEl2.className='call-tab';
   if(adEl2) adEl2.className='call-tab';
   _callBid=null; _callBids=new Set(); _callPttypes=new Set(['신환']); _callPttype='신환'; _callBookingType='당일';
-  // 환자구분 초기화 (체크박스)
-  document.querySelectorAll('input[name="pttype_multi"]').forEach(cb=>{
-    cb.checked=(cb.value==='신환');
-    const lbl=cb.closest('label');
-    if(lbl){ lbl.style.borderColor=cb.value==='신환'?'var(--accent)':'var(--border)'; lbl.style.background=cb.value==='신환'?'rgba(37,99,235,.08)':'var(--s2)'; lbl.style.color=cb.value==='신환'?'var(--accent)':''; }
+  // 환자구분 초기화 (라디오)
+  document.querySelectorAll('input[name="pttype_single"]').forEach(r=>{
+    r.checked=(r.value==='신환');
   });
+  // 스타일 초기화
+  const firstRadio=document.querySelector('input[name="pttype_single"][value="신환"]');
+  if(firstRadio) selectPttype(firstRadio);
   // 예약유형 초기화
   const bkRadio=document.querySelector('input[name="booking_type"][value="당일"]');
   if(bkRadio) bkRadio.checked=true;
@@ -3967,30 +3967,49 @@ function selectBranch(bid){
   if(hint) hint.style.display='none';
 }
 
-function togglePttype(cb){
-  const val=cb.value;
-  if(cb.checked){
-    _callPttypes.add(val);
-  } else {
-    _callPttypes.delete(val);
-    if(_callPttypes.size===0){ cb.checked=true; _callPttypes.add(val); }
-  }
-  _callPttype=[..._callPttypes][0]||'신환';
-  // 체크된 항목 스타일
-  document.querySelectorAll('input[name="pttype_multi"]').forEach(input=>{
-    const lbl=input.closest('label');
-    if(!lbl) return;
-    if(_callPttypes.has(input.value)){
-      lbl.style.borderColor='var(--accent)';
-      lbl.style.background='rgba(37,99,235,.08)';
-      lbl.style.color='var(--accent)';
-    } else {
-      lbl.style.borderColor='var(--border)';
-      lbl.style.background='var(--s2)';
-      lbl.style.color='';
-    }
+function selectPttype(radio){
+  _callPttype=radio.value;
+  _callPttypes=new Set([radio.value]);
+  // 스타일 업데이트
+  const colorMap={
+    '신환':'var(--green)','구환(신규상담)':'var(--purple)',
+    '잔여시술':'var(--cyan)','일반':'var(--text3)',
+    '예약취소':'#dc2626','미예약':'#d97706'
+  };
+  document.querySelectorAll('input[name="pttype_single"]').forEach(r=>{
+    const lbl=r.closest('label'); if(!lbl) return;
+    const isAct=r.value===radio.value;
+    const clr=colorMap[r.value]||'var(--accent)';
+    lbl.style.borderColor=isAct?clr:'var(--border)';
+    lbl.style.background=isAct?clr+'22':'var(--s2)';
+    lbl.style.color=isAct?clr:'';
+    lbl.style.fontWeight=isAct?'700':'';
   });
+  // 예약취소 사유 섹션 표시
+  const cancelSec=document.getElementById('cancel-reason-section');
+  if(cancelSec) cancelSec.style.display=radio.value==='예약취소'?'block':'none';
+  // 미예약 사유 섹션 표시
+  const noapptSec=document.getElementById('noappt-reason-section');
+  if(noapptSec) noapptSec.style.display=radio.value==='미예약'?'block':'none';
+  // 예약취소/미예약일 때 예약유형 숨김
+  const bkSec=document.getElementById('booking-type-section');
+  if(bkSec) bkSec.style.display=(radio.value==='예약취소'||radio.value==='미예약')?'none':'block';
+  // 예약유형 자동 세팅
+  if(radio.value==='예약취소'){ _callBookingType='당일'; }
+  if(radio.value==='미예약'){ _callBookingType='미예약'; }
   toggleSubFields();
+}
+
+function togglePttype(cb){ selectPttype(cb); } // 하위호환
+
+function selectNoapptReason(btn, reason){
+  document.getElementById('cf-noappt-reason').value=reason;
+  document.querySelectorAll('.noappt-reason-btn').forEach(b=>{
+    const isAct=b===btn;
+    b.style.background=isAct?'#d97706':'var(--s2)';
+    b.style.color=isAct?'#fff':'var(--text2)';
+    b.style.borderColor=isAct?'#d97706':'var(--border)';
+  });
 }
 
 function selectBookingType(type){
@@ -4065,35 +4084,60 @@ function renderModalProcGrid(){
   if(!el) return;
   const searchEl=document.getElementById('proc-search-input');
   const q=(searchEl?.value||'').toLowerCase().trim();
-  const allProcs=q?S.procedures.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q))):S.procedures;
+
+  // 검색 필터: 상위명 포함 OR 하위명 포함
+  const allProcs = q
+    ? S.procedures.filter(p=>{
+        const parentMatch=(p.name||'').toLowerCase().includes(q);
+        const subMatch=(p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q));
+        return parentMatch || subMatch;
+      })
+    : S.procedures;
+
+  if(q && allProcs.length===0){
+    el.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:13px">🔍 "${q}" 검색 결과 없음</div>`;
+    return;
+  }
 
   el.innerHTML = allProcs.map(p=>{
     const cnt = _procSel[p.id]||0;
     const hasSubs = p.subs && p.subs.length > 0;
-    const isOpen = _procSubOpen[p.id]||!!q; // 검색 중엔 자동 펼침
+    const parentMatch = (p.name||'').toLowerCase().includes(q);
+    const isOpen = _procSubOpen[p.id] || (!!q && !parentMatch); // 하위만 매칭될 때 자동 펼침
     const clr = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
     const subCnt = hasSubs ? p.subs.reduce((a,s,i)=>a+(_procSel[p.id+':'+i]||0),0) : 0;
     const totalCnt = cnt + subCnt;
-    // 검색 시 하위항목 필터
-    const filteredSubs = q&&hasSubs ? p.subs.filter(s=>(s.name||'').toLowerCase().includes(q)) : (p.subs||[]);
+
+    // 하위항목 필터: 검색어가 있고 상위명이 매칭되지 않으면 하위만 필터
+    const filteredSubs = (q && !parentMatch && hasSubs)
+      ? p.subs.filter(s=>(s.name||'').toLowerCase().includes(q))
+      : (p.subs||[]);
+
+    // 검색어 하이라이트 함수
+    const hl=(text)=>{
+      if(!q) return text;
+      const idx=(text||'').toLowerCase().indexOf(q);
+      if(idx<0) return text;
+      return text.slice(0,idx)+`<mark style="background:#fef08a;border-radius:3px;padding:0 1px">`+text.slice(idx,idx+q.length)+`</mark>`+text.slice(idx+q.length);
+    };
 
     return `<div data-proc-name="${p.name}" style="display:inline-flex;flex-direction:column;gap:0;margin:2px">
       <div style="display:flex;align-items:center;gap:0;border-radius:20px;border:1.5px solid ${totalCnt>0?clr:'var(--border)'};overflow:hidden;background:${totalCnt>0?`${clr}18`:'var(--s2)'}">
         <div onclick="toggleProc('${p.id}')"
           style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${totalCnt>0?'700':'500'};color:${totalCnt>0?clr:'var(--text2)'};position:relative">
-          ${p.name}
+          ${hl(p.name)}
           ${cnt>0?`<span style="position:absolute;top:-6px;right:-6px;background:${clr};color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${cnt}</span>`:''}
         </div>
         ${hasSubs?`<div onclick="toggleProcSub('${p.id}')"
           style="padding:5px 7px;cursor:pointer;font-size:10px;color:${isOpen?clr:'var(--text3)'};border-left:1px solid ${totalCnt>0?clr+'44':'var(--border)'};background:${isOpen?clr+'18':'transparent'}">▾</div>`:''}
       </div>
-      ${hasSubs && isOpen && filteredSubs.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;padding:5px 6px;background:${clr}08;border:1.5px solid ${clr}44;border-top:none;border-radius:0 0 12px 12px;margin-top:-2px">
+      ${hasSubs && (isOpen||q) && filteredSubs.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;padding:5px 6px;background:${clr}08;border:1.5px solid ${clr}44;border-top:none;border-radius:0 0 12px 12px;margin-top:-2px">
         ${filteredSubs.map((s)=>{
           const i=p.subs.indexOf(s);
           const sc = _procSel[p.id+':'+i]||0;
           return `<div onclick="toggleSubProc('${p.id}',${i})"
             style="padding:3px 9px;border-radius:12px;border:1.5px solid ${sc>0?clr:'var(--border)'};background:${sc>0?clr:'transparent'};color:${sc>0?'#fff':'var(--text2)'};font-size:11px;font-weight:${sc>0?'700':'500'};cursor:pointer;position:relative">
-            ${s.icon||''} ${s.name}
+            ${hl(s.name||'')}${s.icon?` ${s.icon}`:''}
             ${sc>0?`<span style="position:absolute;top:-5px;right:-5px;background:${clr};color:#fff;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center">${sc}</span>`:''}
           </div>`;
         }).join('')}
@@ -4148,10 +4192,12 @@ function confirmCall(){
     pttype:primaryPttype, pttypes:pttypesArr.length>1?pttypesArr:undefined,
     bookingType:_callBookingType,
     bookingDate:_callBookingType==='추후'?(document.getElementById('cf-booking-date')?.value||''):'',
-    today:+document.getElementById('cf-today').value||0,
-    cancel:+document.getElementById('cf-cancel').value||0,
-    cancelReason:document.getElementById('cf-cancel-reason')?.value||'',
-    noappt:+document.getElementById('cf-noappt').value||0,
+    today: (_callPttype==='예약취소'||_callPttype==='미예약') ? 0 : 1,
+    cancel: _callPttype==='예약취소' ? 1 : 0,
+    cancelReason: _callPttype==='예약취소' ? (document.getElementById('cf-cancel-reason')?.value||'') : '',
+    noappt: _callPttype==='미예약' ? 1 : 0,
+    noapptReason: _callPttype==='미예약' ? (document.getElementById('cf-noappt-reason')?.value||'') : '',
+    noapptMemo: _callPttype==='미예약' ? (document.getElementById('cf-noappt-reason-memo')?.value.trim()||'') : '',
     channels:chData,
     procs:{...Object.fromEntries(Object.entries(_procSel).filter(([,v])=>v>0))},
     memo:document.getElementById('cf-memo').value.trim(),
@@ -4262,7 +4308,7 @@ function renderBrSum(){
             <div class="kpi" style="--kc:var(--green)"><div class="kl">신환(신규상담)</div><div class="kv">${shin}</div></div>
             <div class="kpi" style="--kc:#7c3aed"><div class="kl">구환(신규상담)</div><div class="kv">${gu}</div></div>
             <div class="kpi" style="--kc:#0891b2"><div class="kl">잔여시술</div><div class="kv">${rem||0}</div></div>
-            <div class="kpi" style="--kc:#d97706"><div class="kl">📵 부재</div><div class="kv">${absence}</div></div>
+            <div class="kpi" style="--kc:#d97706"><div class="kl">부재</div><div class="kv">${absence}</div></div>
             <div class="kpi" style="--kc:var(--red)"><div class="kl">예약취소</div><div class="kv">${cancel}</div></div>
             <div class="kpi" style="--kc:var(--amber)"><div class="kl">미예약종료</div><div class="kv">${noappt}</div></div>
           </div>
@@ -4423,7 +4469,7 @@ function renderCEO(){
     {l:'발신 콜(아웃콜)',v:sum.outcall,c:'var(--purple)',sub:'아웃바운드 건수',d:delta(sum.outcall,prev.outcall)},
     {l:'신규 예약',v:sum.shin,c:'#0e9f6e',sub:'신규 환자 예약',d:delta(sum.shin,prev.shin)},
     {l:'구환(신규상담)',v:sum.gu,c:'#7c3aed',sub:'기존 환자 구환(신규상담)',d:delta(sum.gu,prev.gu)},
-    {l:'📵 부재(비수신/미예약)',v:sum.absence||0,c:'#d97706',sub:'콜백 부재 건수',d:delta(sum.absence||0,prev.absence||0)},
+    {l:'부재(비수신/미예약)',v:sum.absence||0,c:'#d97706',sub:'콜백 부재 건수',d:delta(sum.absence||0,prev.absence||0)},
     {l:'예약 취소',v:sum.cancel,c:'var(--red)',sub:'예약 취소 건수',d:delta(sum.cancel,prev.cancel)},
   ].map(k=>`<div class="ceo-kpi-card" style="--kc:${k.c}">
     <div class="ceo-kpi-lbl">${k.l}</div><div class="ceo-kpi-val">${k.v}</div>
@@ -5313,7 +5359,7 @@ function renderIncentive(){
         <div class="avl" style="background:${cl};width:32px;height:32px;font-size:13px">${s.name[0]}</div>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:800;color:var(--text)">${s.name}</div>
-          <div style="font-size:10px;color:var(--text3)">${s.role||''}</div>
+
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
@@ -5507,7 +5553,7 @@ function renderPerf() {
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800;color:var(--text)">${s.name}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
-            <span style="font-size:11px;color:var(--text3)">${s.role||''}</span>
+
             ${isExternal?'<span style="font-size:9px;font-weight:700;color:#8b5cf6;background:#8b5cf618;padding:1px 6px;border-radius:6px;border:1px solid #8b5cf644">외부업무</span>':''}
             ${isExcluded?'<span style="font-size:9px;font-weight:700;color:#94a3b8;background:#94a3b818;padding:1px 6px;border-radius:6px;border:1px solid #94a3b844">집계제외</span>':''}
           </div>
@@ -5630,7 +5676,7 @@ function openPerfGoalModal() {
           <div style="width:28px;height:28px;border-radius:50%;background:${cl};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">${s.name[0]}</div>
           <div style="flex:1">
             <span style="font-size:12px;font-weight:700;color:var(--text)">${s.name}</span>
-            <span style="font-size:10px;color:var(--text3);margin-left:4px">${s.role||''}</span>
+
           </div>
           ${sug.hasData?`<button onclick="applySuggestion('${s.id}')"
             style="padding:3px 9px;border-radius:6px;border:1px solid #059669;background:rgba(5,150,105,.08);color:#059669;font-size:10px;font-weight:700;cursor:pointer">🤖 추천 적용</button>`:''}
@@ -6240,7 +6286,7 @@ function renderFunnel() {
               <div style="width:28px;height:28px;border-radius:50%;background:${r.clr};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff">${r.s.name[0]}</div>
               <div>
                 <div style="font-size:26px;font-weight:700">${r.s.name}</div>
-                <div style="font-size:20px;color:var(--text3)">${r.s.role||''}</div>
+
               </div>
             </div>
             <div style="display:flex;gap:8px">
@@ -6597,7 +6643,7 @@ function renderMarketing(){
     procEl.innerHTML=sorted.length?sorted.map(([pid,n],i)=>{
       const clr=CLR[i%CLR.length];
       return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:24px;font-weight:600;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getProcLabel(pid)}</span>
+        <span style="font-size:24px;font-weight:600;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getProcName(pid)}</span>
         <div style="flex:1;height:18px;background:var(--s3);border-radius:9px;overflow:hidden">
           <div style="height:100%;width:${Math.round(n/maxP*100)}%;background:${clr};border-radius:9px"></div>
         </div>
@@ -6639,18 +6685,37 @@ function renderMarketing(){
   // 일별 추이
   const trendEl=document.getElementById('mkt-trend-chart');
   if(trendEl&&dates.length<=60){
-    const maxC=Math.max(...dates.map(ds=>(S.calls[ds]||[]).length),1);
-    trendEl.innerHTML=`<div style="display:flex;align-items:flex-end;gap:3px;height:80px;overflow-x:auto">
-      ${dates.map(ds=>{
-        const n=(S.calls[ds]||[]).length;
-        const h=Math.max(4,Math.round(n/maxC*80));
-        const d=new Date(ds+'T00:00:00');
-        return `<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px" title="${ds}: ${n}건">
-          <span style="font-size:18px;color:var(--text3)">${n||''}</span>
-          <div style="width:14px;height:${h}px;background:var(--accent);border-radius:3px 3px 0 0;opacity:.8"></div>
-          <span style="font-size:16px;color:var(--text3);transform:rotate(-45deg);transform-origin:top left;margin-top:4px;white-space:nowrap">${String(d.getMonth()+1)+'/'+d.getDate()}</span>
-        </div>`;
-      }).join('')}
+    const vals=dates.map(ds=>calls.filter(c=>c.date===ds).length);
+    const maxC=Math.max(...vals,1);
+    const W=Math.max(dates.length*28,300), H=120, PAD={t:20,r:10,b:30,l:28};
+    const iW=W-PAD.l-PAD.r, iH=H-PAD.t-PAD.b;
+    const px=(i)=>PAD.l+i/(dates.length-1||1)*iW;
+    const py=(v)=>PAD.t+iH-(v/maxC*iH);
+    const pts=vals.map((v,i)=>`${px(i)},${py(v)}`).join(' ');
+    const area=`${PAD.l},${PAD.t+iH} `+vals.map((v,i)=>`${px(i)},${py(v)}`).join(' ')+` ${PAD.l+iW},${PAD.t+iH}`;
+    const circles=vals.map((v,i)=>`<circle cx="${px(i)}" cy="${py(v)}" r="3" fill="var(--accent)" stroke="#fff" stroke-width="1.5">
+      <title>${dates[i]}: ${v}건</title></circle>`).join('');
+    const xlabels=dates.map((ds,i)=>{
+      const d=new Date(ds+'T00:00:00');
+      const show=dates.length<=14||(i%Math.ceil(dates.length/10)===0)||i===dates.length-1;
+      if(!show) return '';
+      return `<text x="${px(i)}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.getMonth()+1}/${d.getDate()}</text>`;
+    }).join('');
+    trendEl.innerHTML=`<div style="overflow-x:auto">
+      <svg width="${W}" height="${H}" style="display:block">
+        <defs>
+          <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="${area}" fill="url(#trendGrad)"/>
+        <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${circles}
+        ${xlabels}
+        <text x="${PAD.l-4}" y="${PAD.t}" text-anchor="end" font-size="9" fill="var(--text3)">${maxC}</text>
+        <text x="${PAD.l-4}" y="${PAD.t+iH}" text-anchor="end" font-size="9" fill="var(--text3)">0</text>
+      </svg>
     </div>`;
     const totalEl=document.getElementById('mkt-trend-total');
     if(totalEl) totalEl.textContent=`총 ${calls.length}건 · ${dates.length}일간`;
@@ -7562,7 +7627,14 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+=dateLabelStr+'\n'+'─'.repeat(28)+'\n\n';
   txt+='📊 전체 상담 현황\n';
   txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${incall+cb+out}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
-  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n📵 부재    ${absence}건\n예약 취소  ${cancel}건\n미예약 종료 ${noappt}건\n`;
+  // 미예약 사유 집계
+  const noapptReasons={};
+  allCalls.filter(c=>c.pttype==='미예약'&&c.noapptReason).forEach(c=>{
+    const r=c.noapptReason; noapptReasons[r]=(noapptReasons[r]||0)+1;
+  });
+  const noapptReasonTxt=Object.entries(noapptReasons).map(([r,n])=>`  · ${r} ${n}건`).join('\n');
+
+  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n부재      ${absence}건\n예약 취소  ${cancel}건\n미예약    ${noappt}건${noapptReasonTxt?'\n미예약 사유:\n'+noapptReasonTxt:''}\n`;
   txt+='─'.repeat(28)+'\n\n🏥 지점별 현황\n';
   branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0} · 부재 ${b.absence||0} · 예약 ${b.booked}\n`; });
   if(topProcs.length){
@@ -7617,7 +7689,7 @@ function drawReportCanvasAll(dateStr, sum, branchSubs, topProcs){
   rows.push({t:'div'});
   rows.push({t:'sec',text:'📊 전체 상담 현황'});
   rows.push({t:'kpi4',items:[{l:'총 상담',v:sum.total,c:'#2563eb'},{l:'수신 콜',v:sum.incall,c:'#0891b2'},{l:'콜백',v:sum.callback||0,c:'#059669'},{l:'신환',v:sum.shin,c:'#0e9f6e'}]});
-  rows.push({t:'kpi4',items:[{l:'신규 예약',v:sum.shin,c:'#0e9f6e'},{l:'구환',v:sum.gu,c:'#7c3aed'},{l:'📵 부재',v:sum.absence||0,c:'#d97706'},{l:'예약 취소',v:sum.cancel,c:'#dc2626'}]});
+  rows.push({t:'kpi4',items:[{l:'신규 예약',v:sum.shin,c:'#0e9f6e'},{l:'구환',v:sum.gu,c:'#7c3aed'},{l:'부재',v:sum.absence||0,c:'#d97706'},{l:'예약 취소',v:sum.cancel,c:'#dc2626'}]});
   rows.push({t:'div'});
   rows.push({t:'sec',text:'🏥 지점별 현황'});
   rows.push({t:'brh'});
@@ -7801,7 +7873,7 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.trim()).join('\n') : 
   신환(신규)   ${shin}건
   구환         ${gu}건
   잔여시술     ${rem||0}건
-  📵 부재      ${absence}건${chatChData.length?`
+  부재      ${absence}건${chatChData.length?`
 
 📡 채널별 인입 현황
 ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
@@ -7856,7 +7928,7 @@ function drawReportCanvas(dateStr, sum, chData, topProcs){
     items:[
       {label:'신규 예약', val:sum.shin, color:'#0e9f6e'},
       {label:'구환(신규상담)', val:sum.gu, color:'#7c3aed'},
-      {label:'📵 부재', val:sum.absence||0, color:'#d97706'},
+      {label:'부재', val:sum.absence||0, color:'#d97706'},
       {label:'예약 취소', val:sum.cancel, color:'#dc2626'},
       {label:'미예약 종료', val:sum.noappt, color:'#d97706'},
     ]});
@@ -9582,7 +9654,7 @@ function renderDailyProcTable(){
         <th style="padding:10px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;min-width:50px">구분</th>
         ${cols.map(col=>{
           const clr=clrFor(col);
-          return `<th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr};min-width:70px">${col.icon?col.icon+' ':''}${col.name}</th>`;
+          return `<th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr};min-width:70px">${col.name}</th>`;
         }).join('')}
         <th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;background:rgba(37,99,235,.06);min-width:60px">합계</th>
       </tr>
@@ -11328,7 +11400,6 @@ function escHtml(s){
 
 function getProcLabel(pid){
   if(!pid) return '';
-  // 정확한 ID 매칭
   for(const p of (S.procedures||[])){
     if(p.id===pid) return (p.icon?p.icon+' ':'')+p.name;
     if(p.subs) for(const sub of p.subs){
@@ -11336,17 +11407,30 @@ function getProcLabel(pid){
       if(subId===pid) return (sub.icon?sub.icon+' ':'')+sub.name;
     }
   }
-  // 이름으로 fuzzy 매칭 (pid가 이름인 경우)
   const byName=(S.procedures||[]).find(p=>(p.name||'').toLowerCase()===pid.toLowerCase());
   if(byName) return (byName.icon?byName.icon+' ':'')+byName.name;
-  // pid가 'p숫자' 형태면 숫자번째 시술로 매핑
   const mIdx=pid.match(/^p(\d+)$/);
   if(mIdx){
     const idx=parseInt(mIdx[1])-1;
     const p=(S.procedures||[])[idx];
     if(p) return (p.icon?p.icon+' ':'')+p.name;
   }
-  // 그래도 못 찾으면 빈 라벨 대신 '알 수 없는 시술' 반환 (raw pid 노출 방지)
+  return '기타';
+}
+
+// 아이콘 없이 시술명만 반환
+function getProcName(pid){
+  if(!pid) return '';
+  for(const p of (S.procedures||[])){
+    if(p.id===pid) return p.name;
+    if(p.subs) for(const sub of p.subs){
+      if(`${p.id}:${p.subs.indexOf(sub)}`===pid) return sub.name;
+    }
+  }
+  const byName=(S.procedures||[]).find(p=>(p.name||'').toLowerCase()===pid.toLowerCase());
+  if(byName) return byName.name;
+  const mIdx=pid.match(/^p(\d+)$/);
+  if(mIdx){ const p=(S.procedures||[])[parseInt(mIdx[1])-1]; if(p) return p.name; }
   return '기타';
 }
 
