@@ -126,20 +126,20 @@ td:first-child{text-align:left;padding-left:13px}
 
 /* CALL LOG */
 .call-log-list{display:flex;flex-direction:column;gap:8px}
-.call-entry{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px}
-.ce-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.call-entry{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+.ce-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .ce-body{flex:1;min-width:0}
-.ce-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
-.ce-pttype{font-size:11px;font-weight:700}
-.ce-branch{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;color:#fff}
-.ce-degree{font-size:10px;font-weight:700;color:var(--purple)}
-.ce-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-left:auto}
-.ce-procs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.ce-proc-tag{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(37,99,235,.08);color:var(--accent);font-weight:600}
-.ce-stats{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
-.ce-stat{font-size:10px;color:var(--text3)}
+.ce-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.ce-pttype{font-size:14px;font-weight:700}
+.ce-branch{font-size:13px;padding:2px 8px;border-radius:4px;font-weight:700;color:#fff}
+.ce-degree{font-size:13px;font-weight:700;color:var(--purple)}
+.ce-time{font-size:13px;color:var(--text3);font-family:'DM Mono',monospace;margin-left:auto}
+.ce-procs{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.ce-proc-tag{font-size:13px;padding:2px 9px;border-radius:10px;background:rgba(37,99,235,.08);color:var(--accent);font-weight:600}
+.ce-stats{display:flex;gap:10px;margin-top:5px;flex-wrap:wrap}
+.ce-stat{font-size:13px;color:var(--text3)}
 .ce-stat span{font-weight:700;color:var(--text);font-family:'DM Mono',monospace}
-.ce-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px;border-radius:5px;transition:all .15s;flex-shrink:0;align-self:flex-start}
+.ce-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px;border-radius:5px;transition:all .15s;flex-shrink:0;align-self:flex-start}
 .ce-del:hover{color:var(--red);background:rgba(220,38,38,.07)}
 
 /* STAFF MGMT */
@@ -3402,49 +3402,49 @@ function renderStaffInputPage(sid){
     <div id="si-mymemo-wrap-${sid}" style="margin-bottom:16px">
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
         <!-- 메모장 헤더 -->
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px">
             📝 <span>내 메모장</span>
-            <span id="si-memo-count-${sid}" style="font-size:10px;font-weight:600;color:var(--text3);background:var(--s2);padding:1px 6px;border-radius:10px"></span>
+            <span id="si-memo-count-${sid}" style="font-size:13px;font-weight:600;color:var(--text3);background:var(--s2);padding:2px 8px;border-radius:10px"></span>
           </span>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input id="si-memo-search-${sid}" placeholder="검색..." style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);width:110px" oninput="renderSiMemos('${sid}')">
-            <button onclick="openSiMemoAdd('${sid}')" style="border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;cursor:pointer">＋ 추가</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="si-memo-search-${sid}" placeholder="검색..." style="font-size:13px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);width:130px" oninput="renderSiMemos('${sid}')">
+            <button onclick="openSiMemoAdd('${sid}')" style="border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer">＋ 추가</button>
           </div>
         </div>
         <!-- 메모 목록 -->
-        <div id="si-memo-list-${sid}" style="padding:10px 12px;display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto"></div>
+        <div id="si-memo-list-${sid}" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto"></div>
       </div>
     </div>
 
     <!-- 기간 필터 -->
     <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px;padding:9px 13px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-      <span style="font-size:13px;font-weight:700;color:#0f172a">기간</span>
+      <span style="font-size:26px;font-weight:700;color:#0f172a">기간</span>
       <button class="period-btn${period==='today'?' act':''}" id="spb-${sid}-today" onclick="setStaffPeriod('${sid}','today')">오늘</button>
       <button class="period-btn${period==='week'?' act':''}" id="spb-${sid}-week" onclick="setStaffPeriod('${sid}','week')">최근 7일</button>
       <button class="period-btn${period==='year'?' act':''}" id="spb-${sid}-year" onclick="setStaffPeriod('${sid}','year')">최근 1년</button>
       <button class="period-btn${period==='custom'?' act':''}" id="spb-${sid}-custom" onclick="setStaffPeriod('${sid}','custom')">직접선택</button>
       <div id="sp-custom-${sid}" style="display:${period==='custom'?'flex':'none'};align-items:center;gap:5px">
         <input type="date" id="sp-from-${sid}" value="${_staffCustomFrom[sid]||customFromVal}"
-          style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
+          style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:22px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
           onchange="updateStaffCustomDate('${sid}','from',this.value)">
-        <span style="font-size:11px;color:var(--text3)">~</span>
+        <span style="font-size:22px;color:var(--text3)">~</span>
         <input type="date" id="sp-to-${sid}" value="${_staffCustomTo[sid]||today}"
-          style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
+          style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:22px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace"
           onchange="updateStaffCustomDate('${sid}','to',this.value)">
       </div>
-      <span style="margin-left:auto;font-size:11px;color:var(--text3)">${periodLabel(from,to)}</span>
+      <span style="margin-left:auto;font-size:22px;color:var(--text3)">${periodLabel(from,to)}</span>
     </div>
 
     <!-- ① 목표 달성률 -->
     ${(goalIn||goalShin||goalOut)?`
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px">🎯 목표 달성률</div>
+      <div style="font-size:24px;font-weight:700;color:var(--text2);margin-bottom:12px">🎯 목표 달성률</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${goalIn?`<div>
           <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:12px;color:var(--text2)">📞 인콜+콜백</span>
-            <span style="font-size:12px;font-weight:700;color:${inPct>=100?'#059669':inPct>=70?'#f59e0b':'#ef4444'}">${inTotal} / ${goalIn} (${inPct}%)</span>
+            <span style="font-size:24px;color:var(--text2)">📞 인콜+콜백</span>
+            <span style="font-size:24px;font-weight:700;color:${inPct>=100?'#059669':inPct>=70?'#f59e0b':'#ef4444'}">${inTotal} / ${goalIn} (${inPct}%)</span>
           </div>
           <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${inPct}%;background:${inPct>=100?'#059669':inPct>=70?'#f59e0b':'#3b82f6'};border-radius:4px;transition:width .5s"></div>
@@ -3452,8 +3452,8 @@ function renderStaffInputPage(sid){
         </div>`:''}
         ${goalShin?`<div>
           <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:12px;color:var(--text2)">🆕 신환+구환(신규)</span>
-            <span style="font-size:12px;font-weight:700;color:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#ef4444'}">${shinGuTotal} / ${goalShin} (${shinPct}%)</span>
+            <span style="font-size:24px;color:var(--text2)">🆕 신환+구환(신규)</span>
+            <span style="font-size:24px;font-weight:700;color:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#ef4444'}">${shinGuTotal} / ${goalShin} (${shinPct}%)</span>
           </div>
           <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${shinPct}%;background:${shinPct>=100?'#059669':shinPct>=70?'#f59e0b':'#3b82f6'};border-radius:4px;transition:width .5s"></div>
@@ -3461,8 +3461,8 @@ function renderStaffInputPage(sid){
         </div>`:''}
         ${goalOut?`<div>
           <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:12px;color:var(--text2)">📤 아웃콜</span>
-            <span style="font-size:12px;font-weight:700;color:${outPct>=100?'#059669':outPct>=70?'#f59e0b':'#ef4444'}">${outcall} / ${goalOut} (${outPct}%)</span>
+            <span style="font-size:24px;color:var(--text2)">📤 아웃콜</span>
+            <span style="font-size:24px;font-weight:700;color:${outPct>=100?'#059669':outPct>=70?'#f59e0b':'#ef4444'}">${outcall} / ${goalOut} (${outPct}%)</span>
           </div>
           <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${outPct}%;background:${outPct>=100?'#059669':outPct>=70?'#f59e0b':'#7c3aed'};border-radius:4px;transition:width .5s"></div>
@@ -4008,22 +4008,7 @@ function selectBookingType(type){
 }
 
 function filterProcGrid(q){
-  const grid=document.getElementById('modal-proc-grid'); if(!grid) return;
-  const items=grid.querySelectorAll('.proc-item,[data-proc-name]');
-  if(!items.length){ renderProcGrid(); return; } // 첫 렌더 시
-  q=(q||'').toLowerCase().trim();
-  grid.querySelectorAll('.proc-group,.proc-item,.proc-sub-wrap').forEach(el=>{
-    if(q){
-      if(el.classList.contains('proc-item')||el.dataset.procName){
-        const name=(el.dataset.procName||el.textContent||'').toLowerCase();
-        el.style.display=name.includes(q)?'':'none';
-      } else {
-        el.style.display=''; // 그룹은 보임
-      }
-    } else {
-      el.style.display='';
-    }
-  });
+  renderModalProcGrid();
 }
 function stepNum(id, delta){
   const el = document.getElementById(id);
@@ -11879,16 +11864,16 @@ function renderSiMemos(sid){
   let memos=(_siMemoCache[sid]||[]).filter(m=>!q||`${m.title||''} ${m.content||''}`.toLowerCase().includes(q));
   const cnt=document.getElementById(`si-memo-count-${sid}`);
   if(cnt) cnt.textContent=memos.length+'건';
-  if(!memos.length){ el.innerHTML='<div style="padding:8px;text-align:center;color:var(--text3);font-size:11px">메모가 없습니다. + 추가를 눌러보세요</div>'; return; }
-  el.innerHTML=memos.map(m=>`<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+  if(!memos.length){ el.innerHTML='<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">메모가 없습니다. + 추가를 눌러보세요</div>'; return; }
+  el.innerHTML=memos.map(m=>`<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
       <div style="flex:1;min-width:0">
-        ${m.title?`<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.title)}</div>`:''}
-        <div style="font-size:11px;color:var(--text2);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.content||'')}</div>
+        ${m.title?`<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.title)}</div>`:''}
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.content||'')}</div>
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <button onclick="openSiMemoEdit('${sid}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">수정</button>
-        <button onclick="deleteSiMemo('${sid}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">삭제</button>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onclick="openSiMemoEdit('${sid}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer">수정</button>
+        <button onclick="deleteSiMemo('${sid}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer">삭제</button>
       </div>
     </div>
   </div>`).join('');
