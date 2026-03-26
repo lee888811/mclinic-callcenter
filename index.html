@@ -11204,6 +11204,190 @@ function toggleCallSchedulePanel(){
   if(icon) icon.textContent=isOpen?'▼':'▲';
 }
 
+
+// ════════════════════════════════════
+// 핵심 누락 함수 복원
+// ════════════════════════════════════
+
+// ── 데이터 저장 ──
+function saveData(){
+  try{ localStorage.setItem('mclinic_v2', JSON.stringify(S)); }catch(e){}
+}
+
+// ── Firebase 동기화 ──
+async function saveCallToFirebase(ds){
+  if(!_syncUrl) return;
+  const base=_syncUrl.replace(/\/+$/,'');
+  try{
+    await fbFetch(base+`/mclinic/calls/${ds}.json`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(S.calls[ds]||[])
+    });
+  }catch(e){ console.warn('Firebase save failed',e); }
+}
+
+async function syncToFirebase(){
+  if(!_syncUrl) return;
+  const base=_syncUrl.replace(/\/+$/,'');
+  try{
+    const payload={
+      branches:S.branches, staff:S.staff, procedures:S.procedures,
+      channels:S.channels, roles:S.roles, calls:S.calls,
+      notes:S.notes||[], faqs:S.faqs||[],
+      incentive:S.incentive, perfGoals:S.perfGoals||{}, adBudgets:S.adBudgets||{}
+    };
+    await fbFetch(base+'/mclinic.json',{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+  }catch(e){ console.warn('syncToFirebase failed',e); }
+}
+
+// ── VOC 관련 ──
+function toggleVocSection(){
+  const sec=document.getElementById('voc-section');
+  const icon=document.getElementById('voc-toggle-icon');
+  if(!sec) return;
+  const isOpen=sec.style.display!=='none';
+  sec.style.display=isOpen?'none':'block';
+  if(icon) icon.textContent=isOpen?'▾':'▴';
+  if(!isOpen) renderVocProcPills();
+}
+
+let _vocType='';
+let _vocProcSel=new Set();
+
+function renderVocProcPills(){
+  const el=document.getElementById('voc-proc-pills'); if(!el) return;
+  el.innerHTML=(S.procedures||[]).map(p=>{
+    const sel=_vocProcSel.has(p.id);
+    const clr=bclr(S.branches[0]?.id||'');
+    return `<div onclick="toggleVocProc('${p.id}')" style="padding:3px 10px;border-radius:12px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s2)'};color:${sel?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${p.icon||''} ${p.name}</div>`;
+  }).join('');
+}
+
+function toggleVocProc(pid){
+  if(_vocProcSel.has(pid)) _vocProcSel.delete(pid);
+  else _vocProcSel.add(pid);
+  renderVocProcPills();
+}
+
+function getAllVocs(){
+  const vocs=[];
+  Object.entries(S.calls||{}).forEach(([ds,calls])=>{
+    (calls||[]).forEach(c=>{
+      if(c.voc&&c.voc.type){
+        vocs.push({...c.voc, date:ds, bid:c.bid, sid:c.sid, callId:c.id});
+      }
+    });
+  });
+  return vocs.sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+// ── 콜 카드 렌더 ──
+function renderCallCard(c, ds){
+  const s=S.staff.find(x=>x.id===c.sid);
+  const b=S.branches.find(x=>x.id===c.bid);
+  const cl=bclr(c.bid);
+  const ptMap={'신환':'🆕','구환(신규상담)':'🔄','잔여시술':'🗓','일반':'💬','비수신부재':'📵','미예약부재':'🔔'};
+  const ptIco=ptMap[c.pttype]||'';
+  const typeLabel=c.medium==='chat'?'채팅':(c.type==='in'?'수신룰':c.type==='cb'?'콜백':c.type==='out'?'발신':c.type==='miss'?'오발신':c.type==='ad'?'광고':c.type==='absence1'?'비수신부재':c.type==='absence2'?'미예약부재':'');
+  const procs=Object.entries(c.procs||{}).filter(([k,v])=>v>0).map(([pid])=>getProcLabel(pid)).join(', ');
+  const time=c.ts?new Date(c.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="call-card" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;position:relative">
+    <div style="display:flex;align-items:flex-start;gap:8px">
+      <div style="width:32px;height:32px;border-radius:50%;background:${c.medium==='chat'?'rgba(8,145,178,.12)':'rgba(37,99,235,.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${c.medium==='chat'?'💬':'📞'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#0f172a">${ptIco} ${c.pttype||''}</span>
+          ${b?`<span style="font-size:10px;font-weight:700;background:${cl}22;color:${cl};padding:1px 7px;border-radius:8px">${b.name}</span>`:''}
+          ${typeLabel?`<span style="font-size:10px;font-weight:600;color:var(--text3);background:var(--s2);padding:1px 7px;border-radius:8px">${typeLabel}</span>`:''}
+          ${c.voc?.type?`<span style="font-size:10px;font-weight:700;background:${c.voc.type==='컴플레인'?'#fee2e2':'#dcfce7'};color:${c.voc.type==='컴플레인'?'#dc2626':'#15803d'};padding:1px 7px;border-radius:8px">💬 ${c.voc.type}</span>`:''}
+        </div>
+        ${procs?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">🎯 ${procs}</div>`:''}
+        ${c.memo?`<div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ${escHtml(c.memo)}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:4px;font-size:10px;color:var(--text3)">
+          ${c.today?`<span>예약 ${c.today}건</span>`:''}
+          ${c.cancel?`<span style="color:#dc2626">취소 ${c.cancel}건</span>`:''}
+          ${c.noappt?`<span style="color:#d97706">미예약 ${c.noappt}건</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--text3)">${time}</span>
+        <button onclick="openEditModal('${c.id}','${c.sid||''}','${ds}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">✏️</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 직원 KPI 카드 ──
+function renderStaffKpiCard(sid, ds){
+  const el=document.getElementById(`si-kpi-card-${sid}`); if(!el) return;
+  const calls=getAnalysisCalls(ds).filter(c=>c.sid===sid);
+  const shin=calls.filter(c=>c.pttype==='신환').length;
+  const gu=calls.filter(c=>c.pttype==='구환(신규상담)').length;
+  const rem=calls.filter(c=>c.pttype==='잔여시술').length;
+  const gen=calls.filter(c=>c.pttype==='일반').length;
+  const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
+  el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap">
+    <div style="background:#dcfce7;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#15803d">신환</div><div style="font-size:16px;font-weight:900">${shin}</div></div>
+    <div style="background:#ede9fe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#7c3aed">구환</div><div style="font-size:16px;font-weight:900">${gu}</div></div>
+    <div style="background:#dbeafe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#1d4ed8">예약</div><div style="font-size:16px;font-weight:900">${booked}</div></div>
+  </div>`;
+}
+
+// ── 랜딩페이지 검색 모달 ──
+function openLandingSearchModal(){
+  const modal=document.getElementById('modal-landing-search');
+  if(!modal) return;
+  modal.classList.add('open');
+  const inp=document.getElementById('landing-search-inp');
+  if(inp) inp.value='';
+  loadLandingData().then(()=>renderLandingSearchList(''));
+  setTimeout(()=>inp?.focus(),100);
+}
+
+function renderLandingSearchList(q=''){
+  const el=document.getElementById('landing-search-list'); if(!el) return;
+  q=(q||document.getElementById('landing-search-inp')?.value||'').toLowerCase().trim();
+  const filtered=q?_landingData.filter(d=>(d.name||'').toLowerCase().includes(q)):_landingData;
+  if(!filtered.length){ el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3)">결과 없음</div>'; return; }
+  el.innerHTML=filtered.slice(0,30).map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border)">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:700;color:#0f172a">${escHtml(d.name||'')}</div>
+      <div style="font-size:10px;color:#2563eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(d.url||'').replace(/https?:\/\/(www\.)?/,'').slice(0,40)}</div>
+    </div>
+    <button onclick="copyLandingUrl('${escHtml(d.url||'')}');toast('📋 복사됨')" style="border:none;background:var(--accent);color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">복사</button>
+  </div>`).join('');
+}
+
+// ── 근태 프리셋 ──
+function applyRosterPreset(start, end, btn){
+  const s=document.getElementById('roster-time-start');
+  const e=document.getElementById('roster-time-end');
+  if(s) s.value=start;
+  if(e) e.value=end;
+  document.querySelectorAll('.roster-preset-btn').forEach(b=>b.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+}
+
+// ── 연차 이월 ──
+function confirmLeaveCarryover(){
+  if(!confirm('연차를 이월하시겠습니까?')) return;
+  try{
+    const saved=localStorage.getItem('leave_data');
+    if(saved) _leaveData=JSON.parse(saved);
+    S.staff.forEach(s=>{
+      if(!_leaveData[s.name]) _leaveData[s.name]={};
+      _leaveData[s.name].total=(_leaveData[s.name].total||15);
+    });
+    localStorage.setItem('leave_data',JSON.stringify(_leaveData));
+    renderLeaveCards();
+    toast('✅ 연차 이월 완료');
+  }catch(e){ toast('⚠️ 이월 실패'); }
+}
+
 // ── 앱 초기화 ──
 loadBranchExcelFromStorage();
 loadRosterSettings();
