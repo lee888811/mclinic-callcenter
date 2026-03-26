@@ -1817,9 +1817,9 @@ td:first-child{text-align:left;padding-left:13px}
 </div>
 
 <div class="modal" id="modal-call">
-  <div style="display:flex;gap:12px;align-items:flex-start;max-width:99vw;max-height:95vh">
+  <div style="display:flex;gap:12px;align-items:stretch;width:99vw;max-width:99vw;height:93vh;max-height:93vh">
     <!-- 콜 입력 폼 -->
-  <div class="mbox" style="width:560px">
+  <div class="mbox" style="width:560px;height:100%;overflow-y:auto;flex-shrink:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="mt" id="modal-call-title" style="margin:0">📋 상담 기록</div>
       <button onclick="closeModal('modal-call')" style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.color='#64748b'">✕</button>
@@ -2046,7 +2046,7 @@ td:first-child{text-align:left;padding-left:13px}
   </div>
 
     <!-- ★ 수가표·병원정보 패널 -->
-    <div id="side-notes-panel" style="width:400px;flex-shrink:0;border-radius:14px;display:flex;flex-direction:column;height:92vh;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden">
+    <div id="side-notes-panel" style="width:400px;flex-shrink:0;border-radius:14px;display:flex;flex-direction:column;height:100%;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden">
 
       <!-- 파란 헤더 (탭 + 검색) -->
       <div style="background:#2563eb;flex-shrink:0">
@@ -2110,7 +2110,7 @@ td:first-child{text-align:left;padding-left:13px}
     </div>
 
     <!-- 직원근무현황 미니 패널 -->
-    <div id="call-schedule-panel" style="width:400px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:92vh">
+    <div id="call-schedule-panel" style="width:400px;flex-shrink:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);height:100%">
       <div style="padding:10px 14px;background:#059669;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleCallSchedulePanel()">
         <span style="font-size:13px;font-weight:800;color:#fff;flex:1">🏥 직원근무현황</span>
         <span id="call-sched-toggle-icon" style="color:#fff;font-size:12px">▲</span>
@@ -16891,7 +16891,7 @@ function snpRenderLanding(q='') {
 
   const filtered = q
     ? _landingData.filter(d=> d.name.toLowerCase().includes(q)||(d.extra||'').toLowerCase().includes(q))
-    : _landingData.slice(0,30);
+    : _landingData;
 
   if(!filtered.length){
     el.innerHTML=`<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px">검색 결과 없음</div>`;
