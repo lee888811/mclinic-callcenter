@@ -11277,24 +11277,28 @@ function openRosterQuickInput(ds){
   const cur = entries.find(e=>e.staff===_quickStaff);
 
   const SHIFTS = [
-    {label:'9시조',   start:'09:00', end:'18:00', type:'오전', color:'#1d4ed8', bg:'#dbeafe'},
-    {label:'9시30분조',start:'09:30', end:'18:30', type:'오전', color:'#0891b2', bg:'#cffafe'},
-    {label:'10시조',  start:'10:00', end:'19:00', type:'오전', color:'#059669', bg:'#dcfce7'},
-    {label:'1시조',   start:'13:00', end:'21:00', type:'오후', color:'#7c3aed', bg:'#ede9fe'},
-    {label:'휴무',    start:'', end:'', type:'휴무', color:'#b91c1c', bg:'#fee2e2'},
-    {label:'연차',    start:'', end:'', type:'연차', color:'#854d0e', bg:'#fef9c3'},
-    {label:'반차',    start:'', end:'', type:'반차', color:'#9d174d', bg:'#fce7f3'},
-    {label:'특근',    start:'', end:'', type:'특근', color:'#9a3412', bg:'#ffedd5'},
+    {label:'9시조',          start:'09:00', end:'18:00', lunch:'12:00', type:'오전', color:'#1d4ed8', bg:'#dbeafe'},
+    {label:'9시30분조',      start:'09:30', end:'18:30', lunch:'12:30', type:'오전', color:'#0891b2', bg:'#cffafe'},
+    {label:'10시조(점심1시)',start:'10:00', end:'19:00', lunch:'13:00', type:'오전', color:'#059669', bg:'#dcfce7'},
+    {label:'10시조(점심1시30)',start:'10:00',end:'19:00', lunch:'13:30', type:'오전', color:'#16a34a', bg:'#bbf7d0'},
+    {label:'10시조(점심2시)',start:'10:00', end:'19:00', lunch:'14:00', type:'오전', color:'#15803d', bg:'#86efac'},
+    {label:'1시조',          start:'13:00', end:'21:00', lunch:'16:00', type:'오후', color:'#7c3aed', bg:'#ede9fe'},
+    {label:'토요일 근무',    start:'09:00', end:'17:00', lunch:'', type:'오전', color:'#0369a1', bg:'#e0f2fe'},
+    {label:'휴무',           start:'', end:'', lunch:'', type:'휴무', color:'#b91c1c', bg:'#fee2e2'},
+    {label:'연차',           start:'', end:'', lunch:'', type:'연차', color:'#854d0e', bg:'#fef9c3'},
+    {label:'반차',           start:'', end:'', lunch:'', type:'반차', color:'#9d174d', bg:'#fce7f3'},
+    {label:'특근',           start:'', end:'', lunch:'', type:'특근', color:'#9a3412', bg:'#ffedd5'},
   ];
 
   const btnEl = document.getElementById('roster-quick-shift-btns');
   btnEl.innerHTML = SHIFTS.map(sh=>{
     const isAct = cur?.shift===sh.label || (!cur?.shift && cur?.type===sh.type && sh.label==='9시조');
+    const lunchLine = sh.lunch ? `<br><span style="font-size:9px;font-weight:400;opacity:.7">점심 ${sh.lunch}</span>` : '';
     return `<button onclick="applyQuickShift('${sh.label}')"
-      style="padding:12px 8px;border-radius:10px;border:2px solid ${isAct?sh.color:sh.color+'44'};
+      style="padding:10px 6px;border-radius:10px;border:2px solid ${isAct?sh.color:sh.color+'44'};
         background:${isAct?sh.bg:'var(--s2)'};color:${sh.color};
-        font-size:13px;font-weight:800;cursor:pointer;transition:all .15s">
-      ${sh.label}${sh.start?`<br><span style="font-size:10px;font-weight:400;opacity:.8">${sh.start}~${sh.end}</span>`:''}
+        font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;line-height:1.4">
+      ${sh.label}${sh.start?`<br><span style="font-size:10px;font-weight:400;opacity:.8">${sh.start}~${sh.end}</span>`:''}${lunchLine}
     </button>`;
   }).join('');
 
@@ -11304,21 +11308,11 @@ function openRosterQuickInput(ds){
 function applyQuickShift(shiftLabel){
   if(!_quickTargetDs||!_quickStaff) return;
   const ds = _quickTargetDs;
-  const SHIFT_MAP = {
-    '9시조':    {start:'09:00',end:'18:00',type:'오전'},
-    '9시30분조':{start:'09:30',end:'18:30',type:'오전'},
-    '10시조':   {start:'10:00',end:'19:00',type:'오전'},
-    '1시조':    {start:'13:00',end:'21:00',type:'오후'},
-    '휴무':     {start:'',end:'',type:'휴무'},
-    '연차':     {start:'',end:'',type:'연차'},
-    '반차':     {start:'',end:'',type:'반차'},
-    '특근':     {start:'',end:'',type:'특근'},
-  };
-  const info = SHIFT_MAP[shiftLabel]||{start:'09:00',end:'18:00',type:'오전'};
+  const info = SHIFT_TIMES[shiftLabel]||{start:'09:00',end:'18:00',lunch:'12:00',type:'오전'};
   if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:''};
   const entries = _rosterData[ds].entries;
   const idx = entries.findIndex(e=>e.staff===_quickStaff);
-  const entry = {staff:_quickStaff, type:info.type, shift:shiftLabel, start:info.start, end:info.end, lunch:'1시', memo:''};
+  const entry = {staff:_quickStaff, type:info.type, shift:shiftLabel, start:info.start, end:info.end, lunch:info.lunch||'', memo:''};
   if(idx>=0) entries[idx]=entry;
   else entries.push(entry);
   rosterLocalSave();
@@ -11338,7 +11332,7 @@ function rosterQuickDelete(){
   toast(`🗑 ${_quickStaff} · ${ds.slice(5)} 삭제`);
 }
 
-function rosterAutoGenerate(){ toast('⚠️ 직원 선택 후 날짜를 클릭해서 입력해 주세요.'); }
+function rosterAutoGenerate_placeholder(){}
 
 function loadRosterSettings(){
   const view=document.getElementById('roster-notice-view');
@@ -11453,14 +11447,16 @@ function renderRosterCalendar(){
   const sub=document.getElementById('roster-subtitle'); if(sub) sub.textContent=`예약부 월간 근태 현황 · ${lbl}`;
   const pb=document.getElementById('roster-btn-patterns'); if(pb) pb.style.display='';
   renderRosterQuickStaffPills();
-  const firstDay=new Date(yr,mo,1).getDay();
+  // 월요일 시작: 0=월,1=화,...,5=토,6=일
+  const rawFirstDay=new Date(yr,mo,1).getDay(); // 0=일,1=월,...,6=토
+  const firstDay=(rawFirstDay+6)%7; // 월=0, 화=1, ..., 일=6
   const lastDate=new Date(yr,mo+1,0).getDate();
-  const DOW=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const DOW=['월','화','수','목','금','토','일'];
   const today=todayStr();
   let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>`;
   DOW.forEach((d,i)=>{
-    const c=i===0?'#ef4444':i===6?'#3b82f6':'#374151';
-    html+=`<th style="padding:6px 4px;font-size:11px;font-weight:700;color:${c};background:#f8fafc;border:1px solid #e2e8f0;text-align:center">${d}</th>`;
+    const c=i===5?'#3b82f6':i===6?'#ef4444':'#374151';
+    html+=`<th style="padding:6px 4px;font-size:13px;font-weight:700;color:${c};background:#f8fafc;border:1px solid #e2e8f0;text-align:center">${d}</th>`;
   });
   html+=`</tr></thead><tbody>`;
   let day=1, row=0;
@@ -11476,14 +11472,17 @@ function renderRosterCalendar(){
       const entries=dayData.entries||[];
       const notice=dayData.notice||'';
       const isToday=ds===today;
-      const isSun=col===0, isSat=col===6;
+      // 월요일 시작: col 5=토, col 6=일
+      const isSat=col===5, isSun=col===6;
       const numClr=isSun?'#ef4444':isSat?'#3b82f6':'#374151';
       const tags=entries.map((e,i)=>{
         const st=ROSTER_TYPE_STYLE[e.type]||ROSTER_TYPE_STYLE['오전'];
         const timeStr=e.start&&e.end?`${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
         // 시간 있으면 시간, 없으면 type(휴무/연차 등)
-        const dispLabel = timeStr || e.type;
-        return `<div onclick="_quickStaff='${e.staff}';renderRosterQuickStaffPills();openRosterQuickInput('${ds}')" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:10px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.shift||e.type} ${timeStr}">${e.staff} <span style="font-weight:500;opacity:.8">${dispLabel}</span></div>`;
+        const lunchStr = e.lunch ? ` 점심${e.lunch}` : '';
+        const dispLabel = timeStr ? `${timeStr}${lunchStr}` : (e.type||'');
+        const safeStaff = (e.staff||'').replace(/'/g,"\\'");
+        return `<div onclick="_quickStaff='${safeStaff}';renderRosterQuickStaffPills();openRosterQuickInput('${ds}')" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:11px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.shift||e.type} ${timeStr}${lunchStr}">${e.staff} <span style="font-weight:400;opacity:.9">${dispLabel}</span></div>`;
       }).join('');
       const noticeHtml=notice?`<div style="margin-top:2px;padding:2px 5px;border-radius:4px;background:#fef08a;color:#713f12;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📌 ${notice}</div>`:'';
       html+=`<td style="border:1px solid #e2e8f0;background:${isToday?'#eff6ff':'#fff'};vertical-align:top;padding:4px;min-height:80px">
@@ -11630,9 +11629,12 @@ function loadRosterPatternData(){
 }
 function renderRosterPatternList(){
   const el=document.getElementById('roster-pattern-list'); if(!el) return;
-  const DOW_LABELS=['일','월','화','수','목','금','토'];
+  const DOW_LABELS=['월','화','수','목','금','토','일'];
+  // 패턴 저장 시 dow: 0=월,1=화,...,5=토,6=일 (월요일 시작)
+  // 달력과 동기화: getDay()는 0=일,1=월..., 패턴 조회 시 (getDay()+6)%7로 변환
   const SHIFTS=[
-    {label:'9시조'}, {label:'9시30분조'}, {label:'10시조'}, {label:'1시조'},
+    {label:'9시조'}, {label:'9시30분조'}, {label:'10시조(점심1시)'}, {label:'10시조(점심1시30)'},
+    {label:'10시조(점심2시)'}, {label:'1시조'}, {label:'토요일 근무'},
     {label:'휴무'}, {label:'연차'}, {label:'반차'}, {label:'특근'},
   ];
   el.innerHTML=S.staff.map(s=>{
@@ -11641,7 +11643,7 @@ function renderRosterPatternList(){
     return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px">${escHtml(s.name)}</div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
-        ${DOW_LABELS.map((d,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0?'#ef4444':i===6?'#3b82f6':'#374151'}">${d}</div>`).join('')}
+        ${DOW_LABELS.map((d,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===5?'#3b82f6':i===6?'#ef4444':'#374151'}">${d}</div>`).join('')}
         ${[0,1,2,3,4,5,6].map(dow=>{
           const cur=pat[dow]?.shift||'9시조';
           return `<select data-sid="${s.id}" data-dow="${dow}"
@@ -11652,21 +11654,24 @@ function renderRosterPatternList(){
         }).join('')}
       </div>
       <div style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text3)">
-        💡 9시조 09~18 · 9시30분조 09:30~18:30 · 10시조 10~19 · 1시조 13~21
+        💡 9시조 09~18 · 9시30분조 09:30~18:30 · 10시조(점심1~2시) 10~19 · 1시조 13~21 · 토요일 09~15
       </div>
     </div>`;
   }).join('');
 }
 
 const SHIFT_TIMES={
-  '9시조':   {start:'09:00', end:'18:00', type:'오전'},
-  '9시30분조':{start:'09:30', end:'18:30', type:'오전'},
-  '10시조':  {start:'10:00', end:'19:00', type:'오전'},
-  '1시조':   {start:'13:00', end:'21:00', type:'오후'},
-  '휴무':    {start:'', end:'', type:'휴무'},
-  '연차':    {start:'', end:'', type:'연차'},
-  '반차':    {start:'', end:'', type:'반차'},
-  '특근':    {start:'', end:'', type:'특근'},
+  '9시조':        {start:'09:00', end:'18:00', lunch:'12:00', type:'오전'},
+  '9시30분조':    {start:'09:30', end:'18:30', lunch:'12:30', type:'오전'},
+  '10시조(점심1시)':{start:'10:00', end:'19:00', lunch:'13:00', type:'오전'},
+  '10시조(점심1시30)':{start:'10:00', end:'19:00', lunch:'13:30', type:'오전'},
+  '10시조(점심2시)':{start:'10:00', end:'19:00', lunch:'14:00', type:'오전'},
+  '1시조':        {start:'13:00', end:'21:00', lunch:'16:00', type:'오후'},
+  '토요일 근무':  {start:'09:00', end:'17:00', lunch:'', type:'오전'},
+  '휴무':         {start:'', end:'', lunch:'', type:'휴무'},
+  '연차':         {start:'', end:'', lunch:'', type:'연차'},
+  '반차':         {start:'', end:'', lunch:'', type:'반차'},
+  '특근':         {start:'', end:'', lunch:'', type:'특근'},
 };
 
 function setRosterPatternShift(sid, dow, shiftLabel){
@@ -11698,7 +11703,8 @@ function applyRosterPatterns(){
 
   for(let d=1;d<=lastDate;d++){
     const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dow=new Date(ds+'T00:00:00').getDay();
+    const rawDow=new Date(ds+'T00:00:00').getDay(); // 0=일,1=월,...
+    const dow=(rawDow+6)%7; // 월=0,화=1,...,토=5,일=6 (월요일 시작)
     S.staff.forEach(s=>{
       // ID로 먼저, 없으면 이름으로 fallback
       const pat=_rosterPatterns[s.id]||_rosterPatterns[s.name];
@@ -11719,7 +11725,7 @@ function applyRosterPatterns(){
         shift,
         start:shiftInfo.start||'09:00',
         end:shiftInfo.end||'18:00',
-        lunch:'1시',
+        lunch:shiftInfo.lunch||'',
         memo:''
       };
       if(existing>=0) _rosterData[ds].entries[existing]=entry;
@@ -11797,13 +11803,14 @@ function renderLeaveCards(){
     const joinDate=ld.joinDate||s.joinDate||'';
     const baseTotal=ld.totalOverride!=null?ld.totalOverride:calcAnnualLeave(joinDate);
     // 과거 연도는 스냅샷, 현재 연도는 실시간
+    // 연차 사용 날짜 목록 (현재 연도 실시간)
+    const annualEntries = Object.entries(_rosterData)
+      .filter(([ds])=>ds.startsWith(String(yr)))
+      .flatMap(([ds,d])=>(d.entries||[]).filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차')).map(e=>({ds,type:e.type})))
+      .sort((a,b)=>a.ds.localeCompare(b.ds));
     const annualUsed = isPastYear
       ? (ld.yearSnapshot?.[yr] ?? 0)
-      : Object.entries(_rosterData)
-          .filter(([ds])=>ds.startsWith(String(yr)))
-          .flatMap(([,d])=>d.entries||[])
-          .filter(e=>e.staff===s.name&&(e.type==='연차'||e.type==='반차'))
-          .reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
+      : annualEntries.reduce((a,e)=>a+(e.type==='반차'?0.5:1),0);
     const overtimeList=(ld.overtime||[]).filter(o=>o.date&&o.date.startsWith(String(yr)));
     const otComp=overtimeList.filter(o=>o.reward==='대체휴가').length;
     const otPay=overtimeList.filter(o=>o.reward==='금전').length;
@@ -11822,26 +11829,80 @@ function renderLeaveCards(){
       ${joinDate?`<div style="font-size:10px;color:var(--text3);margin-bottom:10px">📅 입사일: ${joinDate}</div>`:'<div style="font-size:10px;color:#f59e0b;margin-bottom:10px">⚠️ 입사일 미설정</div>'}
       <div style="background:#f0fdf4;border-radius:10px;padding:10px 12px;margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:8px">🌿 연차 현황 (${yr}년) — 특근 미포함</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${annualEntries.length?'10px':'0'}">
           ${[['총 연차',baseTotal,'#15803d','#dbeafe'],['사용',annualUsed,'#dc2626','#fee2e2'],['잔여',annualRemain,annualRemain>0?'#15803d':annualRemain<0?'#dc2626':'var(--text3)','#dcfce7']].map(([l,v,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:8px 12px;text-align:center;min-width:55px"><div style="font-size:9px;color:var(--text3)">${l}</div><div style="font-size:20px;font-weight:900;color:${c}">${v}</div></div>`).join('')}
         </div>
+        ${annualEntries.length ? `
+        <div style="margin-top:6px">
+          <div style="font-size:10px;font-weight:700;color:#15803d;margin-bottom:4px">📋 사용 일자</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${annualEntries.map(e=>`<span style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:${e.type==='반차'?'#fce7f3':'#dcfce7'};color:${e.type==='반차'?'#9d174d':'#15803d'}">${e.ds.slice(5)} ${e.type==='반차'?'(반차)':''}</span>`).join('')}
+          </div>
+        </div>` : (isPastYear ? `<div style="font-size:11px;color:var(--text3)">스냅샷 저장된 데이터: ${annualUsed}일 사용</div>` : '<div style="font-size:11px;color:var(--text3)">사용 내역 없음</div>')}
       </div>
       <div style="background:#fff7ed;border-radius:10px;padding:10px 12px">
         <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:8px">🔥 특근 현황 (${yr}년)</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           ${[['특근 횟수',overtimeList.length+'회','#d97706','#fff7ed'],['대체휴가',otComp+'일','#7c3aed','#ede9fe'],['대체사용',otUsed+'일','#dc2626','#fee2e2'],['대체잔여',otRemain+'일',otRemain>0?'#7c3aed':'var(--text3)','#f5f3ff'],['금전지급',otPay+'건','#059669','#dcfce7']].map(([l,v,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:8px 10px;text-align:center;min-width:55px"><div style="font-size:9px;color:var(--text3)">${l}</div><div style="font-size:16px;font-weight:900;color:${c}">${v}</div></div>`).join('')}
         </div>
-        ${overtimeList.length?`<div style="max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:3px">
-          ${overtimeList.map(o=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:#fff;border-radius:6px;font-size:11px">
-            <span style="color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0">${o.date}</span>
-            <span style="font-weight:600;flex:1">${o.note||'특근'}</span>
-            <span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:${o.reward==='대체휴가'?'#ede9fe':'#dcfce7'};color:${o.reward==='대체휴가'?'#7c3aed':'#15803d'}">${o.reward}</span>
-            <button onclick="deleteOvertime('${s.name}','${o.id}')" style="border:none;background:none;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
-          </div>`).join('')}
-        </div>`:'<div style="font-size:11px;color:var(--text3)">특근 내역 없음</div>'}
+        ${overtimeList.length ? `
+        <div style="margin-top:4px">
+          <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px">📋 특근 일자</div>
+          <div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">
+            ${overtimeList.sort((a,b)=>a.date.localeCompare(b.date)).map(o=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#fff;border-radius:8px;font-size:12px;border:1px solid #fed7aa">
+              <span style="font-weight:700;color:#92400e;flex-shrink:0">${o.date.slice(5)}</span>
+              <span style="flex:1;color:#78350f">${o.note||'특근'}</span>
+              <span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${o.reward==='대체휴가'?'#ede9fe':'#dcfce7'};color:${o.reward==='대체휴가'?'#7c3aed':'#15803d'}">${o.reward}</span>
+              <button onclick="deleteOvertime('${s.name}','${o.id}')" style="border:none;background:none;color:var(--text3);cursor:pointer;padding:0 4px;font-size:13px">✕</button>
+            </div>`).join('')}
+          </div>
+        </div>` : '<div style="font-size:11px;color:var(--text3)">특근 내역 없음</div>'}
+      </div>
+      <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-top:8px;border:1px solid #e2e8f0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:700;color:#475569">📝 메모</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="editStaffMemo('${s.name.replace(/'/g,"\\'")}')\" id="memo-edit-btn-${s.name.replace(/\s/g,'_')}" style="padding:3px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;color:#475569;font-size:11px;font-weight:700;cursor:pointer">✏️ 수정</button>
+            <button onclick="saveStaffMemo('${s.name.replace(/'/g,"\\'")}')\" id="memo-save-btn-${s.name.replace(/\s/g,'_')}" style="padding:3px 10px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:none">💾 저장</button>
+          </div>
+        </div>
+        <textarea id="staff-memo-${s.name.replace(/\s/g,'_')}"
+          placeholder="특이사항, 주의사항, 개인 메모 등 자유롭게 작성하세요..."
+          readonly
+          style="width:100%;min-height:80px;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.6;resize:vertical;background:#f1f5f9;color:var(--text);font-family:inherit;box-sizing:border-box;cursor:default">${escHtml(ld.memo||'')}</textarea>
       </div>
     </div>`;
   }).join('');
+}
+function editStaffMemo(name){
+  const key = name.replace(/\s/g,'_');
+  const ta = document.getElementById('staff-memo-'+key);
+  const editBtn = document.getElementById('memo-edit-btn-'+key);
+  const saveBtn = document.getElementById('memo-save-btn-'+key);
+  if(!ta) return;
+  ta.readOnly = false;
+  ta.style.background = '#fff';
+  ta.style.cursor = 'text';
+  ta.focus();
+  if(editBtn) editBtn.style.display = 'none';
+  if(saveBtn) saveBtn.style.display = '';
+}
+function saveStaffMemo(name){
+  const key = name.replace(/\s/g,'_');
+  const ta = document.getElementById('staff-memo-'+key);
+  const editBtn = document.getElementById('memo-edit-btn-'+key);
+  const saveBtn = document.getElementById('memo-save-btn-'+key);
+  if(!ta) return;
+  loadLeaveDataFromStorage();
+  if(!_leaveData[name]) _leaveData[name]={};
+  _leaveData[name].memo = ta.value;
+  saveLeaveData2();
+  ta.readOnly = true;
+  ta.style.background = '#f1f5f9';
+  ta.style.cursor = 'default';
+  if(editBtn) editBtn.style.display = '';
+  if(saveBtn) saveBtn.style.display = 'none';
+  toast(`✅ ${name} 메모 저장됨`);
 }
 function openLeaveOverride(name,current){
   const val=prompt(`${name}의 총 연차를 직접 입력하세요 (현재: ${current}일)\n빈칸 입력 시 자동계산 복원`,current);
