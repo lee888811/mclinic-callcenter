@@ -217,6 +217,24 @@ td:first-child{text-align:left;padding-left:13px}
 
 /* period filter buttons */
 .period-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+/* 아코디언 차트 패널 */
+.pm-acc-card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s}
+.pm-acc-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.pm-acc-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none;background:#fff;flex-wrap:wrap;gap:8px}
+.pm-acc-header:hover{background:var(--s1)}
+.pm-acc-ico{font-size:10px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.pm-acc-ico.open{transform:rotate(90deg)}
+.pm-acc-title{font-size:13px;font-weight:800;color:#0f172a;flex:1;min-width:140px}
+.pm-acc-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pm-br-pills{display:flex;gap:4px;flex-wrap:wrap}
+.pm-period-pills{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pm-pp{padding:3px 9px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+.pm-pp.act{background:var(--accent);border-color:var(--accent);color:#fff}
+.pm-br-pill{padding:3px 9px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;border:2px solid;transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+.pm-date-input{font-size:10px;padding:2px 5px;border:1px solid var(--border);border-radius:6px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace;width:100px}
+.pm-tilde{font-size:10px;color:var(--text3)}
+.pm-acc-body{padding:12px 16px 16px;border-top:1px solid var(--border);animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .period-btn:hover{border-color:var(--accent);color:var(--accent)}
 .period-btn.act{background:var(--accent);border-color:var(--accent);color:#fff}
 
@@ -1173,40 +1191,206 @@ td:first-child{text-align:left;padding-left:13px}
           <button class="btn btn-g btn-sm" onclick="renderProcMatrix()">🔄</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px;padding:9px 13px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <span style="font-size:15px;font-weight:700;color:#0f172a;margin-right:4px">기간</span>
-        <button class="period-btn act" id="pmpb-today" onclick="setPmPeriod('today',this)">오늘</button>
-        <button class="period-btn" id="pmpb-week" onclick="setPmPeriod('week',this)">최근 7일</button>
-        <button class="period-btn" id="pmpb-year" onclick="setPmPeriod('year',this)">최근 1년</button>
-        <button class="period-btn" id="pmpb-custom" onclick="setPmPeriod('custom',this)">직접선택</button>
-        <div id="pm-custom-range" style="display:none;align-items:center;gap:5px">
-          <input type="date" id="pm-date-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderProcMatrix()">
-          <span style="font-size:11px;color:var(--text3)">~</span>
-          <input type="date" id="pm-date-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderProcMatrix()">
+
+      <!-- 월간 차트들 - 아코디언 -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px" id="pm-chart-accordion">
+
+        <!-- ① 지점별 월간 콜 추이 -->
+        <div class="pm-acc-card" id="acc-br">
+          <div class="pm-acc-header" onclick="pmToggleAcc('br')">
+            <span class="pm-acc-ico" id="acc-ico-br">▶</span>
+            <span class="pm-acc-title">🏥 지점별 월간 콜 추이</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-br"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-br-3" onclick="pmSetPeriod('br',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-br-6" onclick="pmSetPeriod('br',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-br-12" onclick="pmSetPeriod('br',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-br" onchange="pmSetCustom('br')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-br" onchange="pmSetCustom('br')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-br" style="display:none">
+            <div id="trend-br-chart" style="overflow-x:auto;position:relative"></div>
+          </div>
         </div>
+
+        <!-- ② 신환·구환 월별 추이 -->
+        <div class="pm-acc-card" id="acc-pt">
+          <div class="pm-acc-header" onclick="pmToggleAcc('pt')">
+            <span class="pm-acc-ico" id="acc-ico-pt">▶</span>
+            <span class="pm-acc-title">👥 신환·구환 월별 추이</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-pt"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-pt-3" onclick="pmSetPeriod('pt',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-pt-6" onclick="pmSetPeriod('pt',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-pt-12" onclick="pmSetPeriod('pt',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-pt" onchange="pmSetCustom('pt')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-pt" onchange="pmSetCustom('pt')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-pt" style="display:none">
+            <div style="display:flex;gap:12px;font-size:11px;margin-bottom:10px">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#059669;display:inline-block"></span>신환</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#7c3aed;display:inline-block"></span>구환</span>
+            </div>
+            <div id="trend-pt-chart" style="overflow-x:auto"></div>
+          </div>
+        </div>
+
+        <!-- ③ 요일별 평균 콜수 -->
+        <div class="pm-acc-card" id="acc-dow">
+          <div class="pm-acc-header" onclick="pmToggleAcc('dow')">
+            <span class="pm-acc-ico" id="acc-ico-dow">▶</span>
+            <span class="pm-acc-title">📅 요일별 평균 콜수</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-dow"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-dow-3" onclick="pmSetPeriod('dow',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-dow-6" onclick="pmSetPeriod('dow',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-dow-12" onclick="pmSetPeriod('dow',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-dow" onchange="pmSetCustom('dow')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-dow" onchange="pmSetCustom('dow')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-dow" style="display:none">
+            <div id="trend-dow-chart"></div>
+          </div>
+        </div>
+
+        <!-- ④ 시간대별 콜 분포 -->
+        <div class="pm-acc-card" id="acc-hour">
+          <div class="pm-acc-header" onclick="pmToggleAcc('hour')">
+            <span class="pm-acc-ico" id="acc-ico-hour">▶</span>
+            <span class="pm-acc-title">🕐 시간대별 콜 분포</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-hour"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-hour-3" onclick="pmSetPeriod('hour',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-hour-6" onclick="pmSetPeriod('hour',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-hour-12" onclick="pmSetPeriod('hour',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-hour" onchange="pmSetCustom('hour')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-hour" onchange="pmSetCustom('hour')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-hour" style="display:none">
+            <div id="trend-hour-chart"></div>
+          </div>
+        </div>
+
+        <!-- ⑤ 시술별 추이 -->
+        <div class="pm-acc-card" id="acc-proc">
+          <div class="pm-acc-header" onclick="pmToggleAcc('proc')">
+            <span class="pm-acc-ico" id="acc-ico-proc">▶</span>
+            <span class="pm-acc-title">💉 시술별 추이</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-proc"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-proc-today" onclick="pmSetProcPeriod('today',this)">당일</button>
+                <button class="pm-pp" id="pm-pp-proc-week" onclick="pmSetProcPeriod('week',this)">7일</button>
+                <button class="pm-pp" id="pm-pp-proc-month" onclick="pmSetProcPeriod('month',this)">1달</button>
+                <button class="pm-pp" id="pm-pp-proc-6mo" onclick="pmSetProcPeriod('6mo',this)">6개월</button>
+                <input type="date" class="pm-date-input" id="tpp-from" onchange="renderTrendProcChartByPeriod()">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="tpp-to" onchange="renderTrendProcChartByPeriod()">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-proc" style="display:none">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="trend-proc-filter"></div>
+            <div id="trend-proc-chart" style="overflow-x:auto"></div>
+          </div>
+        </div>
+
+        <!-- ⑥ 지점별 시술 집중 분석 -->
+        <div class="pm-acc-card" id="acc-focus">
+          <div class="pm-acc-header" onclick="pmToggleAcc('focus')">
+            <span class="pm-acc-ico" id="acc-ico-focus">▶</span>
+            <span class="pm-acc-title">🔬 지점별 시술 집중 분석</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-focus"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-focus-3" onclick="pmSetPeriod('focus',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-focus-6" onclick="pmSetPeriod('focus',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-focus-12" onclick="pmSetPeriod('focus',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-focus" onchange="pmSetCustom('focus')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-focus" onchange="pmSetCustom('focus')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-focus" style="display:none">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="trend-br-filter"></div>
+            <div id="trend-proc-br-chart"></div>
+          </div>
+        </div>
+
+        <!-- ⑦ 지점별 신환·구환 분석 -->
+        <div class="pm-acc-card" id="acc-ptbr">
+          <div class="pm-acc-header" onclick="pmToggleAcc('ptbr')">
+            <span class="pm-acc-ico" id="acc-ico-ptbr">▶</span>
+            <span class="pm-acc-title">👥 지점별 신환·구환 분석</span>
+            <div class="pm-acc-controls" onclick="event.stopPropagation()">
+              <div class="pm-br-pills" id="pm-br-pills-ptbr"></div>
+              <div class="pm-period-pills">
+                <button class="pm-pp act" id="pm-pp-ptbr-3" onclick="pmSetPeriod('ptbr',3,this)">3개월</button>
+                <button class="pm-pp" id="pm-pp-ptbr-6" onclick="pmSetPeriod('ptbr',6,this)">6개월</button>
+                <button class="pm-pp" id="pm-pp-ptbr-12" onclick="pmSetPeriod('ptbr',12,this)">12개월</button>
+                <input type="date" class="pm-date-input" id="pm-from-ptbr" onchange="pmSetCustom('ptbr')">
+                <span class="pm-tilde">~</span>
+                <input type="date" class="pm-date-input" id="pm-to-ptbr" onchange="pmSetCustom('ptbr')">
+              </div>
+            </div>
+          </div>
+          <div class="pm-acc-body" id="acc-body-ptbr" style="display:none">
+            <div id="pttype-branch-chart"></div>
+          </div>
+        </div>
+
+      </div><!-- /아코디언 -->
+    </div>
+
+    <!-- 📈 월간 보고 -->
+    <div class="page" id="page-trend">
+      <div class="ph">
+        <div><div class="pt">📈 월간 보고</div><div class="ps">월별·지점별·시술별 추이 한눈에</div></div>
       </div>
-      <!-- 환자구분 토글 -->
-      <div style="display:flex;gap:7px;margin-bottom:14px" id="pm-pttype-tabs">
-        <button class="period-btn act" id="pmpt-all" onclick="setPmPttype('all',this)">전체</button>
-        <button class="period-btn" id="pmpt-shin" onclick="setPmPttype('신환',this)">신환(신규상담)</button>
-        <button class="period-btn" id="pmpt-gu" onclick="setPmPttype('구환(신규상담)',this)">구환(신규상담)</button>
-        <button class="period-btn" id="pmpt-rem" onclick="setPmPttype('잔여시술',this)">잔여시술</button>
-      </div>
-      <!-- 시술×지점 예약 현황 표 -->
-      <div class="card" style="margin-top:14px">
-        <div class="ch2" style="margin-bottom:8px;flex-wrap:wrap;gap:8px">
+
+      <!-- 📋 시술×지점 예약 현황 (맨 위) -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="ch2" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <span class="slbl" style="margin:0">📋 시술×지점 예약 현황</span>
           <span id="dp-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
         </div>
+        <!-- 기간 선택 -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:8px 12px;background:var(--s1);border:1px solid var(--border);border-radius:9px">
+          <span style="font-size:12px;font-weight:700;color:#0f172a;flex-shrink:0">기간</span>
+          <button class="period-btn act" id="dpb-today" onclick="setDpPeriod('today',this)">당일</button>
+          <button class="period-btn" id="dpb-week" onclick="setDpPeriod('week',this)">일주일</button>
+          <button class="period-btn" id="dpb-month" onclick="setDpPeriod('month',this)">한달</button>
+          <button class="period-btn" id="dpb-custom" onclick="setDpPeriod('custom',this)">기간선택</button>
+          <div id="dp-custom-range" style="display:none;align-items:center;gap:5px">
+            <input type="date" id="dp-date-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="applyDpCustom()">
+            <span style="font-size:11px;color:var(--text3)">~</span>
+            <input type="date" id="dp-date-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="applyDpCustom()">
+          </div>
+        </div>
         <div id="dp-proc-filter" style="margin-bottom:6px;padding:10px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-          <!-- 상위 시술 선택 -->
           <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
             <span style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap">시술 선택</span>
             <button onclick="dpSelectAll()" id="dp-all-btn"
               style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
             <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
           </div>
-          <!-- 하위 카테고리 선택 (상위 선택 시 표시) -->
           <div id="dp-sub-filter" style="display:none;padding-top:6px;border-top:1px solid var(--border)">
             <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
               <span style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap">하위 카테고리</span>
@@ -1224,7 +1408,6 @@ td:first-child{text-align:left;padding-left:13px}
         </div>
         <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
         <div id="branch-call-table" style="overflow-x:auto;font-size:11px;margin-top:16px"></div>
-        <!-- 과거 엑셀 업로드 -->
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button onclick="downloadBranchCallTemplate()" style="padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">📥 CSV 양식 다운로드</button>
           <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">
@@ -1235,109 +1418,6 @@ td:first-child{text-align:left;padding-left:13px}
           <button id="branch-excel-clear" onclick="clearBranchCallExcel()" style="display:none;padding:5px 10px;background:var(--red-light,#fef2f2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✕ 삭제</button>
         </div>
       </div>
-
-      <div id="proc-matrix-content" style="margin-top:14px"></div>
-    </div>
-
-    <!-- 📈 월간 보고 -->
-    <div class="page" id="page-trend">
-      <div class="ph">
-        <div><div class="pt">📈 월간 보고</div><div class="ps">월별·지점별·시술별 추이 한눈에</div></div>
-
-      </div>
-
-      <!-- 기간 선택 -->
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <span style="font-size:15px;font-weight:800;color:#0f172a;flex-shrink:0">표시 기간</span>
-        <button class="period-btn" id="tr-1m" onclick="setTrendPeriod(1,this)">1개월</button>
-        <button class="period-btn act" id="tr-3m" onclick="setTrendPeriod(3,this)">3개월</button>
-        <button class="period-btn" id="tr-6m" onclick="setTrendPeriod(6,this)">6개월</button>
-        <button class="period-btn" id="tr-12m" onclick="setTrendPeriod(12,this)">12개월</button>
-        <button class="period-btn" id="tr-custom" onclick="setTrendPeriod('custom',this)">직접 선택</button>
-        <div id="trend-custom-range" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:11px;color:var(--text3)">시작 월</span>
-          <input type="month" id="tr-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="applyTrendCustom()">
-          <span style="font-size:11px;color:var(--text3)">~</span>
-          <input type="month" id="tr-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="applyTrendCustom()">
-        </div>
-      </div>
-
-      <!-- 1. 월별 총콜 추이 (지점별 누적 막대 + 라인) -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="ch2" style="margin-bottom:12px">
-          <span class="slbl" style="margin:0">🏥 지점별 월간 콜 추이</span>
-          <div style="display:flex;gap:8px;font-size:11px;flex-wrap:wrap;align-items:center" id="trend-br-legend"></div>
-        </div>
-        <div id="trend-br-chart" style="overflow-x:auto;position:relative"></div>
-      </div>
-
-      <!-- 2. 신환/구환 월별 추이 -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="ch2" style="margin-bottom:12px">
-          <span class="slbl" style="margin:0">👥 신환·구환 월별 추이</span>
-          <div style="display:flex;gap:12px;font-size:11px">
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#059669;display:inline-block"></span>신환(신규상담)</span>
-            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#7c3aed;display:inline-block"></span>구환(신규상담)</span>
-          </div>
-        </div>
-        <div id="trend-pt-chart" style="overflow-x:auto"></div>
-      </div>
-
-      <!-- 3. 요일별 콜 패턴 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="card">
-          <div class="slbl" style="margin-bottom:12px">📅 요일별 평균 콜수</div>
-          <div id="trend-dow-chart"></div>
-        </div>
-        <div class="card">
-          <div class="slbl" style="margin-bottom:12px">🕐 시간대별 콜 분포</div>
-          <div id="trend-hour-chart"></div>
-        </div>
-      </div>
-
-      <!-- 4. 시술별 기간별 추이 (시술 선택) -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="ch2" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <span class="slbl" style="margin:0">💉 시술별 추이</span>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-            <button class="period-btn act" id="tppb-today" onclick="setTrendProcPeriod('today',this)">당일</button>
-            <button class="period-btn" id="tppb-week" onclick="setTrendProcPeriod('week',this)">최근 7일</button>
-            <button class="period-btn" id="tppb-month" onclick="setTrendProcPeriod('month',this)">최근 1달</button>
-            <button class="period-btn" id="tppb-6mo" onclick="setTrendProcPeriod('6mo',this)">최근 6개월</button>
-            <button class="period-btn" id="tppb-custom" onclick="setTrendProcPeriod('custom',this)">직접선택</button>
-            <div id="tpp-custom-range" style="display:none;align-items:center;gap:5px">
-              <input type="date" id="tpp-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderTrendProcChartByPeriod()">
-              <span style="font-size:11px;color:var(--text3)">~</span>
-              <input type="date" id="tpp-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px;font-family:'DM Mono',monospace" onchange="renderTrendProcChartByPeriod()">
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap" id="trend-proc-filter"></div>
-        </div>
-        <div id="trend-proc-chart" style="overflow-x:auto"></div>
-      </div>
-
-      <!-- 5. 지점별 시술 집중 분석 -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="ch2" style="margin-bottom:12px">
-          <span class="slbl" style="margin:0">🔬 지점별 시술 집중 분석</span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap" id="trend-br-filter"></div>
-        </div>
-        <div id="trend-proc-br-chart"></div>
-      </div>
-
-      <!-- 6. 지점별 신환/구환 분석 -->
-      <div class="card">
-        <div class="ch2" style="margin-bottom:12px">
-          <span class="slbl" style="margin:0">👥 지점별 신환·구환 분석</span>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-            <button class="period-btn act" id="ptb-3m" onclick="setPtTypePeriod(3,this)">3개월</button>
-            <button class="period-btn" id="ptb-6m" onclick="setPtTypePeriod(6,this)">6개월</button>
-            <button class="period-btn" id="ptb-12m" onclick="setPtTypePeriod(12,this)">12개월</button>
-          </div>
-        </div>
-        <div id="pttype-branch-chart"></div>
-      </div>
-    </div>
 
     <!-- 일일 보고 -->
     <div class="page" id="page-closingrpt">
@@ -1466,8 +1546,6 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
-  </div>
-</div>
 
 <!-- Modal: 특근 보상휴가 관리 -->
 <div class="modal" id="modal-overtime-use" style="z-index:710">
@@ -1830,10 +1908,12 @@ td:first-child{text-align:left;padding-left:13px}
       <div class="ml">전화 유형</div>
       <div class="call-type-tabs" style="flex-wrap:wrap">
         <div class="call-tab act-in" id="ctab-in" onclick="setCallType('in')">📞 수신(인콜)</div>
-        <div class="call-tab" id="ctab-cb" onclick="setCallType('cb')" title="비수신부재 재발신·미예약 재안내도 콜백으로 기록">🔄 콜백</div>
+        <div class="call-tab" id="ctab-cb" onclick="setCallType('cb')">🔄 콜백</div>
         <div class="call-tab" id="ctab-out" onclick="setCallType('out')">📤 발신(아웃콜)</div>
         <div class="call-tab" id="ctab-miss" onclick="setCallType('miss')">📵 오발신</div>
         <div class="call-tab" id="ctab-ad" onclick="setCallType('ad')">📢 광고</div>
+        <div class="call-tab" id="ctab-absence1" onclick="setCallType('absence1')">📵 비수신부재</div>
+        <div class="call-tab" id="ctab-absence2" onclick="setCallType('absence2')">🔔 미예약부재</div>
       </div>
       <div id="cb-info-wrap" style="display:none;margin-top:8px;padding:9px 12px;background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.2);border-radius:8px;font-size:11px;color:var(--green)">
         🔄 <strong>콜백</strong>이란? 인콜 수신 후 지점 확인·안내를 위해 상담원이 고객에게 다시 거는 전화입니다.<br><span style='font-size:10px;color:var(--text3)'>· 비수신 부재중 후 재발신 · 미예약 고객 재안내도 콜백으로 기록하세요.</span>
@@ -1898,7 +1978,7 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
-    <div class="ml">지점 *</div>
+    <div class="ml">지점 * <span id="branch-required-hint" style="font-size:10px;color:#dc2626;font-weight:600;display:none">← 지점을 선택해주세요</span></div>
     <div class="branch-pills" id="modal-branch-pills"></div>
 
     <div id="below-branch-wrap">
@@ -1908,9 +1988,7 @@ td:first-child{text-align:left;padding-left:13px}
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="구환(신규상담)" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--purple)"> 🔄 구환(신규상담)</label>
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="잔여시술" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="일반" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--text3)"> 💬 일반문의</label>
-      <!-- 콜백 전용 -->
-      <label id="pttype-cb-label1" style="display:none;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="비수신부재" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--amber)"> 📵 비수신부재</label>
-      <label id="pttype-cb-label2" style="display:none;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="미예약부재" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--red)"> 🔔 미예약부재</label>
+      <!-- 콜백 전용 안내문 제거됨, 부재는 전화유형으로 이동 -->
     </div>
 
     <div id="modal-sub-fields">
@@ -1961,15 +2039,15 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="proc-grid" id="modal-proc-grid"></div>
     </div>
 
-    <div class="ml">메모 (선택)</div>
+    </div><!-- /below-branch-wrap -->
+
+    <div class="ml" style="margin-top:10px">메모 (선택)</div>
     <textarea class="minp" id="cf-memo" rows="2" placeholder="특이사항..." style="resize:none;margin-top:4px"></textarea>
 
     <!-- 랜딩페이지 빠른 검색 버튼 -->
     <button onclick="openLandingSearchModal()" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;border:1.5px solid #2563eb44;background:rgba(37,99,235,.05);color:#2563eb;font-size:12px;font-weight:700;cursor:pointer;text-align:left">
       🔗 랜딩페이지 검색 <span style="font-weight:400;opacity:.7">(시술 URL 빠르게 찾기)</span>
     </button>
-
-    </div><!-- /below-branch-wrap -->
 
     <!-- VOC 입력 (선택) -->
     <div style="margin-top:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
@@ -2932,6 +3010,10 @@ function getPeriodDates(period, fromId, toId){
     const d=new Date(); d.setDate(d.getDate()-6);
     return {from:localDateStr(d), to:today};
   }
+  if(period==='month'){
+    const d=new Date(); d.setDate(d.getDate()-29);
+    return {from:localDateStr(d), to:today};
+  }
   if(period==='year'){
     const d=new Date(); d.setFullYear(d.getFullYear()-1);
     return {from:localDateStr(d), to:today};
@@ -3029,7 +3111,8 @@ function go(pid,el){
   else if(pid==='procs') renderProcMgmt();
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
-  else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); }
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); }
+  else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   else if(pid==='closingrpt'){
     const cr=document.getElementById('cr-date');
     const crFrom=document.getElementById('cr-from');
@@ -3595,7 +3678,7 @@ function openCallModal(sid){
   const adEl2=document.getElementById('ctab-ad');
   if(missEl2) missEl2.className='call-tab';
   if(adEl2) adEl2.className='call-tab';
-  _callBid=S.branches[0]?.id||null;
+  _callBid=null;
   _callPttype='신환';
   document.querySelectorAll('input[name=pttype]').forEach(r=>r.checked=(r.value==='신환'));
   document.querySelectorAll('input[name=booked]').forEach(r=>r.checked=(r.value==='1'));
@@ -3616,10 +3699,7 @@ function openCallModal(sid){
   Object.keys(_procSubOpen).forEach(k=>delete _procSubOpen[k]);
   resetVocFields();
   document.getElementById('modal-branch-pills').innerHTML=S.branches.map(b=>{
-    const isAct=b.id===_callBid, cl=bclr(b.id);
-    return `<div class="br-pill${isAct?' act':''}" id="bpill-${b.id}"
-      style="${isAct?`background:${cl};border-color:${cl};color:#fff`:''}"
-      onclick="selectBranch('${b.id}')">${b.name}</div>`;
+    return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
   }).join('');
   renderChatChannelFields({});
   renderModalProcGrid();
@@ -3711,31 +3791,31 @@ function setCallType(t){
   document.getElementById('ctab-out').className='call-tab'+(t==='out'?' act-out':'');
   const missEl=document.getElementById('ctab-miss');
   const adEl=document.getElementById('ctab-ad');
+  const abs1El=document.getElementById('ctab-absence1');
+  const abs2El=document.getElementById('ctab-absence2');
   if(missEl) missEl.className='call-tab'+(t==='miss'?' act-miss':'');
-  if(adEl) adEl.className='call-tab'+(t==='ad'?' act-ad':'');
+  if(adEl)   adEl.className='call-tab'+(t==='ad'?' act-ad':'');
+  if(abs1El) abs1El.className='call-tab'+(t==='absence1'?' act-miss':'');
+  if(abs2El) abs2El.className='call-tab'+(t==='absence2'?' act-cb':'');
   document.getElementById('out-degree-wrap').style.display=t==='out'?'block':'none';
   document.getElementById('cb-info-wrap').style.display=t==='cb'?'block':'none';
-  // 오발신/광고 선택 시 지점 아래 섹션 비활성화
+  // 오발신/광고/부재 선택 시 지점 아래 섹션 비활성화
   const isSimple=(t==='miss'||t==='ad');
+  const isAbsenceType=(t==='absence1'||t==='absence2');
   const belowWrap=document.getElementById('below-branch-wrap');
   const branchWrap=document.getElementById('modal-branch-pills');
   if(belowWrap){
-    belowWrap.style.opacity=isSimple?'0.3':'1';
-    belowWrap.style.pointerEvents=isSimple?'none':'auto';
+    belowWrap.style.opacity=(isSimple||isAbsenceType)?'0.3':'1';
+    belowWrap.style.pointerEvents=(isSimple||isAbsenceType)?'none':'auto';
   }
   if(branchWrap){
-    branchWrap.style.opacity=isSimple?'0.3':'1';
-    branchWrap.style.pointerEvents=isSimple?'none':'auto';
+    branchWrap.style.opacity=(isSimple||isAbsenceType)?'0.3':'1';
+    branchWrap.style.pointerEvents=(isSimple||isAbsenceType)?'none':'auto';
   }
-  // 오발신/광고일 때 지점 선택 label 색상 표시
-  const brLabel=document.querySelector('#modal-phone-section~.ml');
-  // 콜백 전용 환자구분 옵션 표시
-  const cb1=document.getElementById('pttype-cb-label1');
-  const cb2=document.getElementById('pttype-cb-label2');
-  if(cb1) cb1.style.display = t==='cb' ? 'flex' : 'none';
-  if(cb2) cb2.style.display = t==='cb' ? 'flex' : 'none';
-  // 콜백 해제 시 부재 옵션 선택돼 있으면 신환으로 초기화
-  if(t!=='cb' && (_callPttype==='비수신부재'||_callPttype==='미예약부재')){
+  // 부재 유형이면 pttype 자동 설정
+  if(isAbsenceType){
+    _callPttype = (t==='absence1') ? '비수신부재' : '미예약부재';
+  } else if(_callPttype==='비수신부재'||_callPttype==='미예약부재'){
     _callPttype='신환';
     const r=document.querySelector('input[name=pttype][value="신환"]');
     if(r) r.checked=true;
@@ -3766,6 +3846,8 @@ function selectBranch(bid){
     p.className='br-pill'+(isAct?' act':'');
     p.style.cssText=isAct?`background:${cl};border-color:${cl};color:#fff`:'';
   });
+  const hint=document.getElementById('branch-required-hint');
+  if(hint) hint.style.display='none';
 }
 function stepNum(id, delta){
   const el = document.getElementById(id);
@@ -3796,7 +3878,8 @@ function selectCancelReason(el,reason){
   if(r) r.value=reason;
 }
 function toggleSubFields(){
-  const isAbsence = (_callPttype==='비수신부재'||_callPttype==='미예약부재');
+  const isAbsenceType=(_callType==='absence1'||_callType==='absence2');
+  const isAbsence = isAbsenceType || (_callPttype==='비수신부재'||_callPttype==='미예약부재');
   const sf=document.getElementById('modal-sub-fields');
   if(sf) sf.style.display=((_callPttype==='일반')||isAbsence)?'none':'block';
   // 잔여시술 선택 시 시술 섹션 비활성화
@@ -3873,8 +3956,13 @@ function toggleSubProc(pid, idx){
   renderModalProcGrid();
 }
 function confirmCall(){
-  const isSimpleType=(_callType==='miss'||_callType==='ad');
-  if(!_callBid && !isSimpleType){toast('⚠️ 지점을 선택해주세요');return;}
+  const isSimpleType=(_callType==='miss'||_callType==='ad'||_callType==='absence1'||_callType==='absence2');
+  if(!_callBid && !isSimpleType){
+    toast('⚠️ 지점을 선택해주세요');
+    const hint=document.getElementById('branch-required-hint');
+    if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
+    return;
+  }
   // 채팅 채널 수집 (채팅 모드일 때만)
   const chData={};
   if(_callMedium==='chat'){
@@ -3927,7 +4015,8 @@ function confirmCall(){
     else if(pid==='brsum') renderBrSum();
     else if(pid==='history') renderHistory();
     else if(pid==='channel') renderChannelPage();
-    else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); }
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); }
+    else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   }
   toast(toastMsg);
 }
@@ -6711,17 +6800,13 @@ function setPmPttype(val, el){
 }
 function renderProcMatrix(){
   const {from,to}=getPeriodDates(_pmPeriod,'pm-date-from','pm-date-to');
-  document.getElementById('pm-date-lbl').textContent=periodLabel(from,to)+(_pmPttype!=='all'?' · '+_pmPttype:'');
+  document.getElementById('pm-date-lbl').textContent=periodLabel(from,to);
   let calls=getAnalysisCallsForRange(from,to);
-  if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
-
   const container=document.getElementById('proc-matrix-content');
 
-  // Build matrix: proc × branch counts (and shin/gu breakdown)
-  // matrix[pid][bid] = {total, shin, gu}
+  // 매트릭스 집계
   const matrix={};
-  S.procedures.forEach(p=>{ matrix[p.id]={total:0}; S.branches.forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0}; }); });
-
+  S.procedures.forEach(p=>{ matrix[p.id]={total:0}; S.branches.forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0,rem:0}; }); });
   calls.forEach(c=>{
     if(!c.procs) return;
     Object.entries(c.procs).forEach(([pid,cnt])=>{
@@ -6730,7 +6815,7 @@ function renderProcMatrix(){
       if(matrix[pid][c.bid]){
         matrix[pid][c.bid].total+=cnt;
         if(c.pttype==='신환') matrix[pid][c.bid].shin+=cnt;
-        if(c.pttype==='잔여시술') matrix[pid][c.bid].rem=(matrix[pid][c.bid].rem||0)+cnt;
+        if(c.pttype==='잔여시술') matrix[pid][c.bid].rem+=cnt;
         else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') matrix[pid][c.bid].gu+=cnt;
       }
     });
@@ -6740,70 +6825,89 @@ function renderProcMatrix(){
     .sort((a,b)=>(matrix[b.id]?.total||0)-(matrix[a.id]?.total||0));
 
   if(!activeProcs.length){
-    container.innerHTML='<div style="color:var(--text3);padding:20px">선택한 기간/조건에 시술 데이터가 없습니다.</div>';return;
+    container.innerHTML=`<div style="padding:48px;text-align:center;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:12px">📭</div>
+      <div style="font-size:14px;font-weight:600">선택한 기간에 시술 데이터가 없습니다</div>
+    </div>`;
+    return;
   }
 
-  // Grand totals per branch
+  // 지점별 합계
   const brTotals={};
-  S.branches.forEach(b=>{
-    brTotals[b.id]=S.procedures.reduce((a,p)=>a+(matrix[p.id][b.id]?.total||0),0);
-  });
+  S.branches.forEach(b=>{ brTotals[b.id]=S.procedures.reduce((a,p)=>a+(matrix[p.id][b.id]?.total||0),0); });
   const grandTotal=Object.values(brTotals).reduce((a,b)=>a+b,0);
+  const maxProc=matrix[activeProcs[0]?.id]?.total||1;
 
-  let html=`<div class="tbl"><table>
-    <thead>
-      <tr>
-        <th style="text-align:left;min-width:120px">시술</th>
-        ${S.branches.map(b=>`<th style="color:${bclr(b.id)};min-width:90px">${b.name}</th>`).join('')}
-        <th>합계</th>
-      </tr>
-    </thead>
-    <tbody>`;
-
-  activeProcs.forEach(p=>{
-    html+=`<tr>
-      <td><span style="font-size:14px"></span> <strong style="font-size:12px">${p.name}</strong></td>`;
-    S.branches.map(b=>{
-      const d=matrix[p.id][b.id];
-      const pct=brTotals[b.id]>0?Math.round(d.total/brTotals[b.id]*100):0;
-      html+=`<td>
-        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${d.total||'-'}</div>
-        ${d.total>0&&_pmPttype==='all'?`<div style="font-size:10px;color:var(--text3)"><span style="color:var(--green)">신${d.shin}</span> <span style="color:#7c3aed">구${d.gu}</span> <span style="color:#0891b2">잔${d.rem||0}</span></div>`:''}
-        ${d.total>0?`<div style="height:3px;background:var(--s3);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${bclr(b.id)};border-radius:2px"></div></div>`:''}
-      </td>`;
-    });
-    html+=`<td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--accent)">${matrix[p.id].total}</td>`;
-    html+=`</tr>`;
-  });
-
-  // Totals row
-  html+=`<tr style="background:var(--s2);font-weight:700">
-    <td>합계</td>
-    ${S.branches.map(b=>`<td style="font-family:'DM Mono',monospace">${brTotals[b.id]||0}</td>`).join('')}
-    <td style="font-family:'DM Mono',monospace;color:var(--accent)">${grandTotal}</td>
-  </tr>`;
-  html+=`</tbody></table></div>`;
-
-  // Proc rank bars
-  html+=`<div style="font-size:15px;font-weight:700;color:#0f172a;margin:18px 0 9px">시술 랭킹</div>`;
-  html+=`<div class="proc-rank-list">`;
-  const maxV=activeProcs[0]?matrix[activeProcs[0].id].total||1:1;
-  activeProcs.forEach((p,i)=>{
-    const tot=matrix[p.id].total;
-    html+=`<div class="proc-rank-row">
-      <span style="font-size:16px;min-width:22px"></span>
-      <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
-      <div style="display:flex;gap:6px;margin-right:8px">
-        ${S.branches.map(b=>{
-          const n=matrix[p.id][b.id]?.total||0;
-          return n?`<span style="font-size:10px;font-weight:700;color:${bclr(b.id)}">${b.name} ${n}</span>`:'';
-        }).filter(Boolean).join('')}
+  // ── 1. 요약 KPI 카드 ──
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px">`;
+  S.branches.forEach(b=>{
+    const cl=bclr(b.id);
+    const tot=brTotals[b.id]||0;
+    const pct=grandTotal>0?Math.round(tot/grandTotal*100):0;
+    html+=`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;border-top:3px solid ${cl}">
+      <div style="font-size:11px;font-weight:700;color:${cl};margin-bottom:6px">${b.name}점</div>
+      <div style="font-size:26px;font-weight:900;color:#0f172a;line-height:1">${tot}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">전체의 ${pct}%</div>
+      <div style="height:3px;background:var(--s3);border-radius:2px;margin-top:8px">
+        <div style="height:100%;width:${pct}%;background:${cl};border-radius:2px;transition:width .3s"></div>
       </div>
-      <div class="prr-bar-wrap" style="width:100px"><div class="prr-bar" style="width:${Math.round(tot/maxV*100)}%;background:var(--accent)"></div></div>
-      <span class="prr-cnt" style="color:var(--accent)">${tot}</span>
+    </div>`;
+  });
+  html+=`<div style="background:var(--accent);border:1px solid var(--border);border-radius:12px;padding:14px">
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:6px">전체 합계</div>
+    <div style="font-size:26px;font-weight:900;color:#fff;line-height:1">${grandTotal}</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:4px">시술 ${activeProcs.length}종</div>
+  </div>`;
+  html+=`</div>`;
+
+  // ── 2. 시술별 카드 ──
+  html+=`<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">`;
+  activeProcs.forEach((p,rank)=>{
+    const tot=matrix[p.id].total;
+    const barW=Math.round(tot/maxProc*100);
+    const rankMedal=rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':'';
+
+    // 지점별 데이터
+    const brData=S.branches.map(b=>({b,d:matrix[p.id][b.id]})).filter(x=>x.d.total>0);
+
+    html+=`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:20px;min-width:24px">${rankMedal||`<span style="font-size:12px;font-weight:800;color:var(--text3)">${rank+1}</span>`}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:800;color:#0f172a">${p.name}</div>
+        </div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent)">${tot}<span style="font-size:11px;font-weight:500;color:var(--text3)">건</span></div>
+      </div>
+      <!-- 전체 바 -->
+      <div style="height:6px;background:var(--s3);border-radius:3px;margin-bottom:10px">
+        <div style="height:100%;width:${barW}%;background:var(--accent);border-radius:3px;transition:width .4s"></div>
+      </div>
+      <!-- 지점별 분포 -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${brData.map(({b,d})=>{
+          const cl=bclr(b.id);
+          const pct=tot>0?Math.round(d.total/tot*100):0;
+          return `<div style="flex:1;min-width:80px;background:${cl}11;border:1px solid ${cl}44;border-radius:8px;padding:8px 10px">
+            <div style="font-size:10px;font-weight:700;color:${cl};margin-bottom:4px">${b.name}점</div>
+            <div style="font-size:18px;font-weight:900;color:#0f172a">${d.total}</div>
+            ${_pmPttype==='all'?`<div style="font-size:9px;color:var(--text3);margin-top:3px">
+              <span style="color:#059669">신${d.shin}</span> · <span style="color:#7c3aed">구${d.gu}</span>${d.rem?` · <span style="color:#0891b2">잔${d.rem}</span>`:''}
+            </div>`:''}
+            <div style="height:2px;background:${cl}33;border-radius:2px;margin-top:6px">
+              <div style="height:100%;width:${pct}%;background:${cl};border-radius:2px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+        ${S.branches.filter(b=>!matrix[p.id][b.id]?.total).map(b=>`
+          <div style="flex:1;min-width:80px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;opacity:.4">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px">${b.name}점</div>
+            <div style="font-size:18px;font-weight:900;color:var(--text3)">-</div>
+          </div>`).join('')}
+      </div>
     </div>`;
   });
   html+=`</div>`;
+
   container.innerHTML=html;
 }
 
@@ -8424,6 +8528,27 @@ let _trendProcs = []; // 선택된 시술 IDs
 let _trendBid = null; // 지점별 시술 분석용 선택 지점
 let _trendProcPeriod = '6mo'; // 시술별 추이 기간
 let _dailyProcPeriod = 'today'; // 시술×지점 표 기간
+let _dpPeriod = 'today';        // 월간 보고 시술×지점 표 독립 기간
+let _dpCustomFrom = '';
+let _dpCustomTo   = '';
+
+function setDpPeriod(period, el){
+  _dpPeriod = period;
+  _dpCustomFrom = ''; _dpCustomTo = '';
+  document.querySelectorAll('[id^="dpb-"]').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  const cr = document.getElementById('dp-custom-range');
+  if(cr) cr.style.display = period==='custom' ? 'flex' : 'none';
+  if(period !== 'custom') renderDailyProcTable();
+}
+
+function applyDpCustom(){
+  const f = document.getElementById('dp-date-from')?.value;
+  const t = document.getElementById('dp-date-to')?.value;
+  if(!f||!t||f>t) return;
+  _dpCustomFrom=f; _dpCustomTo=t;
+  renderDailyProcTable();
+}
 // _selectedPids, _selectedSubs, _focusedPid → 아래에서 선언됨
 let _selectedBids = null; // null = 전체, Set = 선택된 지점 bid
 
@@ -8450,6 +8575,79 @@ function setTrendPeriod(n, el){
   }
   renderTrend();
 }
+
+// ── 차트별 독립 기간 상태 ──
+const _chartPeriod = { br:3, pt:3, dow:3, hour:3, focus:3 };
+let _chartProcBid = 'all';
+
+function setChartPeriod(chart, months, el){
+  _chartPeriod[chart] = months;
+  document.querySelectorAll(`[id^="tc-${chart}-"]`).forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  const md = getNMonthsData(months);
+  if(chart==='br')   renderTrendBrChart(md);
+  if(chart==='pt')   renderTrendPtChart(md);
+  if(chart==='dow')  renderTrendDowWithPeriod(months);
+  if(chart==='hour') renderTrendHourWithPeriod(months);
+  if(chart==='focus'){renderTrendBrFilter();renderTrendProcBrChart();}
+}
+
+function setChartBranch(chart, bid, el){
+  _chartProcBid = bid;
+  document.querySelectorAll('#tpp-br-pills .period-btn, #tpp-br-all').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  renderTrendProcChartByPeriod();
+}
+
+function renderTrendBrPillsForProc(){
+  const el = document.getElementById('tpp-br-pills'); if(!el) return;
+  el.innerHTML = S.branches.map(b=>{
+    const act = _chartProcBid===b.id;
+    return `<button class="period-btn${act?' act':''}" onclick="setChartBranch('proc','${b.id}',this)">${b.name}</button>`;
+  }).join('');
+  const allBtn = document.getElementById('tpp-br-all');
+  if(allBtn) allBtn.classList.toggle('act', _chartProcBid==='all');
+}
+
+function renderTrendDowWithPeriod(months){
+  const n = months || _chartPeriod.dow || 3;
+  const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
+  const from = localDateStr(fromD), to = todayStr();
+  const calls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  const el = document.getElementById('trend-dow-chart'); if(!el) return;
+  const DOW=['일','월','화','수','목','금','토'];
+  const cnt=[0,0,0,0,0,0,0], days=[0,0,0,0,0,0,0];
+  calls.forEach(c=>{ const d=new Date((c.date||'')+'T00:00:00'); if(!isNaN(d)) cnt[d.getDay()]++; });
+  getDateRange(from,to).forEach(ds=>{ days[new Date(ds+'T00:00:00').getDay()]++; });
+  const avg=cnt.map((v,i)=>days[i]>0?(v/days[i]).toFixed(1):0);
+  const max=Math.max(...avg.map(Number),1);
+  el.innerHTML=`<div style="display:flex;gap:6px;align-items:flex-end;height:100px;padding:0 4px">${avg.map((v,i)=>{
+    const pct=Math.round(Number(v)/max*100);
+    const isWe=i===0||i===6;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:10px;font-weight:700;color:${isWe?'#dc2626':'var(--accent)'}">${v}</span>
+      <div style="width:100%;background:${isWe?'#dc262644':'var(--accent)44'};border-radius:4px 4px 0 0;height:${Math.max(pct,2)}px"></div>
+      <span style="font-size:10px;color:var(--text2)">${DOW[i]}</span></div>`;}).join('')}</div>`;
+}
+
+function renderTrendHourWithPeriod(months){
+  const n = months || _chartPeriod.hour || 3;
+  const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
+  const from = localDateStr(fromD), to = todayStr();
+  const calls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  const el = document.getElementById('trend-hour-chart'); if(!el) return;
+  const cnt=Array(24).fill(0);
+  calls.forEach(c=>{ const h=parseInt((c.time||'').split(':')[0]); if(h>=0&&h<24) cnt[h]++; });
+  const max=Math.max(...cnt,1);
+  const hours=Array.from({length:24},(_,i)=>i).filter(i=>i>=8&&i<=22);
+  el.innerHTML=`<div style="overflow-x:auto"><div style="display:flex;gap:3px;align-items:flex-end;height:80px;min-width:300px;padding:0 4px">${hours.map(i=>{
+    const pct=Math.round(cnt[i]/max*100);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      ${cnt[i]>0?`<span style="font-size:9px;font-weight:700;color:var(--accent)">${cnt[i]}</span>`:'<span style="font-size:9px"> </span>'}
+      <div style="width:100%;background:var(--accent)55;border-radius:3px 3px 0 0;height:${Math.max(pct,2)}px"></div>
+      <span style="font-size:9px;color:var(--text2)">${i}시</span></div>`;}).join('')}</div></div>`;
+}
+
 
 function applyTrendCustom(){
   _trendCustomFrom = document.getElementById('tr-from').value;
@@ -8504,13 +8702,97 @@ function getMonthAnalysisCalls(mk){
   return getMonthCalls(mk).filter(c=>c.type!=='out');
 }
 
+// ── 아코디언 차트 상태 ──
+const _pmAcc = {};
+['br','pt','dow','hour','proc','focus','ptbr'].forEach(k=>{
+  _pmAcc[k] = { open:false, months:3, bid:'all', from:'', to:'' };
+});
+
+function pmInitBrPills(){
+  ['br','pt','dow','hour','proc','focus','ptbr'].forEach(k=>{
+    const el = document.getElementById('pm-br-pills-'+k); if(!el) return;
+    const allOn = _pmAcc[k].bid==='all';
+    el.innerHTML = `<button class="pm-br-pill" style="border-color:#64748b;background:${allOn?'#64748b':'transparent'};color:${allOn?'#fff':'#64748b'}" onclick="pmSetBranch('${k}','all')">전체</button>` +
+      S.branches.map(b=>{
+        const cl=bclr(b.id), on=_pmAcc[k].bid===b.id;
+        return `<button class="pm-br-pill" style="border-color:${cl};background:${on?cl:'transparent'};color:${on?'#fff':cl}" onclick="pmSetBranch('${k}','${b.id}')">${b.name}</button>`;
+      }).join('');
+  });
+}
+
+function pmSetBranch(chart, bid){
+  _pmAcc[chart].bid = bid;
+  pmInitBrPills();
+  pmRenderChart(chart);
+}
+
+function pmToggleAcc(chart){
+  const body = document.getElementById('acc-body-'+chart);
+  const ico  = document.getElementById('acc-ico-'+chart);
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if(ico){ ico.textContent = isOpen ? '▶' : '▼'; ico.classList.toggle('open', !isOpen); }
+  if(!isOpen){ pmInitBrPills(); pmRenderChart(chart); }
+}
+
+function pmSetPeriod(chart, months, el){
+  _pmAcc[chart].months = months;
+  _pmAcc[chart].from = ''; _pmAcc[chart].to = '';
+  const f=document.getElementById('pm-from-'+chart), t=document.getElementById('pm-to-'+chart);
+  if(f) f.value=''; if(t) t.value='';
+  document.querySelectorAll('[id^="pm-pp-'+chart+'-"]').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  pmRenderChart(chart);
+}
+
+function pmSetCustom(chart){
+  const f=document.getElementById('pm-from-'+chart)?.value;
+  const t=document.getElementById('pm-to-'+chart)?.value;
+  if(!f||!t||f>t) return;
+  _pmAcc[chart].from=f; _pmAcc[chart].to=t; _pmAcc[chart].months=0;
+  document.querySelectorAll('[id^="pm-pp-'+chart+'-"]').forEach(b=>b.classList.remove('act'));
+  pmRenderChart(chart);
+}
+
+function pmSetProcPeriod(period, el){
+  _trendProcPeriod = period;
+  document.querySelectorAll('[id^="pm-pp-proc-"]').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  renderTrendProcChartByPeriod();
+}
+
+function pmGetMonthDefs(chart){
+  const acc=_pmAcc[chart];
+  if(acc.from && acc.to) return getCustomMonthsData(acc.from.slice(0,7), acc.to.slice(0,7));
+  return getNMonthsData(acc.months||3);
+}
+
+function pmFilterCalls(calls, chart){
+  const bid=_pmAcc[chart]?.bid;
+  return (bid && bid!=='all') ? calls.filter(c=>c.bid===bid) : calls;
+}
+
+function pmRenderChart(chart){
+  if(chart==='br'){
+    const md=pmGetMonthDefs('br');
+    renderTrendBrChart(md, _pmAcc.br.bid==='all'?null:_pmAcc.br.bid);
+  }
+  if(chart==='pt')    renderTrendPtChart(pmGetMonthDefs('pt'));
+  if(chart==='dow')   renderTrendDowWithPeriod(_pmAcc.dow.months||3);
+  if(chart==='hour')  renderTrendHourWithPeriod(_pmAcc.hour.months||3);
+  if(chart==='proc')  renderTrendProcChartByPeriod();
+  if(chart==='focus'){ renderTrendBrFilter(); renderTrendProcBrChart(); }
+  if(chart==='ptbr')  renderPtTypeBranchChart();
+}
+
 function renderTrend(){
-  const monthDefs = getTrendMonthDefs();
-  renderTrendBrChart(monthDefs);
-  renderTrendPtChart(monthDefs);
-  renderTrendDow();
-  renderTrendHour();
+  renderTrendBrChart(getNMonthsData(_chartPeriod.br||3));
+  renderTrendPtChart(getNMonthsData(_chartPeriod.pt||3));
+  renderTrendDowWithPeriod(_chartPeriod.dow||3);
+  renderTrendHourWithPeriod(_chartPeriod.hour||3);
   renderTrendBrFilter();
+  renderTrendBrPillsForProc();
   renderDailyProcTable();
   renderTrendProcChartByPeriod();
   renderPtTypeBranchChart();
@@ -8736,12 +9018,13 @@ function dpToggleBr(bid) {
 }
 
 function renderDailyProcTable(){
-  // 상단 기간 선택과 연동
-  _dailyProcPeriod = _pmPeriod;
-  const {from,to}=getPeriodDates(_pmPeriod,'pm-date-from','pm-date-to');
-  // 기간 라벨 업데이트 (환자구분 포함)
+  // 독립 기간 선택 사용
+  const {from,to} = (_dpPeriod==='custom' && _dpCustomFrom && _dpCustomTo)
+    ? {from:_dpCustomFrom, to:_dpCustomTo}
+    : getPeriodDates(_dpPeriod||'today');
+  // 기간 라벨 업데이트
   const lbl=document.getElementById('dp-period-label');
-  if(lbl) lbl.textContent=periodLabel(from,to)+(_pmPttype!=='all'?' · '+_pmPttype:'');
+  if(lbl) lbl.textContent=periodLabel(from,to);
   const dates=getDateRange(from,to).filter(d=>(S.calls[d]||[]).some(c=>c.type!=='out'));
   const el=document.getElementById('daily-proc-table');
   if(!el) return;
@@ -9269,14 +9552,19 @@ function setTrendProcPeriod(period, el){
 
 function renderTrendProcChartByPeriod(){
   const {from,to}=getPeriodRange(_trendProcPeriod,'tpp-from','tpp-to');
-  // 기간 내 날짜 목록 or 월별 묶기
   const dates=getDateRange(from,to);
   const period=_trendProcPeriod;
+
+  // 지점 필터 버튼 렌더
+  renderTrendBrPillsForProc();
+
+  // 지점 필터 적용
+  const filteredCalls = (ds) => getAnalysisCalls(ds).filter(c=>_chartProcBid==='all'||c.bid===_chartProcBid);
 
   // 시술 선택 버튼 렌더
   if(!_trendProcs.length){
     const allPCnt={};
-    dates.forEach(ds=>getAnalysisCalls(ds).forEach(c=>{
+    dates.forEach(ds=>filteredCalls(ds).forEach(c=>{
       if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{allPCnt[pid]=(allPCnt[pid]||0)+n;});
     }));
     _trendProcs=Object.entries(allPCnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pid])=>pid);
@@ -9288,11 +9576,10 @@ function renderTrendProcChartByPeriod(){
   }).join('');
 
   if(!_trendProcs.length){
-    document.getElementById('trend-proc-chart').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px">시술을 선택하세요 (▾ 클릭 시 하위 항목 선택 가능)</div>';
+    document.getElementById('trend-proc-chart').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px">시술을 선택하세요</div>';
     return;
   }
 
-  // 그룹 단위 결정: 당일→시간별, 7일 이하→일별, 그 이상→월별
   let groups=[];
   if(period==='today'||(dates.length<=1)){
     // 시간대별 (0~23시)
@@ -9321,6 +9608,8 @@ function renderTrendProcChartByPeriod(){
     } else {
       calls=getAnalysisCalls(g.key);
     }
+    // 지점 필터
+    if(_chartProcBid!=='all') calls=calls.filter(c=>c.bid===_chartProcBid);
     const byProc=_trendProcs.map(pid=>calls.reduce((a,c)=>a+(c.procs?.[pid]||0),0));
     return {label:g.label, byProc};
   });
@@ -9373,15 +9662,7 @@ function renderTrendBrChart(monthDefs){
   const brColors = S.branches.map(b=>bclr(b.id));
   if(!_trendBrSelected) _trendBrSelected = new Set(S.branches.map(b=>b.id));
 
-  // legend
-  document.getElementById('trend-br-legend').innerHTML =
-    S.branches.map((b,i)=>{
-      const on=_trendBrSelected.has(b.id);
-      return `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;padding:3px 8px;border-radius:6px;background:${on?brColors[i]+'22':'var(--s2)'};border:1px solid ${on?brColors[i]:'var(--border)'}">
-        <input type="checkbox" ${on?'checked':''} style="accent-color:${brColors[i]};width:13px;height:13px" onchange="toggleTrendBr('${b.id}')">
-        <span style="font-weight:600;font-size:12px;color:${on?brColors[i]:'var(--text3)'}">${b.name}</span>
-      </label>`;
-    }).join('');
+
 
   const activeBrs = S.branches.filter(b=>_trendBrSelected.has(b.id));
   const activeBrColors = activeBrs.map(b=>bclr(b.id));
@@ -11629,15 +11910,7 @@ function renderTrendBrChart(monthDefs){
   const brColors = S.branches.map(b=>bclr(b.id));
   if(!_trendBrSelected) _trendBrSelected = new Set(S.branches.map(b=>b.id));
 
-  // legend
-  document.getElementById('trend-br-legend').innerHTML =
-    S.branches.map((b,i)=>{
-      const on=_trendBrSelected.has(b.id);
-      return `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;padding:3px 8px;border-radius:6px;background:${on?brColors[i]+'22':'var(--s2)'};border:1px solid ${on?brColors[i]:'var(--border)'}">
-        <input type="checkbox" ${on?'checked':''} style="accent-color:${brColors[i]};width:13px;height:13px" onchange="toggleTrendBr('${b.id}')">
-        <span style="font-weight:600;font-size:12px;color:${on?brColors[i]:'var(--text3)'}">${b.name}</span>
-      </label>`;
-    }).join('');
+
 
   const activeBrs = S.branches.filter(b=>_trendBrSelected.has(b.id));
   const activeBrColors = activeBrs.map(b=>bclr(b.id));
