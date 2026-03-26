@@ -2920,10 +2920,37 @@ async function syncPull(){
     const actPage=document.querySelector('.page.act');
     if(actPage){const pid=actPage.id.replace('page-','');try{go(pid,document.querySelector(`.si[data-page="${pid}"]`),true);}catch(e){}}
   }catch(err){
-    updateSyncUI('error');
     console.warn('sync error:', err.message);
-    setTimeout(()=>{ if(_syncUrl&&!_isSyncing) syncPull(); }, 30000);
+    // 일시적 오류는 UI에 오래 표시하지 않음 - 30초 후 자동 재시도
+    updateSyncUI('error');
+    setTimeout(()=>{
+      if(_syncUrl && !_isSyncing){
+        updateSyncUI('ok'); // 재시도 전 오류 표시 제거
+        syncPull();
+      }
+    }, 30000);
   }
+}
+
+
+// Firebase Notes 동기화 (수가표·FAQs)
+async function syncNotesPull(){
+  if(!_syncUrl) return;
+  const base=_syncUrl.replace(/\/+$/, '');
+  try{
+    const r=await fbFetch(base+'/mclinic/notes.json');
+    if(r.ok){
+      const data=await r.json();
+      if(Array.isArray(data)&&data.length) S.notes=data;
+      else if(data&&typeof data==='object') S.notes=Object.values(data).filter(Boolean);
+    }
+    const r2=await fbFetch(base+'/mclinic/faqs.json');
+    if(r2.ok){
+      const data2=await r2.json();
+      if(Array.isArray(data2)&&data2.length) S.faqs=data2;
+      else if(data2&&typeof data2==='object') S.faqs=Object.values(data2).filter(Boolean);
+    }
+  }catch(e){ /* 노트 동기화 실패는 조용히 무시 */ }
 }
 
 function mergeRemoteData(remote){
@@ -4716,23 +4743,23 @@ function saveStaffRow(sid){
   // 입사일 → _leaveData에 저장
   if(joinEl){
     const joinDate = joinEl.value.trim();
-    const targetName = s.name; // 이름 변경됐을 수 있으므로 새 이름 기준
+    const targetName = s.name;
     if(!_leaveData[targetName]) _leaveData[targetName]={joinDate:'',totalOverride:null,carryover:{}};
     _leaveData[targetName].joinDate = joinDate;
-    // 이름이 바뀐 경우 oldName 데이터 이전
     if(oldName !== targetName && _leaveData[oldName]){
       _leaveData[targetName] = {..._leaveData[oldName], joinDate};
       delete _leaveData[oldName];
     }
-    saveLeaveData();
+    try{ saveLeaveData(); }catch(e){}
   }
-  markConfigDirty();
-  localStorage.setItem('mclinic_v2',JSON.stringify(S));
-  syncPush(true);
-  renderSidebar();
+  try{ markConfigDirty(); }catch(e){}
+  try{ localStorage.setItem('mclinic_v2',JSON.stringify(S)); }catch(e){}
+  try{ syncPush(false); }catch(e){}
+  try{ renderSidebar(); }catch(e){}
   const btn=document.getElementById('ssave-'+sid);
   if(btn) btn.style.display='none';
-  toast(`✅ ${s.name} 저장됨`);
+  // 저장 완료 팝업
+  toast(`✅ ${s.name} 저장되었습니다`);
 }
 
 function setStaffPw(sid, pw){
