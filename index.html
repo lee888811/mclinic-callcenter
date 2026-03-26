@@ -2387,7 +2387,24 @@ let S={
   // calls: {"YYYY-MM-DD": [callEntry,...]}
   calls:{},
 };
-try{const v=localStorage.getItem('mclinic_v2');if(v)S=JSON.parse(v);}catch(e){}
+try{
+  const v=localStorage.getItem('mclinic_v2');
+  if(v){
+    const saved=JSON.parse(v);
+    // 저장된 데이터가 있는 경우에만 덮어쓰기 (빈 배열 방지)
+    if(saved.staff&&saved.staff.length>0) S.staff=saved.staff;
+    if(saved.branches&&saved.branches.length>0) S.branches=saved.branches;
+    if(saved.procedures&&saved.procedures.length>0) S.procedures=saved.procedures;
+    if(saved.channels&&saved.channels.length>0) S.channels=saved.channels;
+    if(saved.calls) S.calls=saved.calls;
+    if(saved.notes) S.notes=saved.notes;
+    if(saved.faqs) S.faqs=saved.faqs;
+    if(saved.roles&&saved.roles.length>0) S.roles=saved.roles;
+    if(saved.incentive) S.incentive=saved.incentive;
+    if(saved.perfGoals) S.perfGoals=saved.perfGoals;
+    if(saved.adBudgets) S.adBudgets=saved.adBudgets;
+  }
+}catch(e){}
 // sheetUrls: S에 없으면 localStorage에서 복원
 if(!S.sheetUrls) S.sheetUrls={};
 (S.branches||[]).forEach(b=>{
@@ -2503,10 +2520,16 @@ function initAuth(){
       .then(r=>r.json())
       .then(json=>{
         if(json){
-          // staff/branches 등 최신 설정 반영 (data 구버전 키 무시)
+          // staff/branches 등 최신 설정 반영 - 빈 배열은 무시
           ['branches','staff','procedures','channels','roles'].forEach(k=>{
-            if(json[k]?.length) S[k]=json[k];
+            if(json[k]&&json[k].length>0) S[k]=json[k];
           });
+          if(json.calls) S.calls=json.calls;
+          if(json.notes) S.notes=json.notes;
+          if(json.faqs) S.faqs=json.faqs;
+          if(json.perfGoals) S.perfGoals=json.perfGoals;
+          if(json.adBudgets) S.adBudgets=json.adBudgets;
+          if(json.incentive) S.incentive=json.incentive;
           try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
         }
         // 아직 로그인 전이면 직원 목록 다시 그리기
