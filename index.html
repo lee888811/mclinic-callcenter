@@ -333,7 +333,6 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>지점근무현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
-    <div class="si" data-page="mymemo" onclick="go('mymemo',this)"><span class="sico">📝</span>내 메모장</div>
     <div class="si" data-page="roster" onclick="go('roster',this)"><span class="sico">📅</span>직원 근태관리</div>
     <div class="si" data-page="duty" onclick="go('duty',this)"><span class="sico">📋</span>분담업무</div>
     <div class="sdiv"></div>
@@ -1371,34 +1370,6 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="closing-report-content"></div>
     </div>
 
-    <!-- 개인 메모장 -->
-    <div class="page" id="page-mymemo">
-        <div>
-          <div class="pt">📝 내 메모장</div>
-          <div class="ps" id="mymemo-subtitle">본인만 볼 수 있는 개인 메모</div>
-        </div>
-        <div class="pbtns">
-          <button class="btn btn-p btn-sm" onclick="openMyMemoAdd()">＋ 메모 추가</button>
-        </div>
-      </div>
-
-      <!-- 검색 -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-        <input id="mymemo-search" class="minp" placeholder="🔍 메모 검색..." oninput="renderMyMemos()" style="flex:1;font-size:13px">
-        <select id="mymemo-sort" class="minp" style="width:110px;font-size:12px" onchange="renderMyMemos()">
-          <option value="newest">최신순</option>
-          <option value="oldest">오래된순</option>
-          <option value="alpha">가나다순</option>
-        </select>
-      </div>
-
-      <!-- 카운트 -->
-      <div id="mymemo-count" style="font-size:11px;color:var(--text3);margin-bottom:10px"></div>
-
-      <!-- 목록 -->
-      <div id="mymemo-list" style="display:flex;flex-direction:column;gap:10px"></div>
-    </div>
-
     <!-- 분담업무 -->
     <div class="page" id="page-duty">
       <div class="ph">
@@ -1407,12 +1378,16 @@ td:first-child{text-align:left;padding-left:13px}
           <div class="ps" id="duty-ps">분담업무/오후근무 백업 순서 : 수비 → 지영 → 지혜 → 선미</div>
         </div>
         <div class="pbtns" style="gap:6px">
-          <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(-1)">‹ 이전달</button>
-          <span id="duty-month-display" style="font-size:12px;font-weight:700;color:var(--text2);padding:4px 8px;background:var(--s2);border-radius:6px;border:1px solid var(--border)"></span>
-          <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(1)">다음달 ›</button>
-          <button class="btn btn-g btn-sm" onclick="dutyGoThisMonth()">이번달</button>
           <button class="btn btn-p btn-sm" onclick="openDutyEdit()">✏️ 수정</button>
         </div>
+      </div>
+
+      <!-- 월 이동 버튼 (제목 아래) -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(-1)">‹ 이전달</button>
+        <span id="duty-month-display" style="font-size:13px;font-weight:800;color:#0f172a;padding:4px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)"></span>
+        <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(1)">다음달 ›</button>
+        <button class="btn btn-g btn-sm" onclick="dutyGoThisMonth()">이번달</button>
       </div>
 
       <!-- 안내 -->
@@ -1933,6 +1908,9 @@ td:first-child{text-align:left;padding-left:13px}
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="구환(신규상담)" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--purple)"> 🔄 구환(신규상담)</label>
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="잔여시술" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="일반" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--text3)"> 💬 일반문의</label>
+      <!-- 콜백 전용 -->
+      <label id="pttype-cb-label1" style="display:none;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="비수신부재" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--amber)"> 📵 비수신부재</label>
+      <label id="pttype-cb-label2" style="display:none;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="미예약부재" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--red)"> 🔔 미예약부재</label>
     </div>
 
     <div id="modal-sub-fields">
@@ -2906,7 +2884,7 @@ function getAllAnalysisCalls(){
 function getDaySummary(ds){
   // 분석용: 발신(아웃콜) 제외
   const calls=getDayCalls(ds).filter(c=>c.type!=='out'&&c.type!=='miss'&&c.type!=='ad');
-  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
+  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0,absence=0;
   const proc={};
   calls.forEach(c=>{
     if(c.medium==='chat') chat++; else phone++;
@@ -2915,15 +2893,16 @@ function getDaySummary(ds){
     if(c.pttype==='신환') shin++;
     else if(c.pttype==='잔여시술') rem++;
     else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') gu++;
+    else if(c.pttype==='비수신부재'||c.pttype==='미예약부재') absence++;
     cancel+=+c.cancel||0; noappt+=+c.noappt||0;
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total:calls.length,incall,callback,outcall:0,phone,chat,shin,gu,rem,cancel,noappt,proc};
+  return {total:calls.length,incall,callback,outcall:0,phone,chat,shin,gu,rem,absence,cancel,noappt,proc};
 }
 // 인센티브 전용: 발신 포함 전체
 function getDaySummaryFull(ds){
   const calls=getDayCalls(ds);
-  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
+  let incall=0,callback=0,outcall=0,phone=0,chat=0,shin=0,gu=0,rem=0,cancel=0,noappt=0,absence=0;
   const proc={};
   calls.forEach(c=>{
     if(c.medium==='chat') chat++; else phone++;
@@ -2934,10 +2913,11 @@ function getDaySummaryFull(ds){
     if(c.pttype==='신환') shin++;
     else if(c.pttype==='잔여시술') rem++;
     else if(c.pttype==='구환'||c.pttype==='구환(신규상담)') gu++;
+    else if(c.pttype==='비수신부재'||c.pttype==='미예약부재') absence++;
     cancel+=+c.cancel||0; noappt+=+c.noappt||0;
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total:calls.length,incall,callback,outcall,phone,chat,shin,gu,rem,cancel,noappt,proc};
+  return {total:calls.length,incall,callback,outcall,phone,chat,shin,gu,rem,absence,cancel,noappt,proc};
 }
 
 // ═══════════════════════════════════
@@ -2975,15 +2955,15 @@ function getDateRange(from, to){
 
 function getSummaryForRange(from, to){
   const dates=getDateRange(from,to);
-  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,rem=0,cancel=0,noappt=0;
+  let total=0,incall=0,callback=0,outcall=0,shin=0,gu=0,rem=0,cancel=0,noappt=0,absence=0;
   const proc={};
   dates.forEach(ds=>{
     const s=getDaySummary(ds);
     total+=s.total; incall+=s.incall; callback+=s.callback||0; outcall+=s.outcall;
-    shin+=s.shin; gu+=s.gu; rem+=s.rem||0; cancel+=s.cancel; noappt+=s.noappt;
+    shin+=s.shin; gu+=s.gu; rem+=s.rem||0; absence+=s.absence||0; cancel+=s.cancel; noappt+=s.noappt;
     Object.entries(s.proc||{}).forEach(([pid,n])=>{proc[pid]=(proc[pid]||0)+n;});
   });
-  return {total,incall,callback,outcall,shin,gu,rem,cancel,noappt,proc,days:dates.length};
+  return {total,incall,callback,outcall,shin,gu,rem,absence,cancel,noappt,proc,days:dates.length};
 }
 
 function getCallsForRange(from, to){
@@ -3174,6 +3154,7 @@ function renderStaffInputPage(sid){
   const shin    = analysisCalls.filter(c=>c.pttype==='신환').length;
   const gu      = analysisCalls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
   const rem     = analysisCalls.filter(c=>c.pttype==='잔여시술').length;
+  const absence = analysisCalls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
   const cancel  = analysisCalls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt  = analysisCalls.reduce((a,c)=>a+(+c.noappt||0),0);
   const booked  = analysisCalls.reduce((a,c)=>a+(+c.today||0),0);
@@ -3352,6 +3333,7 @@ function renderStaffInputPage(sid){
             ['🔄 구환',gu,'#7c3aed'],
             ['🗓 잔여시술',rem,'#0891b2'],
             ['💬 일반문의',analysisCalls.filter(c=>c.pttype==='일반').length,'#94a3b8'],
+            ['📵 부재(비수신/미예약)',absence,'#d97706'],
           ].map(([l,v,c])=>`
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span style="font-size:12px;color:var(--text2)">${l}</span>
@@ -3416,8 +3398,8 @@ function renderCallEntry(c){
   const isOut=c.type==='out';
   const isMiss=c.type==='miss';
   const isAd=c.type==='ad';
-  const ptMap={'신환':'🆕 신환(신규상담)','구환(신규상담)':'🔄 구환(신규상담)','잔여시술':'🗓 잔여시술','구환':'🔄 구환(신규상담)','일반':'💬 일반문의'};
-  const ptclr=c.pttype==='신환'?'var(--green)':c.pttype==='잔여시술'?'#0891b2':c.pttype==='일반'?'var(--cyan)':'#7c3aed';
+  const ptMap={'신환':'🆕 신환(신규상담)','구환(신규상담)':'🔄 구환(신규상담)','잔여시술':'🗓 잔여시술','구환':'🔄 구환(신규상담)','일반':'💬 일반문의','비수신부재':'📵 비수신부재','미예약부재':'🔔 미예약부재'};
+  const ptclr=c.pttype==='신환'?'var(--green)':c.pttype==='잔여시술'?'#0891b2':c.pttype==='일반'?'var(--cyan)':(c.pttype==='비수신부재'||c.pttype==='미예약부재')?'#d97706':'#7c3aed';
   const typeIco=isChat?'💬':isOut?'📤':isCb?'🔄':'📞';
   const typeBg=isChat?'rgba(8,145,178,.1)':isOut?'rgba(124,58,237,.1)':isCb?'rgba(5,150,105,.1)':'rgba(8,145,178,.1)';
   const typeLabel=isChat
@@ -3747,6 +3729,17 @@ function setCallType(t){
   }
   // 오발신/광고일 때 지점 선택 label 색상 표시
   const brLabel=document.querySelector('#modal-phone-section~.ml');
+  // 콜백 전용 환자구분 옵션 표시
+  const cb1=document.getElementById('pttype-cb-label1');
+  const cb2=document.getElementById('pttype-cb-label2');
+  if(cb1) cb1.style.display = t==='cb' ? 'flex' : 'none';
+  if(cb2) cb2.style.display = t==='cb' ? 'flex' : 'none';
+  // 콜백 해제 시 부재 옵션 선택돼 있으면 신환으로 초기화
+  if(t!=='cb' && (_callPttype==='비수신부재'||_callPttype==='미예약부재')){
+    _callPttype='신환';
+    const r=document.querySelector('input[name=pttype][value="신환"]');
+    if(r) r.checked=true;
+  }
   toggleSubFields();
 }
 function setDegree(d){
@@ -3803,16 +3796,17 @@ function selectCancelReason(el,reason){
   if(r) r.value=reason;
 }
 function toggleSubFields(){
+  const isAbsence = (_callPttype==='비수신부재'||_callPttype==='미예약부재');
   const sf=document.getElementById('modal-sub-fields');
-  if(sf) sf.style.display=_callPttype==='일반'?'none':'block';
+  if(sf) sf.style.display=((_callPttype==='일반')||isAbsence)?'none':'block';
   // 잔여시술 선택 시 시술 섹션 비활성화
   const wrap=document.getElementById('proc-section-wrap');
   const hint=document.getElementById('proc-section-hint');
   if(wrap){
     const isRem=_callPttype==='잔여시술';
-    wrap.style.opacity=isRem?'0.35':'1';
-    wrap.style.pointerEvents=isRem?'none':'auto';
-    if(hint) hint.textContent=isRem?'(잔여시술은 시술 선택 불필요)':'(한 번=선택 · 두 번=취소)';
+    wrap.style.opacity=(isRem||isAbsence)?'0.35':'1';
+    wrap.style.pointerEvents=(isRem||isAbsence)?'none':'auto';
+    if(hint) hint.textContent=isRem?'(잔여시술은 시술 선택 불필요)':isAbsence?'(부재 시 시술 선택 불필요)':'(한 번=선택 · 두 번=취소)';
     if(isRem){
       // 기존 선택 초기화
       Object.keys(_procSel).forEach(k=>delete _procSel[k]);
@@ -3949,6 +3943,7 @@ function renderBrSum(){
   S.branches.forEach(b=>{
     const bc=calls.filter(c=>c.bid===b.id), cl=bclr(b.id);
     const shin=bc.filter(c=>c.pttype==='신환').length,gu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length,rem=bc.filter(c=>c.pttype==='잔여시술').length;
+    const absence=bc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
     const inc=bc.filter(c=>c.type==='in').length,cb=bc.filter(c=>c.type==='cb').length,out=bc.filter(c=>c.type==='out').length;
     const cancel=bc.reduce((a,c)=>a+(+c.cancel||0),0),noappt=bc.reduce((a,c)=>a+(+c.noappt||0),0);
     const pSum={};bc.forEach(c=>{if(c.procs)Object.entries(c.procs).forEach(([pid,n])=>{pSum[pid]=(pSum[pid]||0)+n;});});
@@ -3961,7 +3956,8 @@ function renderBrSum(){
         <td>${sc.filter(c=>c.type==='out').length}</td>
         <td style="color:var(--green)">${sc.filter(c=>c.pttype==='신환').length}</td>
         <td style="color:#7c3aed">${sc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length}</td>
-        <td style="color:#0891b2">${sc.filter(c=>c.pttype==='잔여시술').length}</td></tr>`;
+        <td style="color:#0891b2">${sc.filter(c=>c.pttype==='잔여시술').length}</td>
+        <td style="color:#d97706">${sc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length}</td></tr>`;
     }).filter(Boolean).join('');
     html+=`<div class="card" style="margin-bottom:14px">
       <div class="ch2">
@@ -3981,11 +3977,12 @@ function renderBrSum(){
             <div class="kpi" style="--kc:var(--green)"><div class="kl">신환(신규상담)</div><div class="kv">${shin}</div></div>
             <div class="kpi" style="--kc:#7c3aed"><div class="kl">구환(신규상담)</div><div class="kv">${gu}</div></div>
             <div class="kpi" style="--kc:#0891b2"><div class="kl">잔여시술</div><div class="kv">${rem||0}</div></div>
+            <div class="kpi" style="--kc:#d97706"><div class="kl">📵 부재</div><div class="kv">${absence}</div></div>
             <div class="kpi" style="--kc:var(--red)"><div class="kl">예약취소</div><div class="kv">${cancel}</div></div>
             <div class="kpi" style="--kc:var(--amber)"><div class="kl">미예약종료</div><div class="kv">${noappt}</div></div>
           </div>
           ${sRows?`<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
-            <thead><tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">직원</th><th>수신콜</th><th style="color:var(--green)">콜백</th><th>발신콜</th><th>신환(신규상담)</th><th>구환(신규상담)</th><th style="color:#0891b2">잔여시술</th></tr></thead>
+            <thead><tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">직원</th><th>수신콜</th><th style="color:var(--green)">콜백</th><th>발신콜</th><th>신환</th><th>구환</th><th style="color:#0891b2">잔여</th><th style="color:#d97706">부재</th></tr></thead>
             <tbody>${sRows}</tbody></table>`
             :'<div style="color:var(--text3);font-size:12px;padding:8px 0">입력 없음</div>'}
         </div>
@@ -4141,6 +4138,7 @@ function renderCEO(){
     {l:'발신 콜(아웃콜)',v:sum.outcall,c:'var(--purple)',sub:'아웃바운드 건수',d:delta(sum.outcall,prev.outcall)},
     {l:'신규 예약',v:sum.shin,c:'#0e9f6e',sub:'신규 환자 예약',d:delta(sum.shin,prev.shin)},
     {l:'구환(신규상담)',v:sum.gu,c:'#7c3aed',sub:'기존 환자 구환(신규상담)',d:delta(sum.gu,prev.gu)},
+    {l:'📵 부재(비수신/미예약)',v:sum.absence||0,c:'#d97706',sub:'콜백 부재 건수',d:delta(sum.absence||0,prev.absence||0)},
     {l:'예약 취소',v:sum.cancel,c:'var(--red)',sub:'예약 취소 건수',d:delta(sum.cancel,prev.cancel)},
   ].map(k=>`<div class="ceo-kpi-card" style="--kc:${k.c}">
     <div class="ceo-kpi-lbl">${k.l}</div><div class="ceo-kpi-val">${k.v}</div>
@@ -4151,6 +4149,7 @@ function renderCEO(){
     const bc=allCalls.filter(c=>c.bid===b.id),cl=bclr(b.id),pct=Math.min(100,bc.length/maxBr*100);
     const noappt=bc.reduce((a,c)=>a+Number(c.noappt||0),0);
     const cancel=bc.reduce((a,c)=>a+Number(c.cancel||0),0);
+    const absence=bc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
     return `<div class="ceo-bc">
       <span class="ceo-bc-badge" style="background:${cl}">${b.name}점</span>
       <div class="ceo-bc-stats">
@@ -4158,9 +4157,9 @@ function renderCEO(){
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">신환</div><div class="ceo-bc-sv" style="color:var(--green)">${bc.filter(c=>c.pttype==='신환').length}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">구환</div><div class="ceo-bc-sv" style="color:#7c3aed">${bc.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">잔여</div><div class="ceo-bc-sv" style="color:#0891b2">${bc.filter(c=>c.pttype==='잔여시술').length}</div></div>
+        <div class="ceo-bc-stat"><div class="ceo-bc-sl">부재</div><div class="ceo-bc-sv" style="color:#d97706">${absence}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">미예약</div><div class="ceo-bc-sv" style="color:var(--amber)">${noappt}</div></div>
         <div class="ceo-bc-stat"><div class="ceo-bc-sl">예약취소</div><div class="ceo-bc-sv" style="color:var(--red)">${cancel}</div></div>
-        <div class="ceo-bc-stat" style="visibility:hidden"></div>
       </div>
       <div style="height:3px;background:var(--s3);border-radius:2px;margin-top:8px">
         <div style="height:100%;width:${pct}%;background:${cl};border-radius:2px"></div>
@@ -6957,21 +6956,23 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const shin=allCalls.filter(c=>c.pttype==='신환').length;
   const gu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
   const rem=allCalls.filter(c=>c.pttype==='잔여시술').length;
+  const absence=allCalls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const out=phoneCalls.filter(c=>c.type==='out').length;
   const cancel=allCalls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=allCalls.reduce((a,c)=>a+(+c.noappt||0),0);
-  const brSum={total:allCalls.length,incall,callback:cb,outcall:out,shin,gu,cancel,noappt,chat:chatCalls.length};
+  const brSum={total:allCalls.length,incall,callback:cb,outcall:out,shin,gu,cancel,noappt,absence,chat:chatCalls.length};
   const branchSubs=S.branches.map(b=>{
     const bc=allCalls.filter(c=>c.bid===b.id);
     if(!bc.length) return null;
     const bShin=bc.filter(c=>c.pttype==='신환').length;
     const bGu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
     const bRem=bc.filter(c=>c.pttype==='잔여시술').length;
+    const bAbsence=bc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
     const bCancel=bc.reduce((a,c)=>a+(+c.cancel||0),0);
     const bBook=bc.reduce((a,c)=>a+(+c.today||0),0);
-    return {name:b.name,total:bc.length,shin:bShin,gu:bGu,rem:bRem,cancel:bCancel,booked:bBook,color:bclr(b.id)};
+    return {name:b.name,total:bc.length,shin:bShin,gu:bGu,rem:bRem,absence:bAbsence,cancel:bCancel,booked:bBook,color:bclr(b.id)};
   }).filter(Boolean);
   const pCntAll={},pCntShin={},pCntGu={};
   allCalls.forEach(c=>{
@@ -6991,9 +6992,9 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+=dateLabelStr+'\n'+'─'.repeat(28)+'\n\n';
   txt+='📊 전체 상담 현황\n';
   txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${incall+cb+out}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
-  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n예약 취소  ${cancel}건\n미예약 종료 ${noappt}건\n`;
+  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n📵 부재    ${absence}건\n예약 취소  ${cancel}건\n미예약 종료 ${noappt}건\n`;
   txt+='─'.repeat(28)+'\n\n🏥 지점별 현황\n';
-  branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0} · 예약 ${b.booked}\n`; });
+  branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0} · 부재 ${b.absence||0} · 예약 ${b.booked}\n`; });
   if(topProcs.length){
     txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 TOP\n';
     topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu}·잔여 ${p.rem||0})\n`; });
@@ -7046,7 +7047,7 @@ function drawReportCanvasAll(dateStr, sum, branchSubs, topProcs){
   rows.push({t:'div'});
   rows.push({t:'sec',text:'📊 전체 상담 현황'});
   rows.push({t:'kpi4',items:[{l:'총 상담',v:sum.total,c:'#2563eb'},{l:'수신 콜',v:sum.incall,c:'#0891b2'},{l:'콜백',v:sum.callback||0,c:'#059669'},{l:'신환',v:sum.shin,c:'#0e9f6e'}]});
-  rows.push({t:'kpi4',items:[{l:'신규 예약',v:sum.shin,c:'#0e9f6e'},{l:'구환',v:sum.gu,c:'#7c3aed'},{l:'예약 취소',v:sum.cancel,c:'#dc2626'},{l:'미예약',v:sum.noappt,c:'#d97706'}]});
+  rows.push({t:'kpi4',items:[{l:'신규 예약',v:sum.shin,c:'#0e9f6e'},{l:'구환',v:sum.gu,c:'#7c3aed'},{l:'📵 부재',v:sum.absence||0,c:'#d97706'},{l:'예약 취소',v:sum.cancel,c:'#dc2626'}]});
   rows.push({t:'div'});
   rows.push({t:'sec',text:'🏥 지점별 현황'});
   rows.push({t:'brh'});
@@ -7155,6 +7156,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const shin=calls.filter(c=>c.pttype==='신환').length;
   const gu=calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
   const rem=calls.filter(c=>c.pttype==='잔여시술').length;
+  const absence=calls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
@@ -7228,7 +7230,8 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.trim()).join('\n') : 
   ──────────────────────
   신환(신규)   ${shin}건
   구환         ${gu}건
-  잔여시술     ${rem||0}건${chatChData.length?`
+  잔여시술     ${rem||0}건
+  📵 부재      ${absence}건${chatChData.length?`
 
 📡 채널별 인입 현황
 ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
@@ -7240,7 +7243,7 @@ ${procLines}`:''}${vocSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 이상 보고드립니다. 🙏`;
 
-  const brSum={total:calls.length,incall,callback:cb,outcall:0,phone:phoneCalls.length,chat:chatCalls.length,shin,gu,rem:rem||0,cancel,noappt};
+  const brSum={total:calls.length,incall,callback:cb,outcall:0,phone:phoneCalls.length,chat:chatCalls.length,shin,gu,rem:rem||0,absence,cancel,noappt};
 
   container.innerHTML=`
     <div style="margin-bottom:16px">
@@ -7283,6 +7286,7 @@ function drawReportCanvas(dateStr, sum, chData, topProcs){
     items:[
       {label:'신규 예약', val:sum.shin, color:'#0e9f6e'},
       {label:'구환(신규상담)', val:sum.gu, color:'#7c3aed'},
+      {label:'📵 부재', val:sum.absence||0, color:'#d97706'},
       {label:'예약 취소', val:sum.cancel, color:'#dc2626'},
       {label:'미예약 종료', val:sum.noappt, color:'#d97706'},
     ]});
@@ -8744,7 +8748,7 @@ function renderDailyProcTable(){
 
   // 실제 사용된 시술 pid (발신 제외, 환자구분 필터 적용)
   const getPtCalls = (ds) => {
-    let calls = getPtCalls(ds);
+    let calls = getAnalysisCalls(ds);
     if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
     return calls;
   };
@@ -11000,7 +11004,7 @@ function renderDailyProcTable(){
 
   // 실제 사용된 시술 pid (발신 제외, 환자구분 필터 적용)
   const getPtCalls = (ds) => {
-    let calls = getPtCalls(ds);
+    let calls = getAnalysisCalls(ds);
     if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
     return calls;
   };
