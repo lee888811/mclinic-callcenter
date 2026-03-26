@@ -330,12 +330,12 @@ td:first-child{text-align:left;padding-left:13px}
 
 <div class="app">
   <div class="sidebar" id="sidebar">
+    <div class="sg">직원 입력</div>
+    <div id="staffNavList"></div>
+    <div class="sdiv"></div>
     <div class="sg">메인</div>
     <div class="si act" data-page="ceo" onclick="go('ceo',this)"><span class="sico">👑</span>대표 보고</div>
     <div class="si" data-page="brsum" onclick="go('brsum',this)"><span class="sico">🗂</span>지점별 현황</div>
-    <div class="sdiv"></div>
-    <div class="sg">직원 입력</div>
-    <div id="staffNavList"></div>
     <div class="sdiv"></div>
     <div class="sg">분석</div>
     <div class="si" data-page="closingrpt" onclick="go('closingrpt',this)"><span class="sico">📢</span>일일 보고</div>
@@ -3549,13 +3549,43 @@ function renderStaffInputPage(sid){
       </div>
     </div>
 
-    <!-- ③ 미예약 현황 요약 (중요 follow-up) -->
+    <!-- ③ 미예약 현황 요약 + 토글 목록 -->
     ${noappt>0?`
-    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">⚠️</span>
-      <div>
-        <div style="font-size:24px;font-weight:700;color:#92400e">미예약종료 ${noappt}건</div>
-        <div style="font-size:22px;color:#b45309;margin-top:2px">아웃콜 대상입니다. 아래 콜 목록에서 확인하세요.</div>
+    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:10px;margin-bottom:14px;overflow:hidden">
+      <div onclick="this.parentElement.querySelector('.noappt-list').style.display=this.parentElement.querySelector('.noappt-list').style.display==='none'?'block':'none';this.querySelector('.noappt-arrow').textContent=this.parentElement.querySelector('.noappt-list').style.display==='none'?'▶':'▼'"
+        style="padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+        <span style="font-size:20px">⚠️</span>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:700;color:#92400e">미예약 ${noappt}건 — 아웃콜 대상</div>
+          <div style="font-size:13px;color:#b45309;margin-top:2px">클릭하면 대상 목록을 볼 수 있어요</div>
+        </div>
+        <span class="noappt-arrow" style="font-size:16px;color:#d97706;font-weight:700">▶</span>
+      </div>
+      <div class="noappt-list" style="display:none;border-top:1px solid rgba(245,158,11,.25);padding:10px 14px;background:rgba(245,158,11,.03)">
+        ${calls.filter(c=>c.pttype==='미예약'||c.noappt>0).length===0
+          ?`<div style="color:var(--text3);font-size:13px;padding:6px">미예약 콜을 찾을 수 없습니다</div>`
+          :calls.filter(c=>c.pttype==='미예약'||c.noappt>0).slice().reverse().map(c=>{
+            const b=S.branches.find(x=>x.id===c.bid);
+            const bc=bclr(c.bid);
+            const procs=Object.entries(c.procs||{}).filter(([,n])=>n>0).map(([pid])=>getProcName(pid)).join(', ');
+            const reason=c.noapptReason||(c.noapptMemo?'':'')||'';
+            const memo=c.noapptMemo||'';
+            return `<div style="background:#fff;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:18px;flex-shrink:0">⏳</span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+                  <span style="font-size:13px;font-weight:700;color:#92400e">${c.pttype||'미예약'}</span>
+                  ${b?`<span style="font-size:12px;font-weight:700;background:${bc}22;color:${bc};padding:1px 8px;border-radius:8px">${b.name}</span>`:''}
+                  ${reason?`<span style="font-size:12px;background:#fff7ed;color:#d97706;padding:1px 8px;border-radius:8px;border:1px solid #fed7aa">${reason}</span>`:''}
+                  <span style="font-size:11px;color:var(--text3);margin-left:auto">${c.time||''}</span>
+                </div>
+                ${procs?`<div style="font-size:12px;color:var(--text2)">🎯 ${procs}</div>`:''}
+                ${memo?`<div style="font-size:12px;color:#b45309;margin-top:2px">📝 ${escHtml(memo)}</div>`:''}
+                ${c.memo?`<div style="font-size:12px;color:var(--text3);margin-top:2px">💬 ${escHtml(c.memo)}</div>`:''}
+              </div>
+              <button onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
+            </div>`;
+          }).join('')}
       </div>
     </div>`:''}
 
@@ -4632,13 +4662,6 @@ function renderStaffMgmt(){
         </div>
       </td>
       <td style="padding:10px 14px">
-        <select id="srole-${s.id}"
-          style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;background:var(--s2);color:var(--text);font-family:'Noto Sans KR',sans-serif"
-          onchange="staffFieldChange('${s.id}')">
-          ${S.roles.map(r=>`<option ${s.role===r?'selected':''}>${r}</option>`).join('')}
-        </select>
-      </td>
-      <td style="padding:10px 14px">
         <input type="text" id="sjoin-${s.id}" value="${escHtml((_leaveData[s.name]||{}).joinDate||'')}"
           placeholder="YYYY-MM-DD" maxlength="10"
           style="border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;width:110px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace"
@@ -4665,7 +4688,6 @@ function renderStaffMgmt(){
         <thead>
           <tr style="background:var(--s2);border-bottom:2px solid var(--border)">
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">이름</th>
-            <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">직책</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">입사일</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">비밀번호</th>
             <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">저장/삭제</th>
@@ -4680,24 +4702,6 @@ function renderStaffMgmt(){
 
   // 직책 관리 + 관리자 비밀번호
   document.getElementById('roles-mgmt').innerHTML=`
-    <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
-      <div style="padding:12px 16px;background:var(--s2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2)">🏷 직책 관리</div>
-      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:7px" id="roles-list">
-        ${S.roles.map((r,i)=>`
-          <div id="role-row-${i}" style="display:flex;align-items:center;gap:8px">
-            <span id="role-label-${i}" style="flex:1;font-size:15px;font-weight:800;color:var(--text);padding:6px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--border)">${r}</span>
-            <input id="role-input-${i}" value="${r}" style="display:none;flex:1;border:1.5px solid var(--accent);background:var(--s1);color:var(--text);font-size:15px;font-weight:800;padding:5px 10px;border-radius:7px;font-family:'Noto Sans KR',sans-serif"
-              onkeydown="if(event.key==='Enter')confirmEditRole(${i});if(event.key==='Escape')cancelEditRole(${i})">
-            <button onclick="startEditRole(${i})" id="role-edit-btn-${i}" class="btn btn-g btn-sm">✏️</button>
-            <button onclick="confirmEditRole(${i})" id="role-save-btn-${i}" class="btn btn-p btn-sm" style="display:none">저장</button>
-            <button onclick="cancelEditRole(${i})" id="role-cancel-btn-${i}" class="btn btn-g btn-sm" style="display:none">✕</button>
-            <button onclick="delRole(${i})" class="btn btn-sm" style="background:none;border:1px solid var(--border);color:var(--text3)">🗑</button>
-          </div>`).join('')}
-      </div>
-      <div style="padding:10px 16px;border-top:1px solid var(--border)">
-        <button class="btn btn-g btn-sm" onclick="addRole()">＋ 직책 추가</button>
-      </div>
-    </div>
     <div style="padding:14px 16px;background:linear-gradient(135deg,#7c3aed11,#7c3aed05);border:1px solid #7c3aed33;border-radius:12px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px">🔑 관리자 비밀번호 변경</div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -9406,7 +9410,6 @@ function renderDpProcPills(allProcs, usedPids) {
   const allBtn = document.getElementById('dp-all-btn');
   if (!pillEl) return;
 
-  // 검색어
   const q=(document.getElementById('dp-proc-search')?.value||'').toLowerCase().trim();
 
   const procs = q
@@ -9426,36 +9429,71 @@ function renderDpProcPills(allProcs, usedPids) {
     return;
   }
 
+  // 하이라이트 함수
+  const hl=(name)=>{
+    if(!q) return name;
+    const idx=(name||'').toLowerCase().indexOf(q);
+    if(idx<0) return name;
+    return name.slice(0,idx)+`<mark style="background:#fef08a;color:#92400e;border-radius:3px;padding:0 2px;font-weight:800">`+name.slice(idx,idx+q.length)+`</mark>`+name.slice(idx+q.length);
+  };
+
   pillEl.innerHTML = procs.map(p => {
     const selected = isAll || (_selectedPids && _selectedPids.has(p.id));
     const isFocused = _focusedPid === p.id;
     const hasSubs = p.subs && p.subs.length > 0;
     const clr = CLR[S.procedures.findIndex(x=>x.id===p.id) % CLR.length] || 'var(--accent)';
-    // 검색어 하이라이트
-    const hl=(name)=>{
-      if(!q) return name;
-      const idx=(name||'').toLowerCase().indexOf(q);
-      if(idx<0) return name;
-      return name.slice(0,idx)+`<mark style="background:#fef08a;border-radius:2px;padding:0 1px">`+name.slice(idx,idx+q.length)+`</mark>`+name.slice(idx+q.length);
-    };
-    return `<div style="display:inline-flex;align-items:center;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid ${clr}">
-      <button onclick="dpToggleProc('${p.id}')"
-        style="padding:2px 8px;border:none;font-size:11px;font-weight:700;
-          background:${selected ? clr : 'transparent'};
-          color:${selected ? '#fff' : clr};
-          cursor:pointer;transition:all .15s;white-space:nowrap">
-        ${hl(p.name)}
-      </button>${hasSubs ? `<button onclick="dpToggleSubs('${p.id}')"
-        title="하위 카테고리"
-        style="padding:2px 6px;border:none;border-left:1px solid ${clr}44;font-size:10px;
-          background:${isFocused ? clr : 'transparent'};
-          color:${isFocused ? '#fff' : clr};
-          cursor:pointer">▾</button>` : ''}
+    const parentMatch = q && (p.name||'').toLowerCase().includes(q);
+    // 검색 중 매칭된 하위항목 인라인 표시
+    const matchingSubs = (q && hasSubs)
+      ? p.subs.filter(s=>(s.name||'').toLowerCase().includes(q))
+      : [];
+
+    const subsHtml = matchingSubs.length ? `
+      <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;padding:4px 6px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+        <span style="font-size:10px;font-weight:700;color:#92400e;margin-right:2px">▸ 하위:</span>
+        ${matchingSubs.map((s,_)=>{
+          const i=p.subs.indexOf(s);
+          const key=`${p.id}:${i}`;
+          const selSub=_selectedSubs===null||(_selectedSubs&&_selectedSubs.has(key));
+          return `<button onclick="dpSelectSubDirect('${p.id}',${i})"
+            style="padding:2px 8px;border-radius:10px;border:1.5px solid ${clr};font-size:11px;font-weight:700;cursor:pointer;
+              background:${selSub?clr:'#fff'};color:${selSub?'#fff':clr}">${hl(s.name||'')}</button>`;
+        }).join('')}
+      </div>` : '';
+
+    return `<div style="display:inline-flex;flex-direction:column;gap:0;margin:2px">
+      <div style="display:inline-flex;align-items:center;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid ${clr}">
+        <button onclick="dpToggleProc('${p.id}')"
+          style="padding:2px 8px;border:none;font-size:11px;font-weight:700;
+            background:${selected ? clr : 'transparent'};
+            color:${selected ? '#fff' : clr};
+            cursor:pointer;transition:all .15s;white-space:nowrap">
+          ${hl(p.name)}
+        </button>${hasSubs ? `<button onclick="dpToggleSubs('${p.id}')"
+          title="하위 카테고리"
+          style="padding:2px 6px;border:none;border-left:1px solid ${clr}44;font-size:10px;
+            background:${isFocused ? clr : 'transparent'};
+            color:${isFocused ? '#fff' : clr};
+            cursor:pointer">▾</button>` : ''}
+      </div>
+      ${subsHtml}
     </div>`;
   }).join('');
 
   // 하위 카테고리 패널 렌더링
   renderDpSubPills();
+}
+
+// 하위 항목 직접 선택 (검색 결과에서)
+function dpSelectSubDirect(pid, idx){
+  const key=`${pid}:${idx}`;
+  if(!_selectedPids) _selectedPids=new Set();
+  _selectedPids.add(pid);
+  _focusedPid=pid;
+  if(!_selectedSubs) _selectedSubs=new Set();
+  if(_selectedSubs.has(key)) _selectedSubs.delete(key);
+  else _selectedSubs.add(key);
+  renderDailyProcTable();
 }
 
 function dpToggleSubs(pid) {
