@@ -1559,7 +1559,6 @@ td:first-child{text-align:left;padding-left:13px}
           <div id="roster-month-label" style="font-size:18px;font-weight:800;color:#0f172a;min-width:120px;text-align:center"></div>
           <button onclick="rosterNextMonth()" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">›</button>
           <button onclick="rosterThisMonth()" style="padding:5px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer">오늘</button>
-          <button onclick="openRosterPatterns()" style="padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer">👤 패턴 설정</button>
         </div>
 
         <!-- 직원 선택 (빠른 입력 모드) -->
@@ -5110,7 +5109,7 @@ function retireST(id){
     syncPush(true);
     renderStaffMgmt(); renderSidebar();
     toast(`📁 ${s.name} 퇴직 처리됨 (데이터 보존)`);
-  });
+  }, '퇴직 처리', '#f59e0b');
 }
 function reinstateST(id){
   const s=S.staff.find(x=>x.id===id);
@@ -5123,7 +5122,7 @@ function reinstateST(id){
     syncPush(true);
     renderStaffMgmt(); renderSidebar();
     toast(`✅ ${s.name} 복직 처리됨`);
-  });
+  }, '복직', '#16a34a');
 }
 function delST(id){
   const s=S.staff.find(x=>x.id===id);
@@ -5135,7 +5134,7 @@ function delST(id){
     syncPush(true);
     renderStaffMgmt();renderSidebar();
     toast('🗑 '+s.name+' 완전 삭제됨');
-  });
+  }, '완전삭제', '#dc2626');
 }
 function addST(){
   const name=prompt('직원 이름:');if(!name?.trim())return;
@@ -8976,7 +8975,7 @@ async function scheduleSave(){
 
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2500);}
 
-function showConfirmToast(msg, onConfirm){
+function showConfirmToast(msg, onConfirm, confirmText='확인', confirmColor='#dc2626'){
   let el=document.getElementById('confirm-toast');
   if(!el){
     el=document.createElement('div');
@@ -8986,7 +8985,7 @@ function showConfirmToast(msg, onConfirm){
   }
   el.innerHTML=`<span>${msg}</span>
     <button onclick="document.getElementById('confirm-toast').style.display='none'" style="background:#475569;color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px">취소</button>
-    <button id="confirm-toast-ok" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700">삭제</button>`;
+    <button id="confirm-toast-ok" style="background:${confirmColor};color:#fff;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700">${confirmText}</button>`;
   el.style.display='flex';
   document.getElementById('confirm-toast-ok').onclick=()=>{
     el.style.display='none';
@@ -11561,7 +11560,7 @@ function renderRosterCalendar(){
   const lbl=`${yr}년 ${mo+1}월`;
   const el=document.getElementById('roster-month-label'); if(el) el.textContent=lbl;
   const sub=document.getElementById('roster-subtitle'); if(sub) sub.textContent=`예약부 월간 근태 현황 · ${lbl}`;
-  const pb=document.getElementById('roster-btn-patterns'); if(pb) pb.style.display='';
+  
   renderRosterQuickStaffPills();
   // 월요일 시작: 0=월,1=화,...,5=토,6=일
   const rawFirstDay=new Date(yr,mo,1).getDay(); // 0=일,1=월,...,6=토
