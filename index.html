@@ -1381,12 +1381,16 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
         </div>
         <div id="dp-proc-filter" style="margin-bottom:6px;padding:10px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
             <span style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap">시술 선택</span>
+            <input type="text" id="dp-proc-search" placeholder="🔍 시술명 검색..." autocomplete="off"
+              oninput="renderDpProcPills()"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();}"
+              style="flex:1;max-width:220px;padding:4px 10px;border:1.5px solid var(--accent);border-radius:9px;background:#fff;color:var(--text);font-size:12px;outline:none">
             <button onclick="dpSelectAll()" id="dp-all-btn"
-              style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
-            <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+              style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s;white-space:nowrap">전체</button>
           </div>
+          <div id="dp-proc-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
           <div id="dp-sub-filter" style="display:none;padding-top:6px;border-top:1px solid var(--border)">
             <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
               <span style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap">하위 카테고리</span>
@@ -7804,6 +7808,14 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=calls.reduce((a,c)=>a+(+c.noappt||0),0);
 
+  // 미예약 사유 집계 (pttype==='미예약' 기준)
+  const noapptReasonMap={};
+  calls.filter(c=>c.pttype==='미예약'&&(c.noapptReason||c.noappt>0)).forEach(c=>{
+    const r=c.noapptReason||'사유미입력';
+    noapptReasonMap[r]=(noapptReasonMap[r]||0)+1;
+  });
+  const noapptReasonLines=Object.entries(noapptReasonMap).map(([r,n])=>`    · ${r} ${n}건`).join('\n');
+
   // 채팅 채널별 집계
   // 전체 채널별 집계 (전화+채팅 모두)
   const chatChData=S.channels.map(ch=>{
@@ -7878,7 +7890,7 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.trim()).join('\n') : 
 📡 채널별 인입 현황
 ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
   예약 취소    ${cancel}건
-  미예약 종료  ${noappt}건
+  미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}
 ${topProcs.length?`
 💉 예약 시술 TOP ${topProcs.length}
 ${procLines}`:''}${vocSection}
@@ -9394,9 +9406,13 @@ function renderDpProcPills(allProcs, usedPids) {
   const allBtn = document.getElementById('dp-all-btn');
   if (!pillEl) return;
 
-  // S.procedures 최신 반영 (시술 관리와 동기화)
-  const procs = S.procedures;
-  const isAll = (_selectedPids === null);
+  // 검색어
+  const q=(document.getElementById('dp-proc-search')?.value||'').toLowerCase().trim();
+
+  const procs = q
+    ? S.procedures.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q)))
+    : S.procedures;
+  const isAll = (_selectedPids === null) && !q;
 
   if (allBtn) {
     allBtn.style.background = isAll ? 'var(--accent)' : 'transparent';
@@ -9405,18 +9421,30 @@ function renderDpProcPills(allProcs, usedPids) {
     allBtn.textContent = '전체';
   }
 
+  if(q && procs.length===0){
+    pillEl.innerHTML=`<span style="font-size:12px;color:var(--text3)">검색 결과 없음</span>`;
+    return;
+  }
+
   pillEl.innerHTML = procs.map(p => {
     const selected = isAll || (_selectedPids && _selectedPids.has(p.id));
     const isFocused = _focusedPid === p.id;
     const hasSubs = p.subs && p.subs.length > 0;
-    const clr = CLR[procs.findIndex(x=>x.id===p.id) % CLR.length] || 'var(--accent)';
+    const clr = CLR[S.procedures.findIndex(x=>x.id===p.id) % CLR.length] || 'var(--accent)';
+    // 검색어 하이라이트
+    const hl=(name)=>{
+      if(!q) return name;
+      const idx=(name||'').toLowerCase().indexOf(q);
+      if(idx<0) return name;
+      return name.slice(0,idx)+`<mark style="background:#fef08a;border-radius:2px;padding:0 1px">`+name.slice(idx,idx+q.length)+`</mark>`+name.slice(idx+q.length);
+    };
     return `<div style="display:inline-flex;align-items:center;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid ${clr}">
       <button onclick="dpToggleProc('${p.id}')"
         style="padding:2px 8px;border:none;font-size:11px;font-weight:700;
           background:${selected ? clr : 'transparent'};
           color:${selected ? '#fff' : clr};
           cursor:pointer;transition:all .15s;white-space:nowrap">
-        ${p.name}
+        ${hl(p.name)}
       </button>${hasSubs ? `<button onclick="dpToggleSubs('${p.id}')"
         title="하위 카테고리"
         style="padding:2px 6px;border:none;border-left:1px solid ${clr}44;font-size:10px;
