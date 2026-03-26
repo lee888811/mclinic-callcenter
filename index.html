@@ -8127,8 +8127,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
 ${posVocs.length ? `  😊 긍정 (${posVocs.length}건)\n${posVocs.map(v=>`    · ${v.date} ${v.content}${v.procs?.length?` [${v.procs.map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?.name||pid;}).join(', ')}]`:''}`).join('\n')}` : ''}${posVocs.length&&negVocs.length?'\n':''}${negVocs.length ? `  😤 컴플레인 (${negVocs.length}건)\n${negVocs.map(v=>`    · ${v.date} ${v.content}${v.procs?.length?` [${v.procs.map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?.name||pid;}).join(', ')}]`:''} [${v.status}]`).join('\n')}` : ''}` : '';
 
   const reportText=
-`📋 ${branch.name}점 CS 일일 상담 보고
-${dateStr}
+`${dateStr}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 전체 상담 현황
