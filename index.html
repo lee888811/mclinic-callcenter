@@ -1469,6 +1469,7 @@ td:first-child{text-align:left;padding-left:13px}
         <span id="duty-month-display" style="font-size:13px;font-weight:800;color:#0f172a;padding:4px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)"></span>
         <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(1)">다음달 ›</button>
         <button class="btn btn-g btn-sm" onclick="dutyGoThisMonth()">이번달</button>
+        <button class="btn btn-g btn-sm" onclick="dutyCopyFromPrev()" style="background:#f0fdf4;border-color:#86efac;color:#15803d">📋 이전달 복사</button>
       </div>
 
       <!-- 안내 -->
@@ -10312,6 +10313,23 @@ function renderDutyPage(){
     </div>`;
   }).join('');
 }
+function saveLeaveData(){
+  try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
+}
+function dutyCopyFromPrev(){
+  const prevKey=dutyStorageKey(getPrevMonth(_dutyMonth));
+  const prevSaved=localStorage.getItem(prevKey);
+  if(!prevSaved){ toast('⚠️ 이전달 데이터가 없습니다'); return; }
+  if(!confirm(`이전달(${getPrevMonth(_dutyMonth)}) 내용을 현재달(${_dutyMonth})에 복사할까요?\n현재 내용은 덮어씌워집니다.`)) return;
+  try{
+    const prev=JSON.parse(prevSaved);
+    _dutyData=JSON.parse(JSON.stringify(prev));
+    _dutyData.month=_dutyMonth;
+    dutyLocalSave();
+    renderDutyPage();
+    toast('✅ 이전달 내용 복사됨');
+  }catch(e){ toast('⚠️ 복사 실패'); }
+}
 function openDutyEdit(){
   if(!_dutyData) loadDutyData();
   renderDutyEditForm();
@@ -10598,10 +10616,40 @@ async function rosterSyncLoad(){
 let _rosterPatterns={};
 function openRosterPatterns(){
   loadRosterPatternData();
+  renderRosterPatternList();
   document.getElementById('modal-roster-patterns')?.classList.add('open');
 }
 function loadRosterPatternData(){
   try{ const s=localStorage.getItem('roster_patterns'); if(s) _rosterPatterns=JSON.parse(s); }catch(e){}
+}
+function renderRosterPatternList(){
+  const el=document.getElementById('roster-pattern-list'); if(!el) return;
+  const DOW_LABELS=['일','월','화','수','목','금','토'];
+  const TYPES=['오전','오후','휴무','연차','반차','특근'];
+  el.innerHTML=S.staff.map(s=>{
+    const pat=_rosterPatterns[s.name]||{};
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:8px">${escHtml(s.name)}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
+        ${DOW_LABELS.map((d,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0?'#ef4444':i===6?'#3b82f6':'#374151'}">${d}</div>`).join('')}
+        ${[0,1,2,3,4,5,6].map(dow=>{
+          const cur=pat[dow]?.type||'오전';
+          return `<select onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'][${dow}]={type:this.value}"
+            style="width:100%;padding:3px;border-radius:5px;border:1px solid var(--border);font-size:10px;font-weight:600;background:var(--s2);color:var(--text)">
+            ${TYPES.map(t=>`<option value="${t}"${t===cur?' selected':''}>${t}</option>`).join('')}
+          </select>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;font-size:11px">
+        <span style="color:var(--text3)">기본 출근:</span>
+        <input type="time" value="${pat.defaultStart||'09:00'}" onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'].defaultStart=this.value"
+          style="padding:2px 6px;border-radius:5px;border:1px solid var(--border);font-size:11px;background:var(--s2);color:var(--text)">
+        <span style="color:var(--text3)">퇴근:</span>
+        <input type="time" value="${pat.defaultEnd||'18:00'}" onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'].defaultEnd=this.value"
+          style="padding:2px 6px;border-radius:5px;border:1px solid var(--border);font-size:11px;background:var(--s2);color:var(--text)">
+      </div>
+    </div>`;
+  }).join('');
 }
 function saveRosterPatterns(){
   try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
