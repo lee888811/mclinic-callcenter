@@ -81,7 +81,7 @@ td:first-child{text-align:left;padding-left:13px}
 .modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.48);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center}
 .modal.open{display:flex}
 .mbox{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;width:420px;max-width:96vw;max-height:92vh;overflow-y:auto}
-.mt{font-size:15px;font-weight:800;margin-bottom:14px}
+.mt{font-size:22px;font-weight:800;margin-bottom:14px}
 .ml{font-size:11px;color:var(--text2);margin-bottom:4px;margin-top:10px;font-weight:600}
 .minp{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;padding:8px 10px;border-radius:7px}
 .minp:focus{outline:none;border-color:var(--accent)}
@@ -617,19 +617,19 @@ td:first-child{text-align:left;padding-left:13px}
 
       <!-- 필터 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <span style="font-size:13px;font-weight:700;color:#0f172a">기간</span>
+        <span style="font-size:26px;font-weight:700;color:#0f172a">기간</span>
         <button class="period-btn act" id="fnpb-month" onclick="setFunnelPeriod('month',this)">이번달</button>
         <button class="period-btn" id="fnpb-3month" onclick="setFunnelPeriod('3month',this)">3개월</button>
         <button class="period-btn" id="fnpb-6month" onclick="setFunnelPeriod('6month',this)">6개월</button>
         <button class="period-btn" id="fnpb-custom" onclick="setFunnelPeriod('custom',this)">직접선택</button>
         <div id="fn-custom-range" style="display:none;align-items:center;gap:6px">
-          <input type="date" id="fn-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderFunnel()">
-          <span style="font-size:11px;color:var(--text3)">~</span>
-          <input type="date" id="fn-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderFunnel()">
+          <input type="date" id="fn-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:24px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderFunnel()">
+          <span style="font-size:22px;color:var(--text3)">~</span>
+          <input type="date" id="fn-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:24px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderFunnel()">
         </div>
         <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-          <span style="font-size:12px;color:var(--text2)">지점</span>
-          <select id="fn-branch-filter" onchange="renderFunnel()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <span style="font-size:24px;color:var(--text2)">지점</span>
+          <select id="fn-branch-filter" onchange="renderFunnel()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:24px">
             <option value="all">전체</option>
           </select>
         </div>
@@ -665,20 +665,20 @@ td:first-child{text-align:left;padding-left:13px}
 
       <!-- 기간 필터 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <span style="font-size:13px;font-weight:700;color:#0f172a">기간</span>
+        <span style="font-size:26px;font-weight:700;color:#0f172a">기간</span>
         <button class="period-btn act" id="roipb-month" onclick="setRoiPeriod('month',this)">이번달</button>
         <button class="period-btn" id="roipb-3month" onclick="setRoiPeriod('3month',this)">3개월</button>
         <button class="period-btn" id="roipb-6month" onclick="setRoiPeriod('6month',this)">6개월</button>
         <button class="period-btn" id="roipb-custom" onclick="setRoiPeriod('custom',this)">직접선택</button>
         <div id="roi-custom-range" style="display:none;align-items:center;gap:6px">
-          <input type="date" id="roi-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderRoi()">
-          <span style="font-size:11px;color:var(--text3)">~</span>
-          <input type="date" id="roi-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderRoi()">
+          <input type="date" id="roi-from" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:24px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderRoi()">
+          <span style="font-size:22px;color:var(--text3)">~</span>
+          <input type="date" id="roi-to" style="background:var(--s2);border:1px solid var(--border2);color:var(--text);font-size:24px;padding:4px 8px;border-radius:7px;font-family:'DM Mono',monospace" onchange="renderRoi()">
         </div>
-        <span style="font-size:11px;color:var(--text3);margin-left:4px" id="roi-period-lbl"></span>
+        <span style="font-size:22px;color:var(--text3);margin-left:4px" id="roi-period-lbl"></span>
         <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-          <span style="font-size:12px;color:var(--text2)">지점</span>
-          <select id="roi-branch-filter" onchange="renderRoi()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <span style="font-size:24px;color:var(--text2)">지점</span>
+          <select id="roi-branch-filter" onchange="renderRoi()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:24px">
             <option value="all">전체</option>
           </select>
         </div>
@@ -733,27 +733,27 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
 
       <!-- 필터 -->
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <select id="voc-filter-branch" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
+        <select id="voc-filter-branch" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 지점</option>
         </select>
-        <select id="voc-filter-type" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+        <select id="voc-filter-type" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 유형</option>
           <option value="긍정">😊 긍정 VOC</option>
           <option value="컴플레인">😤 컴플레인</option>
         </select>
-        <select id="voc-filter-status" onchange="renderVocPage()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+        <select id="voc-filter-status" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 상태</option>
           <option value="접수">접수</option>
           <option value="처리중">처리중</option>
           <option value="완료">완료</option>
         </select>
-        <input type="date" id="voc-filter-from" onchange="renderVocPage()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
-        <span style="color:var(--text3);font-size:12px">~</span>
-        <input type="date" id="voc-filter-to" onchange="renderVocPage()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
-        <button onclick="vocSetRange(7)" class="btn btn-g btn-sm">7일</button>
-        <button onclick="vocSetRange(30)" class="btn btn-g btn-sm">30일</button>
-        <button onclick="vocSetRange(90)" class="btn btn-g btn-sm">90일</button>
+        <input type="date" id="voc-filter-from" onchange="renderVocPage()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <span style="color:var(--text3);font-size:14px">~</span>
+        <input type="date" id="voc-filter-to" onchange="renderVocPage()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <button onclick="vocSetRange(7)" class="btn btn-g">7일</button>
+        <button onclick="vocSetRange(30)" class="btn btn-g">30일</button>
+        <button onclick="vocSetRange(90)" class="btn btn-g">90일</button>
       </div>
 
       <!-- KPI -->
@@ -763,7 +763,7 @@ td:first-child{text-align:left;padding-left:13px}
       <div class="card">
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl">📋 VOC 목록</span>
-          <span id="voc-count" style="font-size:11px;color:var(--text3)"></span>
+          <span id="voc-count" style="font-size:14px;color:var(--text3)"></span>
         </div>
         <div id="voc-list"></div>
       </div>
@@ -776,12 +776,12 @@ td:first-child{text-align:left;padding-left:13px}
           <div class="ps">상담 데이터 기반 마케팅 현황 · 채널 효율 · 이벤트 성과</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <select id="mkt-branch-sel" onchange="renderMarketing()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <select id="mkt-branch-sel" onchange="renderMarketing()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:24px">
             <option value="">전체 지점</option>
           </select>
-          <input type="date" id="mkt-date-from" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
-          <span style="color:var(--text3);font-size:12px">~</span>
-          <input type="date" id="mkt-date-to" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px">
+          <input type="date" id="mkt-date-from" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:24px">
+          <span style="color:var(--text3);font-size:24px">~</span>
+          <input type="date" id="mkt-date-to" onchange="renderMarketing()" style="padding:6px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:24px">
           <button onclick="mktSetRange(7)" class="btn btn-g btn-sm">7일</button>
           <button onclick="mktSetRange(30)" class="btn btn-g btn-sm">30일</button>
         </div>
@@ -821,7 +821,7 @@ td:first-child{text-align:left;padding-left:13px}
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl">📈 일별 상담 추이</span>
           <div style="display:flex;gap:6px">
-            <span id="mkt-trend-total" style="font-size:11px;color:var(--text3)"></span>
+            <span id="mkt-trend-total" style="font-size:22px;color:var(--text3)"></span>
           </div>
         </div>
         <div id="mkt-trend-chart" style="overflow-x:auto"></div>
@@ -846,44 +846,44 @@ td:first-child{text-align:left;padding-left:13px}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
           <!-- 지점 선택 -->
           <div style="background:var(--s2);border-radius:10px;padding:12px">
-            <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:8px">🏥 지점 선택 (복수 가능)</div>
+            <div style="font-size:30px;font-weight:800;color:#0f172a;margin-bottom:8px">🏥 지점 선택 (복수 가능)</div>
             <div id="cmp-branch-pills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
           </div>
           <!-- 기간 A -->
           <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px">
-            <div style="font-size:11px;font-weight:700;color:#2563eb;margin-bottom:8px">📅 기간 A</div>
+            <div style="font-size:22px;font-weight:700;color:#2563eb;margin-bottom:8px">📅 기간 A</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-              <button onclick="cmpSetPeriod('A','today',this)" class="period-btn act" style="font-size:10px">오늘</button>
-              <button onclick="cmpSetPeriod('A','week',this)" class="period-btn" style="font-size:10px">7일</button>
-              <button onclick="cmpSetPeriod('A','month',this)" class="period-btn" style="font-size:10px">30일</button>
-              <button onclick="cmpSetPeriod('A','custom',this)" class="period-btn" style="font-size:10px">직접</button>
+              <button onclick="cmpSetPeriod('A','today',this)" class="period-btn act" style="font-size:20px">오늘</button>
+              <button onclick="cmpSetPeriod('A','week',this)" class="period-btn" style="font-size:20px">7일</button>
+              <button onclick="cmpSetPeriod('A','month',this)" class="period-btn" style="font-size:20px">30일</button>
+              <button onclick="cmpSetPeriod('A','custom',this)" class="period-btn" style="font-size:20px">직접</button>
             </div>
             <div id="cmp-A-custom" style="display:none;flex-direction:column;gap:4px">
-              <input type="date" id="cmp-A-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
-              <input type="date" id="cmp-A-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-A-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:22px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-A-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #bfdbfe;color:var(--text);font-size:22px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
             </div>
-            <div id="cmp-A-label" style="font-size:11px;color:#2563eb;font-weight:600;margin-top:4px"></div>
+            <div id="cmp-A-label" style="font-size:22px;color:#2563eb;font-weight:600;margin-top:4px"></div>
           </div>
           <!-- 기간 B -->
           <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px">
-            <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">📅 기간 B</div>
+            <div style="font-size:22px;font-weight:700;color:#7c3aed;margin-bottom:8px">📅 기간 B</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-              <button onclick="cmpSetPeriod('B','today',this)" class="period-btn" style="font-size:10px">오늘</button>
-              <button onclick="cmpSetPeriod('B','week',this)" class="period-btn act" style="font-size:10px">7일</button>
-              <button onclick="cmpSetPeriod('B','month',this)" class="period-btn" style="font-size:10px">30일</button>
-              <button onclick="cmpSetPeriod('B','custom',this)" class="period-btn" style="font-size:10px">직접</button>
+              <button onclick="cmpSetPeriod('B','today',this)" class="period-btn" style="font-size:20px">오늘</button>
+              <button onclick="cmpSetPeriod('B','week',this)" class="period-btn act" style="font-size:20px">7일</button>
+              <button onclick="cmpSetPeriod('B','month',this)" class="period-btn" style="font-size:20px">30일</button>
+              <button onclick="cmpSetPeriod('B','custom',this)" class="period-btn" style="font-size:20px">직접</button>
             </div>
             <div id="cmp-B-custom" style="display:none;flex-direction:column;gap:4px">
-              <input type="date" id="cmp-B-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
-              <input type="date" id="cmp-B-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:11px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-B-from" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:22px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
+              <input type="date" id="cmp-B-to" onchange="renderCmpChart()" style="background:#fff;border:1px solid #e9d5ff;color:var(--text);font-size:22px;padding:3px 6px;border-radius:6px;width:100%;box-sizing:border-box">
             </div>
-            <div id="cmp-B-label" style="font-size:11px;color:#7c3aed;font-weight:600;margin-top:4px"></div>
+            <div id="cmp-B-label" style="font-size:22px;color:#7c3aed;font-weight:600;margin-top:4px"></div>
           </div>
         </div>
 
         <!-- 시술 선택 -->
         <div style="background:var(--s2);border-radius:10px;padding:10px 12px;margin-bottom:14px">
-          <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:8px">💉 시술 선택 (미선택 시 전체)</div>
+          <div style="font-size:30px;font-weight:800;color:#0f172a;margin-bottom:8px">💉 시술 선택 (미선택 시 전체)</div>
           <div id="cmp-proc-pills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
 
@@ -1462,14 +1462,14 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- 월 이동 버튼 (제목 아래) -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap">
         <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(-1)">‹ 이전달</button>
-        <span id="duty-month-display" style="font-size:13px;font-weight:800;color:#0f172a;padding:4px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)"></span>
+        <span id="duty-month-display" style="font-size:26px;font-weight:800;color:#0f172a;padding:4px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)"></span>
         <button class="btn btn-g btn-sm" onclick="dutyMoveMonth(1)">다음달 ›</button>
         <button class="btn btn-g btn-sm" onclick="dutyGoThisMonth()">이번달</button>
         <button class="btn btn-g btn-sm" onclick="dutyCopyFromPrev()" style="background:#f0fdf4;border-color:#86efac;color:#15803d">📋 이전달 복사</button>
       </div>
 
       <!-- 안내 -->
-      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#713f12;font-weight:600">
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:24px;color:#713f12;font-weight:600">
         Q. 분담업무 하는 방법은?<br>
         A. 예약부 스프레드 메인 - [분담업무 메뉴얼]을 읽어주세요.
       </div>
@@ -1873,7 +1873,7 @@ td:first-child{text-align:left;padding-left:13px}
 <div class="modal" id="modal-call">
   <div style="display:flex;gap:12px;align-items:stretch;width:99vw;max-width:99vw;height:93vh;max-height:93vh">
     <!-- 콜 입력 폼 -->
-  <div class="mbox" style="width:560px;height:100%;overflow-y:auto;flex-shrink:0">
+  <div class="mbox" style="width:680px;height:100%;overflow-y:auto;flex-shrink:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="mt" id="modal-call-title" style="margin:0">📋 상담 기록</div>
       <button onclick="closeModal('modal-call')" style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9';this.style.color='#64748b'">✕</button>
@@ -1979,21 +1979,46 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
-    <div class="ml">지점 * <span id="branch-required-hint" style="font-size:10px;color:#dc2626;font-weight:600;display:none">← 지점을 선택해주세요</span></div>
+    <div class="ml">지점 * <span id="branch-required-hint" style="font-size:10px;color:#dc2626;font-weight:600;display:none">← 지점을 선택해주세요</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:6px">(복수 선택 가능)</span>
+    </div>
     <div class="branch-pills" id="modal-branch-pills"></div>
 
     <div id="below-branch-wrap">
-    <div class="ml">환자 구분</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="신환" checked onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--green)"> 🆕 신환(신규상담)</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="구환(신규상담)" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--purple)"> 🔄 구환(신규상담)</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="잔여시술" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="pttype" value="일반" onchange="_callPttype=this.value;toggleSubFields()" style="accent-color:var(--text3)"> 💬 일반문의</label>
-      <!-- 콜백 전용 안내문 제거됨, 부재는 전화유형으로 이동 -->
+    <div class="ml">환자 구분 <span style="font-size:11px;color:var(--text3);font-weight:400">(복수 선택 가능)</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="pttype-pills">
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-신환">
+        <input type="checkbox" name="pttype_multi" value="신환" onchange="togglePttype(this)" style="accent-color:var(--green)"> 🆕 신환(신규상담)</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-구환">
+        <input type="checkbox" name="pttype_multi" value="구환(신규상담)" onchange="togglePttype(this)" style="accent-color:var(--purple)"> 🔄 구환(신규상담)</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-잔여시술">
+        <input type="checkbox" name="pttype_multi" value="잔여시술" onchange="togglePttype(this)" style="accent-color:var(--cyan)"> 🗓 잔여시술</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);transition:all .15s" id="ptlbl-일반">
+        <input type="checkbox" name="pttype_multi" value="일반" onchange="togglePttype(this)" style="accent-color:var(--text3)"> 💬 일반문의</label>
     </div>
 
     <div id="modal-sub-fields">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+      <!-- 예약 유형 (당일/추후) -->
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:8px">
+        <label style="font-size:12px;font-weight:700;color:#2563eb;display:block;margin-bottom:8px">📅 예약 유형</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--accent);background:rgba(37,99,235,.08);cursor:pointer;font-size:13px;font-weight:700;color:var(--accent)">
+            <input type="radio" name="booking_type" value="당일" checked style="accent-color:var(--accent)"> ⚡ 당일 예약
+          </label>
+          <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
+            <input type="radio" name="booking_type" value="추후" style="accent-color:#7c3aed"> 📆 추후 예약
+          </label>
+          <label id="bklbl-none" onclick="selectBookingType('미예약')" style="flex:1;min-width:100px;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
+            <input type="radio" name="booking_type" value="미예약" style="accent-color:#f59e0b"> ⏳ 미예약
+          </label>
+        </div>
+        <div id="booking-date-wrap" style="display:none;margin-top:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">예약 날짜</label>
+          <input type="date" id="cf-booking-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;width:100%;box-sizing:border-box">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
         <div class="cf">
           <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">예약건수</label>
           <div style="display:flex;align-items:center;gap:4px">
@@ -2037,6 +2062,12 @@ td:first-child{text-align:left;padding-left:13px}
 
     <div id="proc-section-wrap">
     <div class="proc-section-lbl">예약 시술 선택 <span style="font-size:9px;color:var(--text3)" id="proc-section-hint">(한 번=선택 · 두 번=취소)</span></div>
+    <!-- 시술 검색창 -->
+    <div style="position:relative;margin-bottom:8px">
+      <input type="text" id="proc-search-input" placeholder="🔍 시술명 검색..." autocomplete="off"
+        oninput="filterProcGrid(this.value)"
+        style="width:100%;padding:8px 12px;border:1.5px solid var(--accent);border-radius:9px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box;outline:none">
+    </div>
     <div class="proc-grid" id="modal-proc-grid"></div>
     </div>
 
@@ -3445,7 +3476,7 @@ function renderStaffInputPage(sid){
 
       <!-- 콜 현황 -->
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">📞 콜 현황</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text3);margin-bottom:10px">📞 콜 현황</div>
         <div style="display:flex;flex-direction:column;gap:7px">
           ${[
             ['수신 인콜',incall,'#3b82f6'],
@@ -3453,27 +3484,27 @@ function renderStaffInputPage(sid){
             ['발신 아웃콜',outcall,'#7c3aed'],
           ].map(([l,v,c])=>`
             <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:12px;color:var(--text2)">${l}</span>
+              <span style="font-size:24px;color:var(--text2)">${l}</span>
               <span style="font-size:18px;font-weight:800;color:${c}">${v}</span>
             </div>`).join('')}
           <div style="border-top:1px solid var(--border);padding-top:7px;display:flex;justify-content:space-between">
-            <span style="font-size:11px;color:var(--text3)">총 인콜+콜백</span>
-            <span style="font-size:14px;font-weight:800;color:#0f172a">${inTotal}건</span>
+            <span style="font-size:22px;color:var(--text3)">총 인콜+콜백</span>
+            <span style="font-size:28px;font-weight:800;color:#0f172a">${inTotal}건</span>
           </div>
         </div>
       </div>
 
       <!-- 예약 전환율 -->
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">📅 예약 전환</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text3);margin-bottom:10px">📅 예약 전환</div>
         <div style="text-align:center;margin-bottom:10px">
           <div style="font-size:36px;font-weight:900;color:${+convRate>=50?'#059669':+convRate>=30?'#f59e0b':'#ef4444'}">${convRate}%</div>
-          <div style="font-size:11px;color:var(--text3)">인콜 전환율</div>
+          <div style="font-size:22px;color:var(--text3)">인콜 전환율</div>
         </div>
         <div style="height:6px;background:var(--s3);border-radius:3px;margin-bottom:8px">
           <div style="height:100%;width:${Math.min(100,+convRate)}%;background:${+convRate>=50?'#059669':+convRate>=30?'#f59e0b':'#ef4444'};border-radius:3px"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+        <div style="display:flex;justify-content:space-between;font-size:20px;color:var(--text3)">
           <span>예약 ${booked}건</span>
           <span>취소 ${cancel}건 (${cancelRate}%)</span>
         </div>
@@ -3481,7 +3512,7 @@ function renderStaffInputPage(sid){
 
       <!-- 환자 구분 -->
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">👤 환자 구분</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text3);margin-bottom:10px">👤 환자 구분</div>
         <div style="display:flex;flex-direction:column;gap:7px">
           ${[
             ['🆕 신환',shin,'#059669'],
@@ -3491,7 +3522,7 @@ function renderStaffInputPage(sid){
             ['📵 부재(비수신/미예약)',absence,'#d97706'],
           ].map(([l,v,c])=>`
             <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:12px;color:var(--text2)">${l}</span>
+              <span style="font-size:24px;color:var(--text2)">${l}</span>
               <span style="font-size:16px;font-weight:800;color:${c}">${v}</span>
             </div>`).join('')}
         </div>
@@ -3499,22 +3530,22 @@ function renderStaffInputPage(sid){
 
       <!-- 팀 내 순위 + 오늘 현황 -->
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px">🏆 오늘 팀 내 순위</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text3);margin-bottom:10px">🏆 오늘 팀 내 순위</div>
         ${myRank>0?`
           <div style="text-align:center;margin-bottom:8px">
             <div style="font-size:40px">${myRank===1?'🥇':myRank===2?'🥈':myRank===3?'🥉':'🏅'}</div>
             <div style="font-size:22px;font-weight:900;color:${sc}">${myRank}위 / ${teamSize}명</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:2px">신환 기준</div>
+            <div style="font-size:20px;color:var(--text3);margin-top:2px">신환 기준</div>
           </div>
           <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:3px">
             ${teamRanks.slice(0,3).map((r,i)=>`
               <div style="display:flex;align-items:center;gap:6px">
-                <span style="font-size:12px;width:16px">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
-                <span style="font-size:11px;flex:1;font-weight:${r.sid===sid?700:400};color:${r.sid===sid?sc:'var(--text2)'}">${r.name}</span>
-                <span style="font-size:11px;color:#059669;font-weight:600">신환 ${r.shin}</span>
+                <span style="font-size:24px;width:16px">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
+                <span style="font-size:22px;flex:1;font-weight:${r.sid===sid?700:400};color:${r.sid===sid?sc:'var(--text2)'}">${r.name}</span>
+                <span style="font-size:22px;color:#059669;font-weight:600">신환 ${r.shin}</span>
               </div>`).join('')}
           </div>`
-        :`<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">오늘 입력 데이터 없음</div>`}
+        :`<div style="text-align:center;padding:16px;color:var(--text3);font-size:24px">오늘 입력 데이터 없음</div>`}
       </div>
     </div>
 
@@ -3523,8 +3554,8 @@ function renderStaffInputPage(sid){
     <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">⚠️</span>
       <div>
-        <div style="font-size:12px;font-weight:700;color:#92400e">미예약종료 ${noappt}건</div>
-        <div style="font-size:11px;color:#b45309;margin-top:2px">아웃콜 대상입니다. 아래 콜 목록에서 확인하세요.</div>
+        <div style="font-size:24px;font-weight:700;color:#92400e">미예약종료 ${noappt}건</div>
+        <div style="font-size:22px;color:#b45309;margin-top:2px">아웃콜 대상입니다. 아래 콜 목록에서 확인하세요.</div>
       </div>
     </div>`:''}
 
@@ -3535,7 +3566,7 @@ function renderStaffInputPage(sid){
     <div class="call-log-list">
       ${calls.length===0
         ?`<div style="padding:24px;text-align:center;color:var(--text3);background:var(--s1);border:1px solid var(--border);border-radius:10px">
-            ${period==='today'?'오늘 입력된 콜이 없습니다<br><small style="font-size:11px">위 <strong>＋ 콜 기록</strong> 버튼을 눌러 시작하세요</small>':'선택한 기간에 콜 기록이 없습니다'}
+            ${period==='today'?'오늘 입력된 콜이 없습니다<br><small style="font-size:22px">위 <strong>＋ 콜 기록</strong> 버튼을 눌러 시작하세요</small>':'선택한 기간에 콜 기록이 없습니다'}
           </div>`
         :calls.slice().reverse().map(c=>renderCallEntry(c)).join('')}
     </div>`;
@@ -3558,21 +3589,21 @@ function renderCallEntry(c){
   const typeIco=isChat?'💬':isOut?'📤':isCb?'🔄':'📞';
   const typeBg=isChat?'rgba(8,145,178,.1)':isOut?'rgba(124,58,237,.1)':isCb?'rgba(5,150,105,.1)':'rgba(8,145,178,.1)';
   const typeLabel=isChat
-    ? '<span style="font-size:10px;color:var(--cyan);font-weight:600;background:rgba(8,145,178,.1);padding:2px 7px;border-radius:10px">채팅상담</span>'
+    ? '<span style="font-size:20px;color:var(--cyan);font-weight:600;background:rgba(8,145,178,.1);padding:2px 7px;border-radius:10px">채팅상담</span>'
     : isOut?`<span class="ce-degree">📞 전화예약 ${c.degree}차 · ${c.booked?'✅예약성공':'❌미예약'}</span>`
-    : isMiss?'<span style="font-size:10px;color:#6b7280;font-weight:600;background:rgba(107,114,128,.1);padding:2px 7px;border-radius:10px">📵 오발신</span>'
-    : isAd?'<span style="font-size:10px;color:#f59e0b;font-weight:600;background:rgba(245,158,11,.1);padding:2px 7px;border-radius:10px">📢 광고</span>'
-    : isCb?'<span style="font-size:10px;color:var(--green);font-weight:600;background:rgba(5,150,105,.1);padding:2px 7px;border-radius:10px">콜백</span>'
-    : '<span style="font-size:10px;color:var(--cyan);font-weight:600">수신콜</span>';
+    : isMiss?'<span style="font-size:20px;color:#6b7280;font-weight:600;background:rgba(107,114,128,.1);padding:2px 7px;border-radius:10px">📵 오발신</span>'
+    : isAd?'<span style="font-size:20px;color:#f59e0b;font-weight:600;background:rgba(245,158,11,.1);padding:2px 7px;border-radius:10px">📢 광고</span>'
+    : isCb?'<span style="font-size:20px;color:var(--green);font-weight:600;background:rgba(5,150,105,.1);padding:2px 7px;border-radius:10px">콜백</span>'
+    : '<span style="font-size:20px;color:var(--cyan);font-weight:600">수신콜</span>';
 
   // 아웃콜 고객정보 태그
   const outInfo = isOut && (c.outPtname||c.outPtphone||c.outPurpose||c.outResult) ? `
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">
-      ${c.outPtname?`<span style="font-size:11px;font-weight:700;color:var(--text);background:var(--s2);padding:2px 8px;border-radius:6px;border:1px solid var(--border)">👤 ${c.outPtname}</span>`:''}
-      ${c.outPtphone?`<span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(37,99,235,.07);padding:2px 8px;border-radius:6px">📱 ${c.outPtphone}</span>`:''}
-      ${c.outPurpose?`<span style="font-size:10px;font-weight:600;color:var(--purple);background:rgba(124,58,237,.08);padding:2px 8px;border-radius:6px">${c.outPurpose}</span>`:''}
-      ${c.outResult?`<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;${c.outResult==='통화성공'?'color:var(--green);background:rgba(5,150,105,.08)':c.outResult==='부재중'?'color:var(--amber);background:rgba(217,119,6,.08)':'color:var(--red);background:rgba(220,38,38,.08)'}">${c.outResult}</span>`:''}
-      ${c.outRecallDate?`<span style="font-size:10px;font-weight:600;color:var(--amber)">재콜 ${c.outRecallDate}</span>`:''}
+      ${c.outPtname?`<span style="font-size:22px;font-weight:700;color:var(--text);background:var(--s2);padding:2px 8px;border-radius:6px;border:1px solid var(--border)">👤 ${c.outPtname}</span>`:''}
+      ${c.outPtphone?`<span style="font-size:22px;font-family:'DM Mono',monospace;color:var(--accent);background:rgba(37,99,235,.07);padding:2px 8px;border-radius:6px">📱 ${c.outPtphone}</span>`:''}
+      ${c.outPurpose?`<span style="font-size:20px;font-weight:600;color:var(--purple);background:rgba(124,58,237,.08);padding:2px 8px;border-radius:6px">${c.outPurpose}</span>`:''}
+      ${c.outResult?`<span style="font-size:20px;font-weight:600;padding:2px 8px;border-radius:6px;${c.outResult==='통화성공'?'color:var(--green);background:rgba(5,150,105,.08)':c.outResult==='부재중'?'color:var(--amber);background:rgba(217,119,6,.08)':'color:var(--red);background:rgba(220,38,38,.08)'}">${c.outResult}</span>`:''}
+      ${c.outRecallDate?`<span style="font-size:20px;font-weight:600;color:var(--amber)">재콜 ${c.outRecallDate}</span>`:''}
     </div>` : '';
   const procTags=c.procs?Object.entries(c.procs).filter(([,n])=>n>0).map(([pid,n])=>{
     const p=S.procedures.find(x=>x.id===pid);
@@ -3611,17 +3642,18 @@ function renderCallEntry(c){
       <div class="ce-top">
         <span class="ce-pttype" style="color:${ptclr}">${ptMap[c.pttype]||c.pttype}</span>
         ${b?`<span class="ce-branch" style="background:${bc}">${b.name}점</span>`:''}
+        ${c.groupId?`<span style="font-size:18px;font-weight:700;background:#fef9c3;color:#854d0e;padding:1px 8px;border-radius:8px;border:1px solid #fde68a">🔗 ${c.groupIdx+1}/${c.groupTotal} 동시예약</span>`:''}
         ${typeLabel}
         <span class="ce-time">${c.time||''}</span>
       </div>
       ${procTags?`<div class="ce-procs">${procTags}</div>`:''}
       ${outInfo}
       ${stats.length?`<div class="ce-stats">${stats.map(s=>`<span class="ce-stat">${s}</span>`).join('')}</div>`:''}
-      ${c.memo?`<div style="font-size:11px;color:var(--text2);margin-top:3px">📝 ${c.memo}</div>`:''}
+      ${c.memo?`<div style="font-size:22px;color:var(--text2);margin-top:3px">📝 ${c.memo}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-self:flex-start">
-      <button class="ce-del" title="수정" onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="color:var(--accent);font-size:12px;padding:3px 7px">✏️</button>
-      <button class="ce-del" title="삭제" onclick="deleteCall('${c.id}','${c.sid||''}','${c.date||todayStr()}')" style="font-size:12px;padding:3px 7px">🗑</button>
+      <button class="ce-del" title="수정" onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="color:var(--accent);font-size:24px;padding:3px 7px">✏️</button>
+      <button class="ce-del" title="삭제" onclick="deleteCall('${c.id}','${c.sid||''}','${c.date||todayStr()}')" style="font-size:24px;padding:3px 7px">🗑</button>
     </div>
   </div>`;
 }
@@ -3649,7 +3681,7 @@ function deleteCall(cid,sid,ds){
 // ═══════════════════════════════════
 // CALL MODAL
 // ═══════════════════════════════════
-let _callType='in',_callDegree=3,_callBid=null,_callPttype='신환',_callMedium='phone';
+let _callType='in',_callDegree=3,_callBids=new Set(),_callBid=null,_callPttypes=new Set(['신환']),_callPttype='신환',_callMedium='phone',_callBookingType='당일';
 let _outPurpose='예약안내', _outResult='통화성공';
 const _procSel={};
 let _editCallId=null, _editCallDate=null;
@@ -3750,9 +3782,17 @@ function openCallModal(sid){
   const adEl2=document.getElementById('ctab-ad');
   if(missEl2) missEl2.className='call-tab';
   if(adEl2) adEl2.className='call-tab';
-  _callBid=null;
-  _callPttype='신환';
-  document.querySelectorAll('input[name=pttype]').forEach(r=>r.checked=(r.value==='신환'));
+  _callBid=null; _callBids=new Set(); _callPttypes=new Set(['신환']); _callPttype='신환'; _callBookingType='당일';
+  // 환자구분 초기화 (체크박스)
+  document.querySelectorAll('input[name="pttype_multi"]').forEach(cb=>{
+    cb.checked=(cb.value==='신환');
+    const lbl=cb.closest('label');
+    if(lbl){ lbl.style.borderColor=cb.value==='신환'?'var(--accent)':'var(--border)'; lbl.style.background=cb.value==='신환'?'rgba(37,99,235,.08)':'var(--s2)'; lbl.style.color=cb.value==='신환'?'var(--accent)':''; }
+  });
+  // 예약유형 초기화
+  const bkRadio=document.querySelector('input[name="booking_type"][value="당일"]');
+  if(bkRadio) bkRadio.checked=true;
+  selectBookingType('당일');
   document.querySelectorAll('input[name=booked]').forEach(r=>r.checked=(r.value==='1'));
   ['today','cancel','noappt'].forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';});
   const cr=document.getElementById('cf-cancel-reason');if(cr)cr.value='';
@@ -3912,14 +3952,78 @@ function setOutResult(v, el){
   if(recallWrap) recallWrap.style.display=(v==='부재중')?'block':'none';
 }
 function selectBranch(bid){
-  _callBid=bid;
+  // 다중 선택 토글
+  if(_callBids.has(bid)) _callBids.delete(bid);
+  else _callBids.add(bid);
+  _callBid = _callBids.size===1 ? [..._callBids][0] : (_callBids.size>0 ? [..._callBids][0] : null);
   document.querySelectorAll('.br-pill').forEach(p=>{
-    const isAct=p.id==='bpill-'+bid, cl=bclr(bid);
+    const id=p.id.replace('bpill-','');
+    const isAct=_callBids.has(id);
+    const cl=bclr(id);
     p.className='br-pill'+(isAct?' act':'');
     p.style.cssText=isAct?`background:${cl};border-color:${cl};color:#fff`:'';
   });
   const hint=document.getElementById('branch-required-hint');
   if(hint) hint.style.display='none';
+}
+
+function togglePttype(cb){
+  const val=cb.value;
+  if(cb.checked){
+    _callPttypes.add(val);
+  } else {
+    _callPttypes.delete(val);
+    if(_callPttypes.size===0){ cb.checked=true; _callPttypes.add(val); }
+  }
+  _callPttype=[..._callPttypes][0]||'신환';
+  // 체크된 항목 스타일
+  document.querySelectorAll('input[name="pttype_multi"]').forEach(input=>{
+    const lbl=input.closest('label');
+    if(!lbl) return;
+    if(_callPttypes.has(input.value)){
+      lbl.style.borderColor='var(--accent)';
+      lbl.style.background='rgba(37,99,235,.08)';
+      lbl.style.color='var(--accent)';
+    } else {
+      lbl.style.borderColor='var(--border)';
+      lbl.style.background='var(--s2)';
+      lbl.style.color='';
+    }
+  });
+  toggleSubFields();
+}
+
+function selectBookingType(type){
+  _callBookingType=type;
+  ['당일','추후','미예약'].forEach(t=>{
+    const lbl=document.getElementById('bklbl-'+{당일:'today',추후:'future',미예약:'none'}[t]);
+    if(!lbl) return;
+    const isAct=t===type;
+    lbl.style.borderColor=isAct?'var(--accent)':'var(--border)';
+    lbl.style.background=isAct?'rgba(37,99,235,.08)':'var(--s2)';
+    lbl.style.color=isAct?'var(--accent)':'var(--text2)';
+  });
+  const dateWrap=document.getElementById('booking-date-wrap');
+  if(dateWrap) dateWrap.style.display=type==='추후'?'block':'none';
+}
+
+function filterProcGrid(q){
+  const grid=document.getElementById('modal-proc-grid'); if(!grid) return;
+  const items=grid.querySelectorAll('.proc-item,[data-proc-name]');
+  if(!items.length){ renderProcGrid(); return; } // 첫 렌더 시
+  q=(q||'').toLowerCase().trim();
+  grid.querySelectorAll('.proc-group,.proc-item,.proc-sub-wrap').forEach(el=>{
+    if(q){
+      if(el.classList.contains('proc-item')||el.dataset.procName){
+        const name=(el.dataset.procName||el.textContent||'').toLowerCase();
+        el.style.display=name.includes(q)?'':'none';
+      } else {
+        el.style.display=''; // 그룹은 보임
+      }
+    } else {
+      el.style.display='';
+    }
+  });
 }
 function stepNum(id, delta){
   const el = document.getElementById(id);
@@ -3974,18 +4078,21 @@ let _procSubOpen = {}; // { pid: true/false } 하위 펼침 상태
 function renderModalProcGrid(){
   const el = document.getElementById('modal-proc-grid');
   if(!el) return;
-  el.innerHTML = S.procedures.map(p=>{
+  const searchEl=document.getElementById('proc-search-input');
+  const q=(searchEl?.value||'').toLowerCase().trim();
+  const allProcs=q?S.procedures.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q))):S.procedures;
+
+  el.innerHTML = allProcs.map(p=>{
     const cnt = _procSel[p.id]||0;
     const hasSubs = p.subs && p.subs.length > 0;
-    const isOpen = _procSubOpen[p.id];
+    const isOpen = _procSubOpen[p.id]||!!q; // 검색 중엔 자동 펼침
     const clr = CLR[S.procedures.findIndex(x=>x.id===p.id)%CLR.length]||'var(--accent)';
-
-    // 하위 카테고리 선택 현황
     const subCnt = hasSubs ? p.subs.reduce((a,s,i)=>a+(_procSel[p.id+':'+i]||0),0) : 0;
     const totalCnt = cnt + subCnt;
+    // 검색 시 하위항목 필터
+    const filteredSubs = q&&hasSubs ? p.subs.filter(s=>(s.name||'').toLowerCase().includes(q)) : (p.subs||[]);
 
-    return `<div style="display:inline-flex;flex-direction:column;gap:0;margin:2px">
-      <!-- 상위 시술 버튼 -->
+    return `<div data-proc-name="${p.name}" style="display:inline-flex;flex-direction:column;gap:0;margin:2px">
       <div style="display:flex;align-items:center;gap:0;border-radius:20px;border:1.5px solid ${totalCnt>0?clr:'var(--border)'};overflow:hidden;background:${totalCnt>0?`${clr}18`:'var(--s2)'}">
         <div onclick="toggleProc('${p.id}')"
           style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${totalCnt>0?'700':'500'};color:${totalCnt>0?clr:'var(--text2)'};position:relative">
@@ -3995,9 +4102,9 @@ function renderModalProcGrid(){
         ${hasSubs?`<div onclick="toggleProcSub('${p.id}')"
           style="padding:5px 7px;cursor:pointer;font-size:10px;color:${isOpen?clr:'var(--text3)'};border-left:1px solid ${totalCnt>0?clr+'44':'var(--border)'};background:${isOpen?clr+'18':'transparent'}">▾</div>`:''}
       </div>
-      <!-- 하위 카테고리 (펼쳤을 때) -->
-      ${hasSubs && isOpen ? `<div style="display:flex;flex-wrap:wrap;gap:3px;padding:5px 6px;background:${clr}08;border:1.5px solid ${clr}44;border-top:none;border-radius:0 0 12px 12px;margin-top:-2px">
-        ${p.subs.map((s,i)=>{
+      ${hasSubs && isOpen && filteredSubs.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;padding:5px 6px;background:${clr}08;border:1.5px solid ${clr}44;border-top:none;border-radius:0 0 12px 12px;margin-top:-2px">
+        ${filteredSubs.map((s)=>{
+          const i=p.subs.indexOf(s);
           const sc = _procSel[p.id+':'+i]||0;
           return `<div onclick="toggleSubProc('${p.id}',${i})"
             style="padding:3px 9px;border-radius:12px;border:1.5px solid ${sc>0?clr:'var(--border)'};background:${sc>0?clr:'transparent'};color:${sc>0?'#fff':'var(--text2)'};font-size:11px;font-weight:${sc>0?'700':'500'};cursor:pointer;position:relative">
@@ -4029,25 +4136,33 @@ function toggleSubProc(pid, idx){
 }
 function confirmCall(){
   const isSimpleType=(_callType==='miss'||_callType==='ad'||_callType==='absence1'||_callType==='absence2');
-  if(!_callBid && !isSimpleType){
+  if(_callBids.size===0 && !isSimpleType){
     toast('⚠️ 지점을 선택해주세요');
     const hint=document.getElementById('branch-required-hint');
     if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
     return;
   }
-  // 채팅 채널 수집 (채팅 모드일 때만)
+  // 다중 지점이면 대표 지점(첫번째)을 bid로, 전체는 bids 배열로 저장
+  const bidsArr=[..._callBids];
+  const primaryBid=bidsArr[0]||null;
+  // 다중 환자구분
+  const pttypesArr=[..._callPttypes];
+  const primaryPttype=pttypesArr[0]||'신환';
+  // 채팅 채널 수집
   const chData={};
   if(_callMedium==='chat'){
-    // 선택된 채팅 채널 1건으로 저장
     if(_chatChannel) chData[_chatChannel]=1;
   } else {
-    // 전화 모드: 선택된 채널로 기록
     chData[_phoneChannel]=1;
   }
   const callData={
     medium:_callMedium,
     channel:_callMedium==='phone'?_phoneChannel:'',
-    bid:_callBid, type:_callType, degree:_callDegree, pttype:_callPttype,
+    bid:primaryBid, bids:bidsArr.length>1?bidsArr:undefined,
+    type:_callType, degree:_callDegree,
+    pttype:primaryPttype, pttypes:pttypesArr.length>1?pttypesArr:undefined,
+    bookingType:_callBookingType,
+    bookingDate:_callBookingType==='추후'?(document.getElementById('cf-booking-date')?.value||''):'',
     today:+document.getElementById('cf-today').value||0,
     cancel:+document.getElementById('cf-cancel').value||0,
     cancelReason:document.getElementById('cf-cancel-reason')?.value||'',
@@ -4057,7 +4172,6 @@ function confirmCall(){
     memo:document.getElementById('cf-memo').value.trim(),
     voc:getVocData()||undefined,
     booked:document.querySelector('input[name=booked]:checked')?.value==='1',
-    // 아웃콜 전용
     outPtname: _callType==='out'?(document.getElementById('out-ptname')?.value.trim()||''):'',
     outPtphone: _callType==='out'?(document.getElementById('out-ptphone')?.value.trim()||''):'',
     outPurpose: _callType==='out'?_outPurpose:'',
@@ -4066,14 +4180,39 @@ function confirmCall(){
   };
   let toastMsg='✅ 상담 기록 저장';
   if(_editCallId && _editCallDate){
+    // 수정 시: 기존 레코드 업데이트 (단일 지점으로만 수정)
     const idx=S.calls[_editCallDate]?.findIndex(x=>x.id===_editCallId);
-    if(idx!=null && idx!==-1) S.calls[_editCallDate][idx]={...S.calls[_editCallDate][idx],...callData};
+    if(idx!=null && idx!==-1) S.calls[_editCallDate][idx]={...S.calls[_editCallDate][idx],...callData,bid:primaryBid,bids:undefined};
     _editCallId=null; _editCallDate=null;
     toastMsg='✏️ 수정됨';
   } else {
     const ds=_curDate||todayStr();
     if(!S.calls[ds]) S.calls[ds]=[];
-    S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:nowTime(),...callData});
+    if(bidsArr.length>1){
+      // 다중 지점: 지점마다 별도 레코드 저장 (분석 정확도 유지)
+      // 단, 예약건수/취소/미예약은 첫 번째 지점에만 기록 (중복 집계 방지)
+      const sharedId=uid(); // 같은 통화에서 발생했음을 표시
+      bidsArr.forEach((bid, idx2)=>{
+        const isFirst=idx2===0;
+        S.calls[ds].push({
+          id:uid(), sid:_curSid, date:ds, time:nowTime(),
+          ...callData,
+          bid,
+          bids:undefined, // 분리 저장했으므로 불필요
+          groupId:sharedId, // 같은 통화 묶음 표시
+          groupIdx:idx2,
+          groupTotal:bidsArr.length,
+          // 예약건수는 첫 번째 지점만 (이중 집계 방지)
+          today: isFirst ? callData.today : 0,
+          cancel: isFirst ? callData.cancel : 0,
+          cancelReason: isFirst ? callData.cancelReason : '',
+          noappt: isFirst ? callData.noappt : 0,
+        });
+      });
+      toastMsg=`✅ ${bidsArr.length}개 지점에 각각 저장됨`;
+    } else {
+      S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:nowTime(),...callData,bids:undefined});
+    }
   }
   const _savedDate = _editCallDate || _curDate || todayStr();
   scheduleSyncPush(_savedDate);
@@ -6013,10 +6152,10 @@ function renderFunnel() {
       <!-- 인콜 퍼널 -->
       <div style="flex:1;min-width:280px;background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">
         <div style="padding:12px 16px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;gap:8px">
-          <span style="font-size:15px">📞</span>
+          <span style="font-size:30px">📞</span>
           <div>
-            <div style="font-size:13px;font-weight:800;color:#fff">인콜 · 콜백 전환율</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.7)">${label} 기준</div>
+            <div style="font-size:26px;font-weight:800;color:#fff">인콜 · 콜백 전환율</div>
+            <div style="font-size:20px;color:rgba(255,255,255,.7)">${label} 기준</div>
           </div>
         </div>
         <div style="padding:14px 16px">
@@ -6029,27 +6168,27 @@ function renderFunnel() {
           ].map(s=>`
             <div style="margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-                <span style="font-size:14px;width:22px">${s.ico}</span>
-                <span style="font-size:12px;color:var(--text2);flex:1">${s.lbl}</span>
+                <span style="font-size:28px;width:22px">${s.ico}</span>
+                <span style="font-size:24px;color:var(--text2);flex:1">${s.lbl}</span>
                 <span style="font-size:18px;font-weight:800;color:${s.clr}">${s.val}</span>
-                <span style="font-size:11px;color:${s.clr};font-weight:700;min-width:44px;text-align:right">${s.pct}%</span>
+                <span style="font-size:22px;color:${s.clr};font-weight:700;min-width:44px;text-align:right">${s.pct}%</span>
               </div>
               <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden">
                 <div style="height:100%;width:${s.pct}%;background:${s.clr};border-radius:4px;transition:width .5s"></div>
               </div>
-              ${s.sub?`<div style="font-size:10px;color:${s.clr};margin-top:3px;font-weight:600">${s.sub}</div>`:''}
+              ${s.sub?`<div style="font-size:20px;color:${s.clr};margin-top:3px;font-weight:600">${s.sub}</div>`:''}
             </div>`).join('')}
           <div style="margin-top:8px;padding:10px 12px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:8px;display:flex;gap:16px">
             <div style="text-align:center">
-              <div style="font-size:9px;color:var(--text3)">예약취소</div>
+              <div style="font-size:18px;color:var(--text3)">예약취소</div>
               <div style="font-size:16px;font-weight:800;color:#ef4444">${inCancel}</div>
-              <div style="font-size:9px;color:#ef4444">${inCancelR}%</div>
+              <div style="font-size:18px;color:#ef4444">${inCancelR}%</div>
             </div>
             <div style="width:1px;background:var(--border)"></div>
             <div style="text-align:center">
-              <div style="font-size:9px;color:var(--text3)">미예약종료</div>
+              <div style="font-size:18px;color:var(--text3)">미예약종료</div>
               <div style="font-size:16px;font-weight:800;color:#f59e0b">${inNoappt}</div>
-              <div style="font-size:9px;color:#f59e0b">${inTotal>0?(inNoappt/inTotal*100).toFixed(1):0}%</div>
+              <div style="font-size:18px;color:#f59e0b">${inTotal>0?(inNoappt/inTotal*100).toFixed(1):0}%</div>
             </div>
           </div>
         </div>
@@ -6058,15 +6197,15 @@ function renderFunnel() {
       <!-- 아웃콜 퍼널 -->
       <div style="flex:1;min-width:240px;background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">
         <div style="padding:12px 16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;gap:8px">
-          <span style="font-size:15px">📤</span>
+          <span style="font-size:30px">📤</span>
           <div>
-            <div style="font-size:13px;font-weight:800;color:#fff">아웃콜 전환율</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.7)">${label} 기준</div>
+            <div style="font-size:26px;font-weight:800;color:#fff">아웃콜 전환율</div>
+            <div style="font-size:20px;color:rgba(255,255,255,.7)">${label} 기준</div>
           </div>
         </div>
         <div style="padding:14px 16px">
           ${outTotal===0
-            ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">아웃콜 데이터 없음</div>`
+            ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:24px">아웃콜 데이터 없음</div>`
             : `
           ${[
             {ico:'📤',lbl:'총 아웃콜',val:outTotal,clr:'#7c3aed',pct:100},
@@ -6075,17 +6214,17 @@ function renderFunnel() {
           ].map(s=>`
             <div style="margin-bottom:12px">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-                <span style="font-size:14px;width:22px">${s.ico}</span>
-                <span style="font-size:12px;color:var(--text2);flex:1">${s.lbl}</span>
+                <span style="font-size:28px;width:22px">${s.ico}</span>
+                <span style="font-size:24px;color:var(--text2);flex:1">${s.lbl}</span>
                 <span style="font-size:18px;font-weight:800;color:${s.clr}">${s.val}</span>
-                <span style="font-size:11px;color:${s.clr};font-weight:700;min-width:44px;text-align:right">${s.pct}%</span>
+                <span style="font-size:22px;color:${s.clr};font-weight:700;min-width:44px;text-align:right">${s.pct}%</span>
               </div>
               <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden">
                 <div style="height:100%;width:${s.pct}%;background:${s.clr};border-radius:4px;transition:width .5s"></div>
               </div>
             </div>`).join('')}
           <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,rgba(5,150,105,.08),rgba(5,150,105,.04));border:1px solid rgba(5,150,105,.2);border-radius:10px;text-align:center">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">아웃콜 성공률</div>
+            <div style="font-size:22px;color:var(--text3);margin-bottom:4px">아웃콜 성공률</div>
             <div style="font-size:32px;font-weight:900;color:${+outSuccR>=50?'#059669':+outSuccR>=30?'#f59e0b':'#ef4444'}">${outSuccR}%</div>
           </div>`}
         </div>
@@ -6111,31 +6250,31 @@ function renderFunnel() {
         ${staffData.map(r=>{
           const iclr=r.inR>=50?'#059669':r.inR>=30?'#f59e0b':'#ef4444';
           const oclr=r.outR>=50?'#059669':r.outR>=30?'#f59e0b':'#ef4444';
-          return `<div style="flex:1;min-width:180px;max-width:220px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px;border-top:3px solid ${r.clr}">
+          return `<div style="flex:1;min-width:260px;max-width:340px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;border-top:3px solid ${r.clr}">
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
-              <div style="width:28px;height:28px;border-radius:50%;background:${r.clr};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">${r.s.name[0]}</div>
+              <div style="width:28px;height:28px;border-radius:50%;background:${r.clr};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff">${r.s.name[0]}</div>
               <div>
-                <div style="font-size:13px;font-weight:700">${r.s.name}</div>
-                <div style="font-size:10px;color:var(--text3)">${r.s.role||''}</div>
+                <div style="font-size:26px;font-weight:700">${r.s.name}</div>
+                <div style="font-size:20px;color:var(--text3)">${r.s.role||''}</div>
               </div>
             </div>
             <div style="display:flex;gap:8px">
               <div style="flex:1;background:rgba(59,130,246,.06);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:9px;color:#3b82f6;font-weight:700;margin-bottom:3px">📞 인콜</div>
-                <div style="font-size:11px;color:var(--text3)">${r.inTotal}콜 → ${r.sBook}예약</div>
+                <div style="font-size:18px;color:#3b82f6;font-weight:700;margin-bottom:3px">📞 인콜</div>
+                <div style="font-size:22px;color:var(--text3)">${r.inTotal}콜 → ${r.sBook}예약</div>
                 <div style="font-size:20px;font-weight:800;color:${iclr};margin-top:2px">${r.inR}%</div>
               </div>
               ${r.outTotal>0?`<div style="flex:1;background:rgba(124,58,237,.06);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:9px;color:#7c3aed;font-weight:700;margin-bottom:3px">📤 아웃</div>
-                <div style="font-size:11px;color:var(--text3)">${r.outTotal}콜 → ${r.sOSucc}성공</div>
+                <div style="font-size:18px;color:#7c3aed;font-weight:700;margin-bottom:3px">📤 아웃</div>
+                <div style="font-size:22px;color:var(--text3)">${r.outTotal}콜 → ${r.sOSucc}성공</div>
                 <div style="font-size:20px;font-weight:800;color:${oclr};margin-top:2px">${r.outR}%</div>
               </div>`:''}
             </div>
-            ${r.sCncl>0?`<div style="margin-top:7px;font-size:10px;color:#ef4444;text-align:center">취소 ${r.sCncl}건</div>`:''}
+            ${r.sCncl>0?`<div style="margin-top:7px;font-size:20px;color:#ef4444;text-align:center">취소 ${r.sCncl}건</div>`:''}
           </div>`;
         }).join('')}
       </div>`
-    : '<div style="color:var(--text3);font-size:12px;padding:8px">직원별 데이터 없음</div>';
+    : '<div style="color:var(--text3);font-size:24px;padding:8px">직원별 데이터 없음</div>';
 
   // ── 지점별 ──
   const brData = S.branches.map(b=>{
@@ -6152,8 +6291,8 @@ function renderFunnel() {
         ${brData.map(b=>`
           <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-              <span style="font-size:13px;font-weight:700;min-width:60px">${b.name}점</span>
-              <span style="font-size:11px;color:var(--text3)">인콜 ${b.total}건 → 예약 ${b.booked}건</span>
+              <span style="font-size:26px;font-weight:700;min-width:60px">${b.name}점</span>
+              <span style="font-size:22px;color:var(--text3)">인콜 ${b.total}건 → 예약 ${b.booked}건</span>
               <span style="margin-left:auto;font-size:20px;font-weight:800;color:${b.rate>=50?'#059669':b.rate>=30?'#f59e0b':'#ef4444'}">${b.rate}%</span>
             </div>
             <div style="height:8px;background:var(--s3);border-radius:4px">
@@ -6218,8 +6357,8 @@ function renderFunnel() {
 
     document.getElementById('fn-trend-chart').innerHTML=`
       <div style="margin-bottom:8px;display:flex;gap:12px">
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:20px;height:3px;background:#3b82f6;display:inline-block;border-radius:2px"></span>인콜 전환율</span>
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:20px;height:3px;background:#7c3aed;display:inline-block;border-radius:2px;border-top:2px dashed #7c3aed;height:0"></span>아웃콜 성공률</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:22px;color:var(--text2)"><span style="width:20px;height:3px;background:#3b82f6;display:inline-block;border-radius:2px"></span>인콜 전환율</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:22px;color:var(--text2)"><span style="width:20px;height:3px;background:#7c3aed;display:inline-block;border-radius:2px;border-top:2px dashed #7c3aed;height:0"></span>아웃콜 성공률</span>
       </div>
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:300px;overflow:visible;font-family:'DM Mono',monospace">
         ${grid}
@@ -6229,7 +6368,7 @@ function renderFunnel() {
       </svg>`;
   } else {
     document.getElementById('fn-trend-chart').innerHTML=
-      '<div style="color:var(--text3);font-size:12px;padding:8px">월별 추이를 보려면 2개월 이상의 데이터가 필요합니다.</div>';
+      '<div style="color:var(--text3);font-size:24px;padding:8px">월별 추이를 보려면 2개월 이상의 데이터가 필요합니다.</div>';
   }
 }
 
@@ -6437,7 +6576,7 @@ function renderMarketing(){
       ['총 콜',calls.length,'#3b82f6'],['신환',shin,'#059669'],
       ['구환',gu,'#7c3aed'],['예약전환율',convR+'%','#ec4899']
     ].map(([l,v,c])=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${l}</div>
+      <div style="font-size:22px;color:var(--text3);margin-bottom:6px">${l}</div>
       <div style="font-size:26px;font-weight:900;color:${c}">${v}</div>
     </div>`).join('');
   }
@@ -6453,14 +6592,14 @@ function renderMarketing(){
     chEl.innerHTML=chData.length?chData.map((d,i)=>{
       const clr=CLR[i%CLR.length];
       return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:13px;width:24px">${d.icon}</span>
-        <span style="font-size:12px;font-weight:600;min-width:80px">${d.name}</span>
+        <span style="font-size:26px;width:24px">${d.icon}</span>
+        <span style="font-size:24px;font-weight:600;min-width:80px">${d.name}</span>
         <div style="flex:1;height:18px;background:var(--s3);border-radius:9px;overflow:hidden">
           <div style="height:100%;width:${Math.round(d.n/maxN*100)}%;background:${clr};border-radius:9px"></div>
         </div>
-        <span style="font-size:12px;font-weight:800;color:${clr};min-width:24px;text-align:right">${d.n}</span>
+        <span style="font-size:24px;font-weight:800;color:${clr};min-width:24px;text-align:right">${d.n}</span>
       </div>`;
-    }).join(''):'<div style="color:var(--text3);font-size:12px;padding:8px">데이터 없음</div>';
+    }).join(''):'<div style="color:var(--text3);font-size:24px;padding:8px">데이터 없음</div>';
   }
 
   // 시술별 예약 TOP 8
@@ -6473,19 +6612,19 @@ function renderMarketing(){
     procEl.innerHTML=sorted.length?sorted.map(([pid,n],i)=>{
       const clr=CLR[i%CLR.length];
       return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:600;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getProcLabel(pid)}</span>
+        <span style="font-size:24px;font-weight:600;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getProcLabel(pid)}</span>
         <div style="flex:1;height:18px;background:var(--s3);border-radius:9px;overflow:hidden">
           <div style="height:100%;width:${Math.round(n/maxP*100)}%;background:${clr};border-radius:9px"></div>
         </div>
-        <span style="font-size:12px;font-weight:800;color:${clr};min-width:24px;text-align:right">${n}</span>
+        <span style="font-size:24px;font-weight:800;color:${clr};min-width:24px;text-align:right">${n}</span>
       </div>`;
-    }).join(''):'<div style="color:var(--text3);font-size:12px;padding:8px">데이터 없음</div>';
+    }).join(''):'<div style="color:var(--text3);font-size:24px;padding:8px">데이터 없음</div>';
   }
 
   // 지점별 성과
   const brEl=document.getElementById('mkt-branch-chart');
   if(brEl){
-    brEl.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    brEl.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:24px">
       <thead><tr style="background:var(--s2)">
         <th style="padding:8px 12px;border:1px solid var(--border);text-align:left">지점</th>
         <th style="padding:8px 12px;border:1px solid var(--border);text-align:right;color:#3b82f6">총 콜</th>
@@ -6522,9 +6661,9 @@ function renderMarketing(){
         const h=Math.max(4,Math.round(n/maxC*80));
         const d=new Date(ds+'T00:00:00');
         return `<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px" title="${ds}: ${n}건">
-          <span style="font-size:9px;color:var(--text3)">${n||''}</span>
+          <span style="font-size:18px;color:var(--text3)">${n||''}</span>
           <div style="width:14px;height:${h}px;background:var(--accent);border-radius:3px 3px 0 0;opacity:.8"></div>
-          <span style="font-size:8px;color:var(--text3);transform:rotate(-45deg);transform-origin:top left;margin-top:4px;white-space:nowrap">${String(d.getMonth()+1)+'/'+d.getDate()}</span>
+          <span style="font-size:16px;color:var(--text3);transform:rotate(-45deg);transform-origin:top left;margin-top:4px;white-space:nowrap">${String(d.getMonth()+1)+'/'+d.getDate()}</span>
         </div>`;
       }).join('')}
     </div>`;
@@ -6538,10 +6677,10 @@ function renderMarketing(){
     const evNotes=(S.notes||[]).filter(n=>n.cat==='카톡이벤트'||n.cat==='이벤트'||n.cat==='첫방문이벤트');
     evEl.innerHTML=evNotes.length?evNotes.slice(0,5).map(n=>`
       <div style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
-        <div style="font-size:12px;font-weight:700">${escHtml(n.title||'')}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">${n.branch||''} · ${n.updatedAt||''}</div>
+        <div style="font-size:24px;font-weight:700">${escHtml(n.title||'')}</div>
+        <div style="font-size:22px;color:var(--text3);margin-top:2px">${n.branch||''} · ${n.updatedAt||''}</div>
       </div>`).join('')
-    :'<div style="color:var(--text3);font-size:12px;padding:8px">진행 중인 이벤트가 없습니다</div>';
+    :'<div style="color:var(--text3);font-size:24px;padding:8px">진행 중인 이벤트가 없습니다</div>';
   }
 
   // 비교 분석 초기화
@@ -6674,7 +6813,7 @@ function renderRoi() {
   roiCardsEl.innerHTML = `
     <!-- 전체 요약 -->
     <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:14px;padding:16px 20px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:12px">💰 전체 요약 · ${label}${filterBid!=='all'?` · ${S.branches.find(b=>b.id===filterBid)?.name||''}점`:''}</div>
+      <div style="font-size:24px;font-weight:700;color:#94a3b8;margin-bottom:12px">💰 전체 요약 · ${label}${filterBid!=='all'?` · ${S.branches.find(b=>b.id===filterBid)?.name||''}점`:''}</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px">
         ${[
           ['총 광고비', totalAdCost>0?fmt(totalAdCost):'미입력', '#f59e0b'],
@@ -6683,7 +6822,7 @@ function renderRoi() {
           ['평균 CPL', overallCpl?fmt(overallCpl):'—', '#ec4899'],
         ].map(([l2,v,c])=>`
           <div style="flex:1;min-width:110px;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px">
-            <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">${l2}</div>
+            <div style="font-size:20px;color:#94a3b8;margin-bottom:4px">${l2}</div>
             <div style="font-size:20px;font-weight:800;color:${c}">${v}</div>
           </div>`).join('')}
       </div>
@@ -6693,48 +6832,48 @@ function renderRoi() {
     <div style="display:flex;flex-wrap:wrap;gap:12px">
       ${chStats.map(s=>{
         const cplGrade=!s.cpl?'':s.cpl<30000?'🟢 우수':s.cpl<80000?'🟡 보통':'🔴 비효율';
-        const logSummary=s.logs.length?`<div style="margin-top:8px;font-size:10px;color:var(--text3)">${s.logs.length}건 발송 · ${fmt(s.adCost)}</div>`:'';
+        const logSummary=s.logs.length?`<div style="margin-top:8px;font-size:20px;color:var(--text3)">${s.logs.length}건 발송 · ${fmt(s.adCost)}</div>`:'';
         return `
           <div style="flex:1;min-width:200px;background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
             <div style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
               <span style="font-size:16px">${s.ch.icon||'📡'}</span>
-              <span style="font-size:13px;font-weight:700;flex:1">${s.chName}</span>
-              ${cplGrade?`<span style="font-size:10px;font-weight:700">${cplGrade}</span>`:''}
+              <span style="font-size:26px;font-weight:700;flex:1">${s.chName}</span>
+              ${cplGrade?`<span style="font-size:20px;font-weight:700">${cplGrade}</span>`:''}
             </div>
             <div style="padding:12px 14px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
                 <div style="text-align:center;padding:8px;background:rgba(59,130,246,.06);border-radius:8px">
-                  <div style="font-size:9px;color:var(--text3)">유입 콜</div>
+                  <div style="font-size:18px;color:var(--text3)">유입 콜</div>
                   <div style="font-size:18px;font-weight:800;color:#3b82f6">${s.total}</div>
                 </div>
                 <div style="text-align:center;padding:8px;background:rgba(5,150,105,.06);border-radius:8px">
-                  <div style="font-size:9px;color:var(--text3)">신환</div>
+                  <div style="font-size:18px;color:var(--text3)">신환</div>
                   <div style="font-size:18px;font-weight:800;color:#059669">${s.shin}</div>
                 </div>
               </div>
               ${s.adCost>0?`
                 <div style="border-top:1px solid var(--border);padding-top:10px">
                   <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                    <span style="font-size:11px;color:var(--text3)">광고비 합계</span>
-                    <span style="font-size:12px;font-weight:700;color:#f59e0b">${fmt(s.adCost)}</span>
+                    <span style="font-size:22px;color:var(--text3)">광고비 합계</span>
+                    <span style="font-size:24px;font-weight:700;color:#f59e0b">${fmt(s.adCost)}</span>
                   </div>
                   ${logSummary}
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                    <span style="font-size:11px;color:var(--text3)">신환 CPL</span>
+                    <span style="font-size:22px;color:var(--text3)">신환 CPL</span>
                     <span style="font-size:16px;font-weight:900;color:${!s.cpl?'var(--text3)':s.cpl<30000?'#059669':s.cpl<80000?'#f59e0b':'#ef4444'}">${s.cpl?fmt(s.cpl):'—'}</span>
                   </div>
                 </div>`:`
                 <div style="border-top:1px solid var(--border);padding-top:10px;text-align:center">
-                  <div style="font-size:10px;color:var(--text3);margin-bottom:6px">광고비 미입력</div>
+                  <div style="font-size:20px;color:var(--text3);margin-bottom:6px">광고비 미입력</div>
                 </div>`}
               <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;text-align:center">
-                <button onclick="openRoiAdCostModalForCh('${s.ch.id}')" style="width:100%;padding:5px 10px;border-radius:6px;border:1px solid var(--accent);background:rgba(37,99,235,.06);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer">💸 광고비 입력하기</button>
+                <button onclick="openRoiAdCostModalForCh('${s.ch.id}')" style="width:100%;padding:5px 10px;border-radius:6px;border:1px solid var(--accent);background:rgba(37,99,235,.06);color:var(--accent);font-size:22px;font-weight:700;cursor:pointer">💸 광고비 입력하기</button>
               </div>
               <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
                 <div style="flex:1;height:4px;background:var(--s3);border-radius:2px">
                   <div style="height:100%;width:${Math.min(100,+s.convR)}%;background:#8b5cf6;border-radius:2px"></div>
                 </div>
-                <span style="font-size:10px;color:#8b5cf6;font-weight:700">${s.convR}% 전환</span>
+                <span style="font-size:20px;color:#8b5cf6;font-weight:700">${s.convR}% 전환</span>
               </div>
             </div>
           </div>`;
@@ -6754,21 +6893,21 @@ function renderRoi() {
             const clr=s.cpl<30000?'#059669':s.cpl<80000?'#f59e0b':'#ef4444';
             return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
-                <span style="font-size:14px">${s.ch.icon||'📡'}</span>
-                <span style="font-size:13px;font-weight:700;min-width:80px">${s.chName}</span>
-                <span style="font-size:11px;color:var(--text3)">신환 ${s.shin}명 / ${fmt(s.adCost)}</span>
+                <span style="font-size:28px">${s.ch.icon||'📡'}</span>
+                <span style="font-size:26px;font-weight:700;min-width:80px">${s.chName}</span>
+                <span style="font-size:22px;color:var(--text3)">신환 ${s.shin}명 / ${fmt(s.adCost)}</span>
                 <span style="margin-left:auto;font-size:18px;font-weight:800;color:${clr}">${fmt(s.cpl)}</span>
               </div>
               <div style="height:8px;background:var(--s3);border-radius:4px">
                 <div style="height:100%;width:${pct}%;background:${clr};border-radius:4px"></div>
               </div>
-              <div style="font-size:9px;color:var(--text3);margin-top:4px">${s.cpl<30000?'✅ 효율적':s.cpl<80000?'⚠️ 보통':'❌ 비용 재검토'}</div>
+              <div style="font-size:18px;color:var(--text3);margin-top:4px">${s.cpl<30000?'✅ 효율적':s.cpl<80000?'⚠️ 보통':'❌ 비용 재검토'}</div>
             </div>`;
           }).join('')}
-          <div style="font-size:10px;color:var(--text3);padding:4px 0">기준: 🟢 3만원 미만 · 🟡 3~8만원 · 🔴 8만원 초과</div>
+          <div style="font-size:20px;color:var(--text3);padding:4px 0">기준: 🟢 3만원 미만 · 🟡 3~8만원 · 🔴 8만원 초과</div>
         </div>`;
     } else {
-      cplEl.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">💸 광고비를 입력하면 CPL 비교 차트가 표시됩니다.</div>`;
+      cplEl.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:24px;text-align:center">💸 광고비를 입력하면 CPL 비교 차트가 표시됩니다.</div>`;
     }
   }
 
@@ -6820,7 +6959,7 @@ function renderRoi() {
     const showBranch = trendBranches.length > 1;
     trendEl.innerHTML=`
       <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:500px">
+      <table style="width:100%;border-collapse:collapse;font-size:24px;min-width:500px">
         <thead>
           <tr style="background:var(--s2)">
             <th style="padding:10px 12px;border:1px solid var(--border);text-align:left">월</th>
@@ -6840,17 +6979,17 @@ function renderRoi() {
             const rowBg = isAll ? 'background:var(--s2);font-weight:700;' : isCommon ? 'background:#fffbeb;' : '';
             const borderTop = showBranch && isFirstBrOfMonth ? 'border-top:2px solid #2563eb33;' : '';
             return `<tr style="${rowBg}${borderTop}">
-              <td style="padding:8px 12px;border:1px solid var(--border);font-weight:${isAll?700:500};${(!isAll&&!isCommon)?'color:var(--text3);font-size:11px;':''}">${isFirstBrOfMonth||!showBranch?d.mk:''}</td>
-              ${showBranch?`<td style="padding:8px 12px;border:1px solid var(--border);font-size:11px;font-weight:${isAll?700:isCommon?600:500};color:${isAll?'#0f172a':isCommon?'#d97706':'var(--text2)'}">
+              <td style="padding:8px 12px;border:1px solid var(--border);font-size:22px;font-weight:${isAll?700:500};${(!isAll&&!isCommon)?'color:var(--text3);':''}">${isFirstBrOfMonth||!showBranch?d.mk:''}</td>
+              ${showBranch?`<td style="padding:8px 12px;border:1px solid var(--border);font-size:22px;font-weight:${isAll?700:isCommon?600:500};color:${isAll?'#0f172a':isCommon?'#d97706':'var(--text2)'}">
                 ${isAll?'🏢 합계':isCommon?'📣 공통광고':d.brName}</td>`:''}
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;color:#f59e0b;font-family:'DM Mono',monospace">${d.adCost>0?fmt(d.adCost):'-'}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-weight:700;color:#059669">${isCommon?'-':d.shin}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;color:#3b82f6">${isCommon?'-':d.total}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-weight:800;
+              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;color:#f59e0b;font-family:'DM Mono',monospace">${d.adCost>0?fmt(d.adCost):'-'}</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;font-weight:700;color:#059669">${isCommon?'-':d.shin}</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;color:#3b82f6">${isCommon?'-':d.total}</td>
+              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;font-weight:800;
                 color:${!d.cpl?'var(--text3)':d.cpl<30000?'#059669':d.cpl<80000?'#f59e0b':'#ef4444'}">
                 ${isCommon?'-':d.cpl?fmt(d.cpl):'—'}
               </td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-size:14px">
+              <td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-size:22px">
                 ${isCommon?'':(!d.cpl?'':d.cpl<30000?'🟢':d.cpl<80000?'🟡':'🔴')}
               </td>
             </tr>`;
@@ -10623,19 +10762,19 @@ function renderDutyPage(){
   el.innerHTML=_dutyData.sections.map((sec,si)=>{
     const clr=SECTION_COLORS[si%SECTION_COLORS.length];
     const staffLine=sec.staff?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-      <span style="font-size:15px;font-weight:900;color:${clr.title}">${escHtml(sec.staff)}</span>
-      ${sec.staffNote?`<span style="font-size:11px;color:var(--text3)">${escHtml(sec.staffNote)}</span>`:''}
-      ${sec.backup?`<span style="font-size:11px;color:var(--text3)">└ 백업 : <strong style="color:var(--text2)">${escHtml(sec.backup)}</strong></span>`:''}
+      <span style="font-size:30px;font-weight:900;color:${clr.title}">${escHtml(sec.staff)}</span>
+      ${sec.staffNote?`<span style="font-size:22px;color:var(--text3)">${escHtml(sec.staffNote)}</span>`:''}
+      ${sec.backup?`<span style="font-size:22px;color:var(--text3)">└ 백업 : <strong style="color:var(--text2)">${escHtml(sec.backup)}</strong></span>`:''}
     </div>`:'';
     const itemsHtml=sec.items.map((item,ii)=>{
       const isWarn=item.startsWith('※');
       return `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid ${clr.border}80;align-items:flex-start">
-        ${!isWarn?`<span style="font-size:11px;font-weight:700;color:${clr.title};min-width:16px;margin-top:1px">${ii+1}</span>`:'<span style="min-width:16px"></span>'}
-        <span style="font-size:12px;line-height:1.6;color:${isWarn?'#dc2626':'var(--text2)'};font-weight:${isWarn?'600':'400'}">${escHtml(item)}</span>
+        ${!isWarn?`<span style="font-size:22px;font-weight:700;color:${clr.title};min-width:16px;margin-top:1px">${ii+1}</span>`:'<span style="min-width:16px"></span>'}
+        <span style="font-size:24px;line-height:1.6;color:${isWarn?'#dc2626':'var(--text2)'};font-weight:${isWarn?'600':'400'}">${escHtml(item)}</span>
       </div>`;
     }).join('');
     return `<div style="background:${clr.bg};border:1.5px solid ${clr.border};border-radius:12px;padding:14px 16px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:900;color:${clr.title};margin-bottom:8px">${escHtml(sec.title)}</div>
+      <div style="font-size:26px;font-weight:900;color:${clr.title};margin-bottom:8px">${escHtml(sec.title)}</div>
       ${staffLine}<div>${itemsHtml}</div>
     </div>`;
   }).join('');
@@ -11204,7 +11343,7 @@ function escHtml(s){
 
 function getProcLabel(pid){
   if(!pid) return '';
-  // 하위 카테고리 포함 검색
+  // 정확한 ID 매칭
   for(const p of (S.procedures||[])){
     if(p.id===pid) return (p.icon?p.icon+' ':'')+p.name;
     if(p.subs) for(const sub of p.subs){
@@ -11212,7 +11351,18 @@ function getProcLabel(pid){
       if(subId===pid) return (sub.icon?sub.icon+' ':'')+sub.name;
     }
   }
-  return pid;
+  // 이름으로 fuzzy 매칭 (pid가 이름인 경우)
+  const byName=(S.procedures||[]).find(p=>(p.name||'').toLowerCase()===pid.toLowerCase());
+  if(byName) return (byName.icon?byName.icon+' ':'')+byName.name;
+  // pid가 'p숫자' 형태면 숫자번째 시술로 매핑
+  const mIdx=pid.match(/^p(\d+)$/);
+  if(mIdx){
+    const idx=parseInt(mIdx[1])-1;
+    const p=(S.procedures||[])[idx];
+    if(p) return (p.icon?p.icon+' ':'')+p.name;
+  }
+  // 그래도 못 찾으면 빈 라벨 대신 '알 수 없는 시술' 반환 (raw pid 노출 방지)
+  return '기타';
 }
 
 function renderStaffPage(sid){
@@ -11446,12 +11596,11 @@ function resetVocFields(){
 }
 function renderVocList(){
   const el=document.getElementById('voc-list'); if(!el) return;
-  // 기간 필터 적용
   const days=_vocRange||30;
   const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
   const cutoffStr=localDateStr(cutoff);
   const vocs=getAllVocs().filter(v=>v.date>=cutoffStr);
-  if(!vocs.length){ el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)">VOC 데이터가 없습니다.</div>'; return; }
+  if(!vocs.length){ el.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:15px">VOC 데이터가 없습니다.</div>'; return; }
 
   const statusColors={'접수':'#dbeafe,#1d4ed8','처리중':'#fef9c3,#854d0e','완료':'#dcfce7,#15803d'};
   el.innerHTML=vocs.map(v=>{
@@ -11460,22 +11609,22 @@ function renderVocList(){
     const staffName=S.staff.find(s=>s.id===v.sid)?.name||'';
     const typeClr=v.type==='컴플레인'?'#fee2e2,#dc2626':'#dcfce7,#15803d';
     const [tbg,tc]=typeClr.split(',');
-    return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;background:${tbg};color:${tc};padding:2px 9px;border-radius:10px">${v.type||''}</span>
-        ${v.status?`<span style="font-size:11px;font-weight:700;background:${sbg};color:${sc};padding:2px 9px;border-radius:10px">${v.status}</span>`:''}
-        <span style="font-size:11px;color:var(--text3)">${v.date||''}</span>
-        ${brName?`<span style="font-size:11px;color:var(--text3)">${brName}</span>`:''}
-        ${staffName?`<span style="font-size:11px;color:var(--text3)">${staffName}</span>`:''}
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:700;background:${tbg};color:${tc};padding:4px 12px;border-radius:10px">${v.type||''}</span>
+        ${v.status?`<span style="font-size:14px;font-weight:700;background:${sbg};color:${sc};padding:4px 12px;border-radius:10px">${v.status}</span>`:''}
+        <span style="font-size:13px;color:var(--text3)">${v.date||''}</span>
+        ${brName?`<span style="font-size:13px;color:var(--text3)">${brName}</span>`:''}
+        ${staffName?`<span style="font-size:13px;color:var(--text3)">${staffName}</span>`:''}
       </div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px">${escHtml(v.content||'')}</div>
-      <div style="display:flex;gap:5px;align-items:center">
-        <span style="font-size:11px;color:var(--text3);font-weight:600">처리 상태:</span>
+      <div style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:12px">${escHtml(v.content||'')}</div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <span style="font-size:13px;color:var(--text3);font-weight:600">처리 상태:</span>
         ${['접수','처리중','완료'].map(st=>{
           const isAct=v.status===st;
           const [bg,clr]=(statusColors[st]||'#f1f5f9,#64748b').split(',');
           return `<button onclick="updateVocStatus('${v.callId}','${v.date}','${st}')"
-            style="padding:3px 10px;border-radius:8px;border:1.5px solid ${isAct?clr:'var(--border)'};background:${isAct?bg:'transparent'};color:${isAct?clr:'var(--text3)'};font-size:11px;font-weight:${isAct?700:500};cursor:pointer">${st}</button>`;
+            style="padding:5px 14px;border-radius:8px;border:1.5px solid ${isAct?clr:'var(--border)'};background:${isAct?bg:'transparent'};color:${isAct?clr:'var(--text3)'};font-size:13px;font-weight:${isAct?700:500};cursor:pointer">${st}</button>`;
         }).join('')}
       </div>
     </div>`;
@@ -12003,25 +12152,25 @@ function renderCallCard(c, ds){
   const time=c.ts?new Date(c.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
   return `<div class="call-card" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;position:relative">
     <div style="display:flex;align-items:flex-start;gap:8px">
-      <div style="width:32px;height:32px;border-radius:50%;background:${c.medium==='chat'?'rgba(8,145,178,.12)':'rgba(37,99,235,.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${c.medium==='chat'?'💬':'📞'}</div>
+      <div style="width:32px;height:32px;border-radius:50%;background:${c.medium==='chat'?'rgba(8,145,178,.12)':'rgba(37,99,235,.1)'};display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${c.medium==='chat'?'💬':'📞'}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-          <span style="font-size:11px;font-weight:700;color:#0f172a">${ptIco} ${c.pttype||''}</span>
-          ${b?`<span style="font-size:10px;font-weight:700;background:${cl}22;color:${cl};padding:1px 7px;border-radius:8px">${b.name}</span>`:''}
-          ${typeLabel?`<span style="font-size:10px;font-weight:600;color:var(--text3);background:var(--s2);padding:1px 7px;border-radius:8px">${typeLabel}</span>`:''}
-          ${c.voc?.type?`<span style="font-size:10px;font-weight:700;background:${c.voc.type==='컴플레인'?'#fee2e2':'#dcfce7'};color:${c.voc.type==='컴플레인'?'#dc2626':'#15803d'};padding:1px 7px;border-radius:8px">💬 ${c.voc.type}</span>`:''}
+          <span style="font-size:22px;font-weight:700;color:#0f172a">${ptIco} ${c.pttype||''}</span>
+          ${b?`<span style="font-size:20px;font-weight:700;background:${cl}22;color:${cl};padding:1px 7px;border-radius:8px">${b.name}</span>`:''}
+          ${typeLabel?`<span style="font-size:20px;font-weight:600;color:var(--text3);background:var(--s2);padding:1px 7px;border-radius:8px">${typeLabel}</span>`:''}
+          ${c.voc?.type?`<span style="font-size:20px;font-weight:700;background:${c.voc.type==='컴플레인'?'#fee2e2':'#dcfce7'};color:${c.voc.type==='컴플레인'?'#dc2626':'#15803d'};padding:1px 7px;border-radius:8px">💬 ${c.voc.type}</span>`:''}
         </div>
-        ${procs?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">🎯 ${procs}</div>`:''}
-        ${c.memo?`<div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ${escHtml(c.memo)}</div>`:''}
-        <div style="display:flex;gap:8px;margin-top:4px;font-size:10px;color:var(--text3)">
+        ${procs?`<div style="font-size:22px;color:var(--text2);margin-bottom:2px">🎯 ${procs}</div>`:''}
+        ${c.memo?`<div style="font-size:22px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ${escHtml(c.memo)}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:4px;font-size:20px;color:var(--text3)">
           ${c.today?`<span>예약 ${c.today}건</span>`:''}
           ${c.cancel?`<span style="color:#dc2626">취소 ${c.cancel}건</span>`:''}
           ${c.noappt?`<span style="color:#d97706">미예약 ${c.noappt}건</span>`:''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-        <span style="font-size:10px;color:var(--text3)">${time}</span>
-        <button onclick="openEditModal('${c.id}','${c.sid||''}','${ds}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">✏️</button>
+        <span style="font-size:20px;color:var(--text3)">${time}</span>
+        <button onclick="openEditModal('${c.id}','${c.sid||''}','${ds}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:22px;font-weight:700;cursor:pointer">✏️</button>
       </div>
     </div>
   </div>`;
@@ -12037,9 +12186,9 @@ function renderStaffKpiCard(sid, ds){
   const gen=calls.filter(c=>c.pttype==='일반').length;
   const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
   el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap">
-    <div style="background:#dcfce7;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#15803d">신환</div><div style="font-size:16px;font-weight:900">${shin}</div></div>
-    <div style="background:#ede9fe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#7c3aed">구환</div><div style="font-size:16px;font-weight:900">${gu}</div></div>
-    <div style="background:#dbeafe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:9px;color:#1d4ed8">예약</div><div style="font-size:16px;font-weight:900">${booked}</div></div>
+    <div style="background:#dcfce7;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:18px;color:#15803d">신환</div><div style="font-size:16px;font-weight:900">${shin}</div></div>
+    <div style="background:#ede9fe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:18px;color:#7c3aed">구환</div><div style="font-size:16px;font-weight:900">${gu}</div></div>
+    <div style="background:#dbeafe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:18px;color:#1d4ed8">예약</div><div style="font-size:16px;font-weight:900">${booked}</div></div>
   </div>`;
 }
 
