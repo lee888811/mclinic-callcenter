@@ -2593,6 +2593,8 @@ const localDateStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0
 const nowTime=()=>new Date().toTimeString().slice(0,5);
 const dateLabel=ds=>{const d=new Date(ds+'T00:00:00');return `${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`;}
 const bclr=bid=>{const i=S.branches.findIndex(b=>b.id===bid);return CLR[Math.max(0,i)%CLR.length];}
+// 활성 지점만 반환 (비활성화된 지점 제외) — 분석/UI에서 사용
+const activeBranches=()=>S.branches.filter(b=>!b.inactive);
 const sclr=sid=>{const i=S.staff.findIndex(s=>s.id===sid);return CLR[Math.max(0,i)%CLR.length];}
 
 // sync 변수 선언 (AUTH보다 먼저 선언해야 함)
@@ -2657,7 +2659,7 @@ function renderLoginScreen(){
     document.getElementById('login-staff-grid').innerHTML=
       '<div style="grid-column:1/-1;text-align:center;padding:18px;font-size:13px;color:var(--text3)">⏳ 직원 정보 불러오는 중…</div>';
   } else {
-    document.getElementById('login-staff-grid').innerHTML = S.staff.map(s=>`
+    document.getElementById('login-staff-grid').innerHTML = S.staff.filter(s=>!s.retired).map(s=>`
       <div class="login-staff-btn" id="lsb-${s.id}" onclick="selectLoginStaff('${s.id}')">
         <span class="lsb-name">${s.name}</span>
         <span class="lsb-role">${s.role}</span>
@@ -2877,7 +2879,7 @@ function openSyncSettings(){
   // 지점별 구글 시트 URL 입력 렌더링
   const wrap=document.getElementById('sheet-url-inputs');
   if(wrap){
-    wrap.innerHTML=S.branches.map(b=>{
+    wrap.innerHTML=activeBranches().map(b=>{
       const saved=S.sheetUrls?.[b.id]||localStorage.getItem(`mclinic_sheet_url_${b.id}`)||'';
       const cl=bclr(b.id);
       return `<div style="margin-bottom:8px">
@@ -3698,7 +3700,7 @@ function renderStaffInputPage(sid){
 
 
 function renderCallEntry(c){
-  const b=S.branches.find(x=>x.id===c.bid);
+  const b={name:getBranchName(c.bid)};
   const bc=bclr(c.bid);
   const isChat=c.medium==='chat';
   const isCb=c.type==='cb';
@@ -3935,7 +3937,7 @@ function openCallModal(sid){
   Object.keys(_procSel).forEach(k=>delete _procSel[k]);
   Object.keys(_procSubOpen).forEach(k=>delete _procSubOpen[k]);
   resetVocFields();
-  document.getElementById('modal-branch-pills').innerHTML=S.branches.map(b=>{
+  document.getElementById('modal-branch-pills').innerHTML=activeBranches().map(b=>{
     return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
   }).join('');
   renderChatChannelFields({});
@@ -4396,7 +4398,7 @@ function renderBrSum(){
   document.getElementById('brsum-date-lbl').textContent=periodLabel(from,to);
   const calls=getAnalysisCallsForRange(from,to);
   let html='';
-  S.branches.forEach(b=>{
+  activeBranches().forEach(b=>{
     const bc=calls.filter(c=>c.bid===b.id), cl=bclr(b.id);
     const shin=bc.filter(c=>c.pttype==='신환').length,gu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length,rem=bc.filter(c=>c.pttype==='잔여시술').length;
     const absence=bc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
@@ -4600,8 +4602,8 @@ function renderCEO(){
     <div class="ceo-kpi-lbl">${k.l}</div><div class="ceo-kpi-val">${k.v}</div>
     <div class="ceo-kpi-sub">${k.sub}</div>${k.d}</div>`).join('');
 
-  const maxBr=Math.max(1,...S.branches.map(b=>allCalls.filter(c=>c.bid===b.id).length));
-  document.getElementById('ceo-branch-cards').innerHTML=S.branches.map(b=>{
+  const maxBr=Math.max(1,...activeBranches().map(b=>allCalls.filter(c=>c.bid===b.id).length));
+  document.getElementById('ceo-branch-cards').innerHTML=activeBranches().map(b=>{
     const bc=allCalls.filter(c=>c.bid===b.id),cl=bclr(b.id),pct=Math.min(100,bc.length/maxBr*100);
     const noappt=bc.reduce((a,c)=>a+Number(c.noappt||0),0);
     const cancel=bc.reduce((a,c)=>a+Number(c.cancel||0),0);
@@ -4742,7 +4744,9 @@ function renderCEO(){
 // STAFF MANAGEMENT
 // ═══════════════════════════════════
 function renderStaffMgmt(){
-  const rows=S.staff.map((s,idx)=>`
+  const activeStaff = S.staff.filter(s=>!s.retired);
+  const retiredStaff = S.staff.filter(s=>s.retired);
+  const rows=activeStaff.map((s,idx)=>`
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 14px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -4769,7 +4773,7 @@ function renderStaffMgmt(){
       <td style="padding:10px 14px;text-align:center">
         <button id="ssave-${s.id}" onclick="saveStaffRow('${s.id}')"
           style="display:none;background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px">💾 저장</button>
-        <button onclick="delST('${s.id}')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>
+        <button onclick="retireST('${s.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer" title="퇴직 처리 (데이터 보존)">퇴직</button>
       </td>
     </tr>`).join('');
 
@@ -4789,7 +4793,32 @@ function renderStaffMgmt(){
       <div style="padding:10px 14px;border-top:1px solid var(--border)">
         <button onclick="addST()" style="background:none;border:1.5px dashed var(--border2);color:var(--text3);border-radius:8px;padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;width:100%">＋ 직원 추가</button>
       </div>
-    </div>`;
+    </div>
+    ${retiredStaff.length ? `
+    <div style="background:var(--s1);border:1px solid #fca5a533;border-radius:12px;overflow:hidden;margin-bottom:16px">
+      <div style="padding:10px 14px;background:#fff1f2;border-bottom:1px solid #fca5a533;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:12px;font-weight:700;color:#ef4444">📁 퇴직자 (${retiredStaff.length}명) — 데이터 보존됨</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody>
+          ${retiredStaff.map(s=>`
+          <tr style="border-bottom:1px solid var(--border);opacity:.7">
+            <td style="padding:8px 14px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:28px;height:28px;border-radius:50%;background:#94a3b8;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">${(s.name||'?')[0]}</div>
+                <span style="font-size:13px;font-weight:700;color:var(--text2)">${escHtml(s.name)}</span>
+                <span style="font-size:10px;padding:2px 7px;background:#fee2e2;color:#ef4444;border-radius:20px;font-weight:700">퇴직</span>
+                ${s.retiredAt?`<span style="font-size:10px;color:var(--text3)">${s.retiredAt}</span>`:''}
+              </div>
+            </td>
+            <td style="padding:8px 14px;text-align:right">
+              <button onclick="reinstateST('${s.id}')" style="background:none;border:1px solid #86efac;color:#16a34a;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;margin-right:6px">↩ 복직</button>
+              <button onclick="delST('${s.id}')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">완전삭제</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}`;
 
   // 직책 관리 + 관리자 비밀번호
   document.getElementById('roles-mgmt').innerHTML=`
@@ -5070,16 +5099,42 @@ function addRole(){
   if(S.roles.includes(name.trim())){toast('이미 존재하는 직책입니다');return;}
   S.roles.push(name.trim());localStorage.setItem('mclinic_v2',JSON.stringify(S));syncPush(true);renderStaffMgmt();toast('✅ 직책 추가됨');
 }
+function retireST(id){
+  const s=S.staff.find(x=>x.id===id);
+  if(!s) return;
+  showConfirmToast(`📁 "${s.name}" 퇴직 처리할까요?\n(데이터는 보존됩니다)`, ()=>{
+    s.retired = true;
+    s.retiredAt = todayStr();
+    markConfigDirty();
+    localStorage.setItem('mclinic_v2',JSON.stringify(S));
+    syncPush(true);
+    renderStaffMgmt(); renderSidebar();
+    toast(`📁 ${s.name} 퇴직 처리됨 (데이터 보존)`);
+  });
+}
+function reinstateST(id){
+  const s=S.staff.find(x=>x.id===id);
+  if(!s) return;
+  showConfirmToast(`↩ "${s.name}" 복직 처리할까요?`, ()=>{
+    s.retired = false;
+    s.retiredAt = '';
+    markConfigDirty();
+    localStorage.setItem('mclinic_v2',JSON.stringify(S));
+    syncPush(true);
+    renderStaffMgmt(); renderSidebar();
+    toast(`✅ ${s.name} 복직 처리됨`);
+  });
+}
 function delST(id){
   const s=S.staff.find(x=>x.id===id);
   if(!s){toast('직원을 찾을 수 없습니다');return;}
-  showConfirmToast(`🗑 "${s.name}" 직원을 삭제할까요?`, ()=>{
+  showConfirmToast(`🗑 "${s.name}" 데이터를 완전 삭제할까요?\n(복구 불가)`, ()=>{
     S.staff=S.staff.filter(x=>x.id!==id);
     const pg=document.getElementById('page-si-'+id);if(pg)pg.remove();
     localStorage.setItem('mclinic_v2',JSON.stringify(S));
     syncPush(true);
     renderStaffMgmt();renderSidebar();
-    toast('🗑 '+s.name+' 삭제됨');
+    toast('🗑 '+s.name+' 완전 삭제됨');
   });
 }
 function addST(){
@@ -5883,7 +5938,7 @@ function renderRetention() {
   // 지점 필터 옵션 초기화
   const sel = document.getElementById('ret-branch-filter');
   if(sel && sel.options.length === 1) {
-    S.branches.forEach(b => {
+    activeBranches().forEach(b => {
       const o = document.createElement('option');
       o.value = b.id; o.textContent = b.name + '점';
       sel.appendChild(o);
@@ -6602,7 +6657,7 @@ function renderRoiLogForm() {
           <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">지점</label>
           <select id="roi-new-bid" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
             <option value="all">전체 공통</option>
-            ${S.branches.map(b=>`<option value="${b.id}">${b.name}점</option>`).join('')}
+            ${activeBranches().map(b=>`<option value="${b.id}">${b.name}점</option>`).join('')}
           </select>
         </div>
         <div>
@@ -6713,7 +6768,7 @@ function renderMarketing(){
   // 지점 필터 옵션 초기화
   const brSel=document.getElementById('mkt-branch-sel');
   if(brSel&&brSel.options.length===1){
-    S.branches.forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name+'점'; brSel.appendChild(o); });
+    activeBranches().forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name+'점'; brSel.appendChild(o); });
   }
   const bid=brSel?.value||'';
   const toStr=document.getElementById('mkt-date-to')?.value||todayStr();
@@ -7195,19 +7250,34 @@ function renderRoi() {
 function renderBranchMgmt(){
   const grid=document.getElementById('br-mgmt-grid');
   if(!grid) return;
-  grid.innerHTML=S.branches.map(b=>`
-    <div class="sc">
+  const active=S.branches.filter(b=>!b.inactive);
+  const inactive=S.branches.filter(b=>b.inactive);
+  const makeRow=b=>`
+    <div class="sc" style="${b.inactive?'opacity:.6;border:1px solid #fca5a533;':''}">
       <div class="sct">
-        <div class="avl" style="background:${bclr(b.id)};font-size:13px">${b.name[0]}</div>
+        <div class="avl" style="background:${b.inactive?'#94a3b8':bclr(b.id)};font-size:13px">${b.name[0]}</div>
         <div style="flex:1">
           <input class="scn" id="bname-${b.id}" value="${b.name}" oninput="document.getElementById('bsave-${b.id}').style.display='inline-flex'">
           <input class="scr" id="baddr-${b.id}" value="${b.addr||''}" placeholder="주소" oninput="document.getElementById('bsave-${b.id}').style.display='inline-flex'">
+          ${b.inactiveAt?`<div style="font-size:10px;color:#ef4444;margin-top:2px">비활성화: ${b.inactiveAt}${b.inactiveNote?` · ${b.inactiveNote}`:''}</div>`:''}
         </div>
       </div>
       <button id="bsave-${b.id}" class="btn btn-p btn-sm" style="display:none;width:100%;margin-bottom:6px" onclick="saveBranchRow('${b.id}')">💾 저장</button>
-      <button class="scdel" onclick="delBr('${b.id}')">🗑 삭제</button>
-    </div>`).join('')+
-    `<div class="addc" onclick="openAddBranch()"><span style="font-size:18px">+</span><span>지점 추가</span></div>`;
+      ${b.inactive
+        ? `<button class="btn btn-sm" style="width:100%;background:#dcfce7;color:#16a34a;border:1px solid #86efac" onclick="reactivateBr('${b.id}')">↩ 재활성화 (재계약)</button>`
+        : `<button class="scdel" onclick="deactivateBr('${b.id}')">비활성화</button>`
+      }
+    </div>`;
+  grid.innerHTML=
+    active.map(makeRow).join('')+
+    `<div class="addc" onclick="openAddBranch()"><span style="font-size:18px">+</span><span>지점 추가</span></div>`+
+    (inactive.length?`
+    <div style="margin-top:16px;border-top:2px dashed #fca5a5;padding-top:12px">
+      <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:8px">📁 비활성 지점 (${inactive.length}개) — 데이터 보존됨</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+        ${inactive.map(makeRow).join('')}
+      </div>
+    </div>`:'');
 }
 
 function saveBranchRow(bid){
@@ -7247,10 +7317,57 @@ function confirmAddBranch(){
   toast('✅ '+name+'점 추가됨');
   setTimeout(()=>_addingBranch=false, 500);
 }
+function deactivateBr(id){
+  const b=S.branches.find(x=>x.id===id);
+  if(!b) return;
+  const note=prompt(`"${b.name}점" 비활성화 사유를 입력하세요.\n(예: 계약종료, 폐점 등)\n빈칸으로 두어도 됩니다.`,'');
+  if(note===null) return; // 취소
+  b.inactive=true;
+  b.inactiveAt=todayStr();
+  b.inactiveNote=note.trim();
+  markConfigDirty();
+  autoSave();
+  syncPush(true);
+  renderBranchMgmt();
+  renderSidebar();
+  toast(`📁 ${b.name}점 비활성화됨 (데이터 보존)`);
+}
+function reactivateBr(id){
+  const b=S.branches.find(x=>x.id===id);
+  if(!b) return;
+  if(!confirm(`"${b.name}점"을 재활성화할까요?\n\n⚠️ 같은 위치에 새 원장이 계약한 경우라면\n"지점 추가"로 새 지점을 만드는 것을 권장합니다.\n\n기존 데이터를 이어서 쓰려면 재활성화하세요.`)) return;
+  b.inactive=false;
+  b.inactiveAt='';
+  b.inactiveNote='';
+  markConfigDirty();
+  autoSave();
+  syncPush(true);
+  renderBranchMgmt();
+  renderSidebar();
+  toast(`✅ ${b.name}점 재활성화됨`);
+}
 function delBr(id){
   const b=S.branches.find(x=>x.id===id);
-  if(!b||!confirm(`${b.name}점 삭제할까요?`))return;
-  S.branches=S.branches.filter(x=>x.id!==id);renderBranchMgmt();autoSave();toast('🗑 '+b.name+'점 삭제됨');
+  if(!b||!confirm(`${b.name}점 삭제할까요?\n\n기존 콜 기록에서 지점명이 표시될 수 있도록 이름이 보존됩니다.`))return;
+  // 지점명 스냅샷 저장
+  try{
+    const snap=JSON.parse(localStorage.getItem('branch_snapshot')||'{}');
+    snap[id]=b.name;
+    localStorage.setItem('branch_snapshot',JSON.stringify(snap));
+  }catch(e){}
+  S.branches=S.branches.filter(x=>x.id!==id);
+  renderBranchMgmt();autoSave();toast('🗑 '+b.name+'점 삭제됨 (이름 보존)');
+}
+
+// 지점명 조회 — 삭제된 지점도 스냅샷에서 이름 반환
+function getBranchName(bid){
+  const b=S.branches.find(x=>x.id===bid);
+  if(b) return b.inactive ? b.name+'(비활성)' : b.name;
+  try{
+    const snap=JSON.parse(localStorage.getItem('branch_snapshot')||'{}');
+    if(snap[bid]) return snap[bid]+'(삭제됨)';
+  }catch(e){}
+  return bid||'알수없음';
 }
 
 // ═══════════════════════════════════
@@ -7479,7 +7596,7 @@ function renderProcMatrix(){
 
   // 매트릭스 집계
   const matrix={};
-  S.procedures.forEach(p=>{ matrix[p.id]={total:0}; S.branches.forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0,rem:0}; }); });
+  S.procedures.forEach(p=>{ matrix[p.id]={total:0}; activeBranches().forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0,rem:0}; }); });
   calls.forEach(c=>{
     if(!c.procs) return;
     Object.entries(c.procs).forEach(([pid,cnt])=>{
@@ -7507,7 +7624,7 @@ function renderProcMatrix(){
 
   // 지점별 합계
   const brTotals={};
-  S.branches.forEach(b=>{ brTotals[b.id]=S.procedures.reduce((a,p)=>a+(matrix[p.id][b.id]?.total||0),0); });
+  activeBranches().forEach(b=>{ brTotals[b.id]=S.procedures.reduce((a,p)=>a+(matrix[p.id][b.id]?.total||0),0); });
   const grandTotal=Object.values(brTotals).reduce((a,b)=>a+b,0);
   const maxProc=matrix[activeProcs[0]?.id]?.total||1;
 
@@ -7590,7 +7707,7 @@ function exportProcMatrixCSV(){
   if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
 
   const matrix={};
-  S.procedures.forEach(p=>{ matrix[p.id]={}; S.branches.forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0}; }); matrix[p.id].total=0; });
+  S.procedures.forEach(p=>{ matrix[p.id]={}; activeBranches().forEach(b=>{ matrix[p.id][b.id]={total:0,shin:0,gu:0}; }); matrix[p.id].total=0; });
   calls.forEach(c=>{
     if(!c.procs)return;
     Object.entries(c.procs).forEach(([pid,cnt])=>{
@@ -7605,7 +7722,7 @@ function exportProcMatrixCSV(){
     });
   });
 
-  const brNames=S.branches.map(b=>b.name);
+  const brNames=activeBranches().map(b=>b.name);
   const headers=['시술',...S.branches.flatMap(b=>[b.name+'(합계)',b.name+'(신환)',b.name+'(구환)',b.name+'(잔여)']),'총합계'];
   const rows=[headers];
   S.procedures.filter(p=>matrix[p.id].total>0).forEach(p=>{
@@ -7699,7 +7816,7 @@ function renderClosingReport(){
     const allTab=`<div onclick="selectCrBranch('all')" style="padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid ${_crBid==='all'?'#1a202c':'var(--border)'};background:${_crBid==='all'?'#1a202c':'var(--s1)'};color:${_crBid==='all'?'#fff':'var(--text2)'}">
       🏢 전 지점 합산
     </div>`;
-    const branchTabs=S.branches.map(b=>{
+    const branchTabs=activeBranches().map(b=>{
       const hasCalls=calls.some(c=>c.bid===b.id);
       const cl=bclr(b.id);
       const isAct=b.id===_crBid;
@@ -11240,7 +11357,7 @@ let _quickStaff = null; // 현재 선택된 직원
 function renderRosterQuickStaffPills(){
   const el = document.getElementById('roster-quick-staff-pills');
   if(!el) return;
-  el.innerHTML = S.staff.map(s=>{
+  el.innerHTML = S.staff.filter(s=>!s.retired).map(s=>{
     const isAct = _quickStaff === s.name;
     return `<button onclick="selectQuickStaff('${s.id}')"
       style="padding:5px 14px;border-radius:20px;border:2px solid ${isAct?'var(--accent)':'var(--border)'};
@@ -11505,7 +11622,7 @@ function renderRosterCalendar(){
 }
 function renderRosterStaffOptions(){
   const el=document.getElementById('roster-staff-sel'); if(!el) return;
-  el.innerHTML=S.staff.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+  el.innerHTML=S.staff.filter(s=>!s.retired).map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
 }
 function setRosterType(type,btn){
   _rosterType=type;
@@ -11637,7 +11754,7 @@ function renderRosterPatternList(){
     {label:'10시조(점심2시)'}, {label:'1시조'}, {label:'토요일 근무'},
     {label:'휴무'}, {label:'연차'}, {label:'반차'}, {label:'특근'},
   ];
-  el.innerHTML=S.staff.map(s=>{
+  el.innerHTML=S.staff.filter(s=>!s.retired).map(s=>{
     // ID 기반으로 먼저 찾고, 없으면 이름으로 fallback
     const pat=_rosterPatterns[s.id]||_rosterPatterns[s.name]||{};
     return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
@@ -11786,7 +11903,7 @@ function renderLeaveCards(){
   const isPastYear=(yr < curYr);
   // 현재 연도 데이터를 스냅샷에 저장
   if(yr===curYr){
-    S.staff.forEach(s=>{
+    S.staff.filter(s=>!s.retired).forEach(s=>{
       if(!_leaveData[s.name]) _leaveData[s.name]={};
       const used=Object.entries(_rosterData)
         .filter(([ds])=>ds.startsWith(String(yr)))
@@ -11798,7 +11915,7 @@ function renderLeaveCards(){
     });
     try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
   }
-  el.innerHTML=S.staff.map(s=>{
+  el.innerHTML=S.staff.filter(s=>!s.retired).map(s=>{
     const ld=_leaveData[s.name]||{};
     const joinDate=ld.joinDate||s.joinDate||'';
     const baseTotal=ld.totalOverride!=null?ld.totalOverride:calcAnnualLeave(joinDate);
