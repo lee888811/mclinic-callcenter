@@ -692,7 +692,21 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="roi-cpl-chart" style="margin-bottom:24px"></div>
 
       <!-- 월별 ROI 추이 -->
-      <div class="slbl" style="margin-bottom:10px">📈 월별 광고비 vs 신환 추이</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="slbl" style="margin:0">📈 월별 광고비 vs 신환 추이</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto">
+          <button class="period-btn" id="roi-trend-btn-1" onclick="setRoiTrendPeriod(1,this)">이번달</button>
+          <button class="period-btn act" id="roi-trend-btn-3" onclick="setRoiTrendPeriod(3,this)">3개월</button>
+          <button class="period-btn" id="roi-trend-btn-6" onclick="setRoiTrendPeriod(6,this)">6개월</button>
+          <button class="period-btn" id="roi-trend-btn-12" onclick="setRoiTrendPeriod(12,this)">12개월</button>
+          <button class="period-btn" id="roi-trend-btn-custom" onclick="setRoiTrendPeriod('custom',this)">직접선택</button>
+          <div id="roi-trend-custom-wrap" style="display:none;align-items:center;gap:4px">
+            <input type="month" id="roi-trend-from" style="padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px" onchange="renderRoi()">
+            <span style="font-size:11px;color:var(--text3)">~</span>
+            <input type="month" id="roi-trend-to" style="padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px" onchange="renderRoi()">
+          </div>
+        </div>
+      </div>
       <div id="roi-trend"></div>
     </div>
 
@@ -1458,9 +1472,16 @@ td:first-child{text-align:left;padding-left:13px}
     <!-- 분담업무 -->
     <div class="page" id="page-duty">
       <div class="ph">
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="pt">📋 이달의 분담업무</div>
-          <div class="ps" id="duty-ps">분담업무/오후근무 백업 순서 : 수비 → 지영 → 지혜 → 선미</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap">
+            <span id="duty-ps-text" class="ps"></span>
+            <button id="duty-ps-edit-btn" onclick="startDutyPsEdit()" style="padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;cursor:pointer">✏️ 수정</button>
+            <input id="duty-ps-input" style="display:none;padding:3px 8px;border:1.5px solid var(--accent);border-radius:6px;font-size:13px;color:var(--text);background:var(--s1);min-width:300px;max-width:100%"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();saveDutyPs();}if(event.key==='Escape'){cancelDutyPs();}">
+            <button id="duty-ps-save-btn" style="display:none;padding:3px 10px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer" onclick="saveDutyPs()">💾 저장</button>
+            <button id="duty-ps-cancel-btn" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;cursor:pointer" onclick="cancelDutyPs()">취소</button>
+          </div>
         </div>
         <div class="pbtns" style="gap:6px">
           <button class="btn btn-p btn-sm" onclick="openDutyEdit()">✏️ 수정</button>
@@ -1508,6 +1529,18 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- ── 달력 탭 ── -->
       <div id="roster-tab-content-cal">
         <div id="roster-sync-status" style="display:none;font-size:11px;padding:6px 12px;border-radius:7px;margin-bottom:10px;background:rgba(5,150,105,.08);color:var(--green);font-weight:600"></div>
+
+        <!-- 공지사항 메모 -->
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:800;color:#c2410c">📢 공지사항</span>
+            <span style="font-size:11px;color:#92400e">근태 관련 공지사항을 메모해 두세요</span>
+          </div>
+          <textarea id="roster-1si-memo"
+            placeholder="예: 2026-04 1시조: 오수비&#10;공지사항을 자유롭게 입력하세요"
+            oninput="try{localStorage.setItem('roster_1si_memo',this.value);}catch(e){}"
+            style="width:100%;min-height:70px;padding:7px 10px;border:1px solid #fed7aa;border-radius:7px;background:#fff;color:#1e293b;font-size:12px;line-height:1.7;resize:vertical;box-sizing:border-box;font-family:'Noto Sans KR',sans-serif;outline:none"></textarea>
+        </div>
 
         <!-- 월 + 네비게이션 -->
         <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -1627,7 +1660,7 @@ td:first-child{text-align:left;padding-left:13px}
 
 <!-- Modal: 직원 패턴 설정 -->
 <div class="modal" id="modal-roster-patterns" style="z-index:700;align-items:flex-start;padding-top:30px">
-  <div class="mbox" style="width:640px;max-height:88vh;overflow-y:auto">
+  <div class="mbox" style="width:680px;max-height:88vh;overflow-y:auto">
     <div class="mt">👤 직원별 주간 패턴 설정</div>
     <div style="font-size:11px;color:var(--text3);margin-bottom:14px;background:var(--s2);padding:8px 12px;border-radius:8px;line-height:1.6">
       각 직원의 기본 근무 패턴을 설정하면 <strong>🔄 이번달 자동생성</strong> 버튼으로 한 번에 채워집니다.<br>
@@ -3240,7 +3273,11 @@ function go(pid,el){
   else if(pid==='voc') initVocPage();
   else if(pid==='mymemo') loadMyMemos();
   else if(pid==='duty'){ loadDutyData(); renderDutyPage(); }
-  else if(pid==='roster'){ rosterSyncLoad().then(()=>renderRosterCalendar()); renderRosterCalendar(); }
+  else if(pid==='roster'){
+    rosterSyncLoad().then(()=>renderRosterCalendar()); renderRosterCalendar();
+    // 1시조 순번 메모 로드
+    try{ const m=localStorage.getItem('roster_1si_memo')||''; const ta=document.getElementById('roster-1si-memo'); if(ta&&!ta.value) ta.value=m; }catch(e){}
+  }
 }
 function goSI(sid,el){
   // 본인 또는 관리자만 접근 가능
@@ -6422,6 +6459,32 @@ function renderFunnel() {
 // ═══════════════════════════════════════════════════
 let _roiPeriod = 'month';
 
+function setRoiTrendPeriod(n, btn){
+  window._roiTrendMode = n==='custom'?'custom':String(n);
+  window._roiTrendN = n==='custom'?6:n;
+  // 버튼 스타일
+  ['1','3','6','12','custom'].forEach(k=>{
+    const b=document.getElementById(`roi-trend-btn-${k}`);
+    if(b){ b.classList.toggle('act', String(n)===k||n===k); }
+  });
+  // 직접선택 패널
+  const wrap=document.getElementById('roi-trend-custom-wrap');
+  if(wrap){
+    wrap.style.display=n==='custom'?'flex':'none';
+    if(n==='custom'){
+      // 기본값: 최근 6개월
+      const to=new Date(), from=new Date();
+      from.setMonth(from.getMonth()-5);
+      const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const fromEl=document.getElementById('roi-trend-from');
+      const toEl=document.getElementById('roi-trend-to');
+      if(fromEl&&!fromEl.value) fromEl.value=fmt(from);
+      if(toEl&&!toEl.value) toEl.value=fmt(to);
+    }
+  }
+  renderRoi();
+}
+
 function setRoiPeriod(p, el) {
   _roiPeriod = p;
   ['month','3month','6month','custom'].forEach(x => {
@@ -6976,9 +7039,26 @@ function renderRoi() {
   // 월별 추이 테이블 (지점별 포함)
   const today3=new Date();
   const trendMonths=[];
-  for(let i=5;i>=0;i--){
-    const d=new Date(today3); d.setMonth(d.getMonth()-i);
-    trendMonths.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  const _trendN=window._roiTrendN||6;
+  const _trendMode=window._roiTrendMode||'6';
+  if(_trendMode==='custom'){
+    const fromM=document.getElementById('roi-trend-from')?.value;
+    const toM=document.getElementById('roi-trend-to')?.value;
+    if(fromM&&toM){
+      const [fy,fm]=fromM.split('-').map(Number);
+      const [ty,tm]=toM.split('-').map(Number);
+      let cy=fy,cm=fm;
+      while(cy<ty||(cy===ty&&cm<=tm)){
+        trendMonths.push(`${cy}-${String(cm).padStart(2,'0')}`);
+        cm++; if(cm>12){cm=1;cy++;}
+        if(trendMonths.length>24) break;
+      }
+    }
+  } else {
+    for(let i=_trendN-1;i>=0;i--){
+      const d=new Date(today3); d.setMonth(d.getMonth()-i);
+      trendMonths.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
   }
 
   // 지점 목록 (전체 합계 + 공통광고 + 각 지점)
@@ -9510,12 +9590,20 @@ function renderDpProcPills(allProcs, usedPids) {
 // 하위 항목 직접 선택 (검색 결과에서)
 function dpSelectSubDirect(pid, idx){
   const key=`${pid}:${idx}`;
+  // 상위 시술도 selectedPids에 추가
   if(!_selectedPids) _selectedPids=new Set();
   _selectedPids.add(pid);
-  _focusedPid=pid;
+  // 하위 선택: _selectedSubs에 토글 (focusedPid 변경 없이)
   if(!_selectedSubs) _selectedSubs=new Set();
-  if(_selectedSubs.has(key)) _selectedSubs.delete(key);
-  else _selectedSubs.add(key);
+  if(_selectedSubs.has(key)) {
+    _selectedSubs.delete(key);
+    // 해당 상위의 모든 하위가 해제됐으면 상위도 해제
+    const anySubLeft=[..._selectedSubs].some(k=>k.startsWith(pid+':'));
+    if(!anySubLeft) _selectedPids.delete(pid);
+    if(_selectedPids.size===0) _selectedPids=null;
+  } else {
+    _selectedSubs.add(key);
+  }
   renderDailyProcTable();
 }
 
@@ -9599,15 +9687,17 @@ function dpSelectAll() {
 }
 
 function dpToggleProc(pid) {
-  _focusedPid = null;
-  _selectedSubs = null;
+  // focusedPid/selectedSubs는 건드리지 않음 — 다른 카테고리 중복 선택 유지
   const procs = S.procedures;
   if (!_selectedPids) {
+    // 전체 선택 상태에서 특정 하나 클릭 → 그것만 선택
     _selectedPids = new Set([pid]);
   } else if (_selectedPids.has(pid)) {
+    // 이미 선택된 것 클릭 → 해제
     _selectedPids.delete(pid);
     if (_selectedPids.size === 0) _selectedPids = null;
   } else {
+    // 새 시술 추가 선택
     _selectedPids.add(pid);
     if (_selectedPids.size === procs.length) _selectedPids = null;
   }
@@ -10903,8 +10993,13 @@ function renderDutyPage(){
   if(!_dutyData) loadDutyData();
   const monthDisp=document.getElementById('duty-month-display');
   if(monthDisp) monthDisp.textContent=_dutyData.month||_dutyMonth;
+  // 부제목 업데이트
+  const psText=document.getElementById('duty-ps-text');
+  const psVal=_dutyData.dutySubtitle||`${_dutyData.month||_dutyMonth} · 백업순서: ${_dutyData.backupOrder||''}`;
+  if(psText) psText.textContent=psVal;
+  // 구버전 호환
   const sub=document.getElementById('duty-ps');
-  if(sub) sub.textContent=`${_dutyData.month||_dutyMonth} · 백업순서: ${_dutyData.backupOrder||''}`;
+  if(sub) sub.textContent=psVal;
   el.innerHTML=_dutyData.sections.map((sec,si)=>{
     const clr=SECTION_COLORS[si%SECTION_COLORS.length];
     const staffLine=sec.staff?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
@@ -10942,6 +11037,56 @@ function dutyCopyFromPrev(){
     toast('✅ 이전달 내용 복사됨');
   }catch(e){ toast('⚠️ 복사 실패'); }
 }
+// 부제목 인라인 편집
+function startDutyPsEdit(){
+  const txt=document.getElementById('duty-ps-text');
+  const inp=document.getElementById('duty-ps-input');
+  const editBtn=document.getElementById('duty-ps-edit-btn');
+  const saveBtn=document.getElementById('duty-ps-save-btn');
+  const cancelBtn=document.getElementById('duty-ps-cancel-btn');
+  if(!txt||!inp) return;
+  inp.value=txt.textContent;
+  txt.style.display='none';
+  if(editBtn) editBtn.style.display='none';
+  inp.style.display='inline-block';
+  if(saveBtn) saveBtn.style.display='inline-block';
+  if(cancelBtn) cancelBtn.style.display='inline-block';
+  inp.focus(); inp.select();
+}
+function saveDutyPs(){
+  const txt=document.getElementById('duty-ps-text');
+  const inp=document.getElementById('duty-ps-input');
+  const editBtn=document.getElementById('duty-ps-edit-btn');
+  const saveBtn=document.getElementById('duty-ps-save-btn');
+  const cancelBtn=document.getElementById('duty-ps-cancel-btn');
+  if(!txt||!inp) return;
+  const val=inp.value.trim();
+  if(val){
+    txt.textContent=val;
+    if(!_dutyData) loadDutyData();
+    _dutyData.dutySubtitle=val;
+    dutyLocalSave();  // ← 올바른 저장 함수
+    toast('✅ 저장됨');
+  }
+  txt.style.display='';
+  if(editBtn) editBtn.style.display='';
+  inp.style.display='none';
+  if(saveBtn) saveBtn.style.display='none';
+  if(cancelBtn) cancelBtn.style.display='none';
+}
+function cancelDutyPs(){
+  const txt=document.getElementById('duty-ps-text');
+  const inp=document.getElementById('duty-ps-input');
+  const editBtn=document.getElementById('duty-ps-edit-btn');
+  const saveBtn=document.getElementById('duty-ps-save-btn');
+  const cancelBtn=document.getElementById('duty-ps-cancel-btn');
+  if(txt) txt.style.display='';
+  if(editBtn) editBtn.style.display='';
+  if(inp) inp.style.display='none';
+  if(saveBtn) saveBtn.style.display='none';
+  if(cancelBtn) cancelBtn.style.display='none';
+}
+
 function openDutyEdit(){
   if(!_dutyData) loadDutyData();
   renderDutyEditForm();
@@ -11246,7 +11391,16 @@ function loadRosterPatternData(){
 function renderRosterPatternList(){
   const el=document.getElementById('roster-pattern-list'); if(!el) return;
   const DOW_LABELS=['일','월','화','수','목','금','토'];
-  const TYPES=['오전','오후','휴무','연차','반차','특근'];
+  const SHIFTS=[
+    {label:'9시조', start:'09:00', end:'18:00'},
+    {label:'9시30분조', start:'09:30', end:'18:30'},
+    {label:'10시조', start:'10:00', end:'19:00'},
+    {label:'1시조', start:'13:00', end:'21:00'},
+    {label:'휴무', start:'', end:''},
+    {label:'연차', start:'', end:''},
+    {label:'반차', start:'', end:''},
+    {label:'특근', start:'', end:''},
+  ];
   el.innerHTML=S.staff.map(s=>{
     const pat=_rosterPatterns[s.name]||{};
     return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
@@ -11254,23 +11408,35 @@ function renderRosterPatternList(){
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
         ${DOW_LABELS.map((d,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0?'#ef4444':i===6?'#3b82f6':'#374151'}">${d}</div>`).join('')}
         ${[0,1,2,3,4,5,6].map(dow=>{
-          const cur=pat[dow]?.type||'오전';
-          return `<select onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'][${dow}]={type:this.value}"
-            style="width:100%;padding:3px;border-radius:5px;border:1px solid var(--border);font-size:10px;font-weight:600;background:var(--s2);color:var(--text)">
-            ${TYPES.map(t=>`<option value="${t}"${t===cur?' selected':''}>${t}</option>`).join('')}
+          const cur=pat[dow]?.type||'9시조';
+          return `<select onchange="setRosterPatternShift('${s.name}',${dow},this.value)"
+            style="width:100%;padding:3px 2px;border-radius:5px;border:1px solid var(--border);font-size:10px;font-weight:600;background:var(--s2);color:var(--text)">
+            ${SHIFTS.map(sh=>`<option value="${sh.label}"${sh.label===cur?' selected':''}>${sh.label}</option>`).join('')}
           </select>`;
         }).join('')}
       </div>
-      <div style="display:flex;gap:6px;align-items:center;font-size:11px">
-        <span style="color:var(--text3)">기본 출근:</span>
-        <input type="time" value="${pat.defaultStart||'09:00'}" onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'].defaultStart=this.value"
-          style="padding:2px 6px;border-radius:5px;border:1px solid var(--border);font-size:11px;background:var(--s2);color:var(--text)">
-        <span style="color:var(--text3)">퇴근:</span>
-        <input type="time" value="${pat.defaultEnd||'18:00'}" onchange="_rosterPatterns['${s.name}']||(_rosterPatterns['${s.name}']={});_rosterPatterns['${s.name}'].defaultEnd=this.value"
-          style="padding:2px 6px;border-radius:5px;border:1px solid var(--border);font-size:11px;background:var(--s2);color:var(--text)">
+      <div style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text3)">
+        💡 조별 출퇴근: 9시조 09:00~18:00 · 9시30분조 09:30~18:30 · 10시조 10:00~19:00 · 1시조 13:00~21:00
       </div>
     </div>`;
   }).join('');
+}
+
+const SHIFT_TIMES={
+  '9시조':   {start:'09:00', end:'18:00', type:'오전'},
+  '9시30분조':{start:'09:30', end:'18:30', type:'오전'},
+  '10시조':  {start:'10:00', end:'19:00', type:'오전'},
+  '1시조':   {start:'13:00', end:'21:00', type:'오후'},
+  '휴무':    {start:'', end:'', type:'휴무'},
+  '연차':    {start:'', end:'', type:'연차'},
+  '반차':    {start:'', end:'', type:'반차'},
+  '특근':    {start:'', end:'', type:'특근'},
+};
+
+function setRosterPatternShift(name, dow, shiftLabel){
+  if(!_rosterPatterns[name]) _rosterPatterns[name]={};
+  const times=SHIFT_TIMES[shiftLabel]||{start:'09:00',end:'18:00',type:'오전'};
+  _rosterPatterns[name][dow]={type:times.type, shift:shiftLabel, start:times.start, end:times.end};
 }
 function saveRosterPatterns(){
   try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
@@ -11291,7 +11457,11 @@ function applyRosterPatterns(){
       if(!dayPat||dayPat.type==='휴무') return;
       if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:''};
       const existing=_rosterData[ds].entries.findIndex(e=>e.staff===s.name);
-      const entry={staff:s.name,type:dayPat.type||'오전',start:pat.defaultStart||'09:00',end:pat.defaultEnd||'18:00',lunch:'1시',memo:''};
+      // 조별 시간 우선, 없으면 defaultStart/End
+      const shiftInfo=SHIFT_TIMES[dayPat.shift]||null;
+      const start=dayPat.start||shiftInfo?.start||pat.defaultStart||'09:00';
+      const end=dayPat.end||shiftInfo?.end||pat.defaultEnd||'18:00';
+      const entry={staff:s.name,type:dayPat.type||'오전',shift:dayPat.shift||'',start,end,lunch:'1시',memo:''};
       if(existing>=0) _rosterData[ds].entries[existing]=entry;
       else _rosterData[ds].entries.push(entry);
     });
