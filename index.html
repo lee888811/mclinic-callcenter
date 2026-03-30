@@ -3935,6 +3935,15 @@ function openCallModal(sid){
   const rcd=document.getElementById('out-recall-date'); if(rcd) rcd.value='';
   Object.keys(_procSel).forEach(k=>delete _procSel[k]);
   Object.keys(_procSubOpen).forEach(k=>delete _procSubOpen[k]);
+  // 시술 검색창 초기화
+  const procSearch=document.getElementById('proc-search-input');
+  if(procSearch) procSearch.value='';
+  // 미예약 사유 초기화
+  document.querySelectorAll('.noappt-reason-btn').forEach(b=>{
+    b.style.background='var(--s2)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)';
+  });
+  const noapptMemo=document.getElementById('cf-noappt-reason-memo'); if(noapptMemo) noapptMemo.value='';
+  const noapptHidden=document.getElementById('cf-noappt-reason'); if(noapptHidden) noapptHidden.value='';
   resetVocFields();
   document.getElementById('modal-branch-pills').innerHTML=activeBranches().map(b=>{
     return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
@@ -4012,6 +4021,22 @@ function openEditModal(cid, sid, ds){
   // 시술
   Object.keys(_procSel).forEach(k=>delete _procSel[k]);
   if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{ if(n>0) _procSel[pid]=n; });
+  // 시술 검색창 초기화
+  const procSearchE=document.getElementById('proc-search-input');
+  if(procSearchE) procSearchE.value='';
+  // 미예약 사유 초기화 후 기존값 복원
+  document.querySelectorAll('.noappt-reason-btn').forEach(b=>{
+    b.style.background='var(--s2)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)';
+  });
+  const noapptMemoE=document.getElementById('cf-noappt-reason-memo'); if(noapptMemoE) noapptMemoE.value=c.noapptMemo||'';
+  const noapptHiddenE=document.getElementById('cf-noappt-reason'); if(noapptHiddenE) noapptHiddenE.value=c.noapptReason||'';
+  if(c.noapptReason){
+    document.querySelectorAll('.noappt-reason-btn').forEach(b=>{
+      if(b.textContent.trim()===c.noapptReason){
+        b.style.background='#fef3c7'; b.style.color='#d97706'; b.style.borderColor='#d97706';
+      }
+    });
+  }
   renderModalProcGrid();
   // 전화 채널 복원
   _phoneChannel = c.channel||'ch0';
@@ -4078,13 +4103,12 @@ function setOutResult(v, el){
   if(recallWrap) recallWrap.style.display=(v==='부재중')?'block':'none';
 }
 function selectBranch(bid){
-  // 다중 선택 토글
-  if(_callBids.has(bid)) _callBids.delete(bid);
-  else _callBids.add(bid);
-  _callBid = _callBids.size===1 ? [..._callBids][0] : (_callBids.size>0 ? [..._callBids][0] : null);
+  // 단일 선택
+  _callBid = (_callBid === bid) ? null : bid;
+  _callBids = new Set(_callBid ? [_callBid] : []);
   document.querySelectorAll('.br-pill').forEach(p=>{
     const id=p.id.replace('bpill-','');
-    const isAct=_callBids.has(id);
+    const isAct=(id===_callBid);
     const cl=bclr(id);
     p.className='br-pill'+(isAct?' act':'');
     p.style.cssText=isAct?`background:${cl};border-color:${cl};color:#fff`:'';
@@ -4313,7 +4337,7 @@ function confirmCall(){
   const callData={
     medium:_callMedium,
     channel:_callMedium==='phone'?_phoneChannel:'',
-    bid:primaryBid, bids:bidsArr.length>1?bidsArr:undefined,
+    bid:primaryBid,
     type:_callType, degree:_callDegree,
     pttype:primaryPttype, pttypes:pttypesArr.length>1?pttypesArr:undefined,
     bookingType:_callBookingType,
@@ -4336,7 +4360,8 @@ function confirmCall(){
     outRecallDate: _callType==='out'&&_outResult==='부재중'?(document.getElementById('out-recall-date')?.value||''):'',
   };
   let toastMsg='✅ 상담 기록 저장';
-  if(_editCallId && _editCallDate){
+  const isEdit = !!((_editCallId && _editCallDate));
+  if(isEdit){
     // 수정 시: 기존 레코드 업데이트 (단일 지점으로만 수정)
     const idx=S.calls[_editCallDate]?.findIndex(x=>x.id===_editCallId);
     if(idx!=null && idx!==-1) S.calls[_editCallDate][idx]={...S.calls[_editCallDate][idx],...callData,bid:primaryBid,bids:undefined};
@@ -4345,31 +4370,7 @@ function confirmCall(){
   } else {
     const ds=_curDate||todayStr();
     if(!S.calls[ds]) S.calls[ds]=[];
-    if(bidsArr.length>1){
-      // 다중 지점: 지점마다 별도 레코드 저장 (분석 정확도 유지)
-      // 단, 예약건수/취소/미예약은 첫 번째 지점에만 기록 (중복 집계 방지)
-      const sharedId=uid(); // 같은 통화에서 발생했음을 표시
-      bidsArr.forEach((bid, idx2)=>{
-        const isFirst=idx2===0;
-        S.calls[ds].push({
-          id:uid(), sid:_curSid, date:ds, time:nowTime(),
-          ...callData,
-          bid,
-          bids:undefined, // 분리 저장했으므로 불필요
-          groupId:sharedId, // 같은 통화 묶음 표시
-          groupIdx:idx2,
-          groupTotal:bidsArr.length,
-          // 예약건수는 첫 번째 지점만 (이중 집계 방지)
-          today: isFirst ? callData.today : 0,
-          cancel: isFirst ? callData.cancel : 0,
-          cancelReason: isFirst ? callData.cancelReason : '',
-          noappt: isFirst ? callData.noappt : 0,
-        });
-      });
-      toastMsg=`✅ ${bidsArr.length}개 지점에 각각 저장됨`;
-    } else {
-      S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:nowTime(),...callData,bids:undefined});
-    }
+    S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:nowTime(),...callData,bids:undefined});
   }
   const _savedDate = _editCallDate || _curDate || todayStr();
   scheduleSyncPush(_savedDate);
@@ -4386,7 +4387,16 @@ function confirmCall(){
   else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); }
     else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   }
-  toast(toastMsg);
+  // 저장 후 토스트: 신규 콜이면 "다른 지점 예약 추가" 버튼 포함
+  if(!isEdit){
+    const savedSid=_curSid;
+    showToastWithAction('✅ 저장됨', '＋ 다른 지점 추가', ()=>{
+      // 같은 직원으로 콜 모달 재오픈 (지점만 새로 선택)
+      openCallModal(savedSid);
+    });
+  } else {
+    toast(toastMsg);
+  }
 }
 
 // ═══════════════════════════════════
@@ -8975,6 +8985,25 @@ async function scheduleSave(){
 
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2500);}
 
+function showToastWithAction(msg, actionLabel, onAction, duration=6000){
+  let el=document.getElementById('action-toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='action-toast';
+    el.style.cssText='position:fixed;bottom:70px;right:20px;z-index:9999;background:#1e293b;color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:all .2s';
+    document.body.appendChild(el);
+  }
+  el.innerHTML=`<span>${msg}</span>
+    <button id="action-toast-btn" style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap">${actionLabel}</button>
+    <button onclick="document.getElementById('action-toast').style.display='none'" style="background:#475569;color:#fff;border:none;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:12px">✕</button>`;
+  el.style.display='flex';
+  document.getElementById('action-toast-btn').onclick=()=>{
+    el.style.display='none';
+    onAction();
+  };
+  if(el._timer) clearTimeout(el._timer);
+  el._timer=setTimeout(()=>{if(el)el.style.display='none';}, duration);
+}
 function showConfirmToast(msg, onConfirm, confirmText='확인', confirmColor='#dc2626'){
   let el=document.getElementById('confirm-toast');
   if(!el){
