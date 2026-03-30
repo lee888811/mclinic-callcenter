@@ -618,7 +618,8 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- 필터 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
         <span style="font-size:26px;font-weight:700;color:#0f172a">기간</span>
-        <button class="period-btn act" id="fnpb-month" onclick="setFunnelPeriod('month',this)">이번달</button>
+        <button class="period-btn act" id="fnpb-today" onclick="setFunnelPeriod('today',this)">당일</button>
+        <button class="period-btn" id="fnpb-month" onclick="setFunnelPeriod('month',this)">이번달</button>
         <button class="period-btn" id="fnpb-3month" onclick="setFunnelPeriod('3month',this)">3개월</button>
         <button class="period-btn" id="fnpb-6month" onclick="setFunnelPeriod('6month',this)">6개월</button>
         <button class="period-btn" id="fnpb-custom" onclick="setFunnelPeriod('custom',this)">직접선택</button>
@@ -6450,11 +6451,11 @@ function renderRetention() {
 // ═══════════════════════════════════════════════════
 // 예약 전환율 퍼널
 // ═══════════════════════════════════════════════════
-let _funnelPeriod = 'month';
+let _funnelPeriod = 'today';
 
 function setFunnelPeriod(p, el) {
   _funnelPeriod = p;
-  ['month','3month','6month','custom'].forEach(x => {
+  ['today','month','3month','6month','custom'].forEach(x => {
     const b = document.getElementById(`fnpb-${x}`);
     if(b) b.className = 'period-btn' + (x===p?' act':'');
   });
@@ -6466,7 +6467,9 @@ function setFunnelPeriod(p, el) {
 function getFunnelRange() {
   const today = todayStr();
   const d = new Date(today);
-  if(_funnelPeriod==='month') {
+  if(_funnelPeriod==='today') {
+    return {from:today, to:today, label:'당일'};
+  } else if(_funnelPeriod==='month') {
     const from = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
     return {from, to:today, label:`${d.getMonth()+1}월`};
   } else if(_funnelPeriod==='3month') {
