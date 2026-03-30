@@ -2946,6 +2946,13 @@ async function syncPush(showToast=false){
     const base=_syncUrl.replace(/\/+$/,'');
     if(_dirtyConfig||showToast){
       _localSavedAt = new Date().toISOString();
+      // 분담업무: 모든 월 데이터 수집
+      const dutyAll={};
+      try{
+        Object.keys(localStorage).filter(k=>k.startsWith('duty_data_')).forEach(k=>{
+          try{ dutyAll[k.replace('duty_data_','')]=JSON.parse(localStorage.getItem(k)); }catch(e){}
+        });
+      }catch(e){}
       const cfg={branches:S.branches,staff:S.staff,procedures:S.procedures,
         channels:S.channels,roles:S.roles,incentive:S.incentive,
         masterPw:S.masterPw||'',
@@ -2955,7 +2962,13 @@ async function syncPush(showToast=false){
         faqs:S.faqs||[],
         roiCosts:S.roiCosts||{},
         roiLogs:S.roiLogs||[],
-        _deletedIds:S._deletedIds||[],savedAt:_localSavedAt};
+        _deletedIds:S._deletedIds||[],savedAt:_localSavedAt,
+        rosterData:_rosterData||{},
+        leaveData:_leaveData||{},
+        rosterPatterns:_rosterPatterns||{},
+        roster1siMemo:localStorage.getItem('roster_1si_memo')||'',
+        branchSnapshot:(()=>{try{return JSON.parse(localStorage.getItem('branch_snapshot')||'{}')}catch(e){return {}}})(  ),
+        dutyAll};
       const r=await fbFetch(base+'/mclinic.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
       if(r.ok){ _dirtyConfig=false; _lastPushAt=Date.now(); }
     }
@@ -3009,6 +3022,40 @@ async function syncPull(){
           else localStorage.removeItem(`mclinic_sheet_url_${bid}`);
         });
       }
+      // ── 추가 동기화 항목 ──────────────────────────
+      // 근태 달력
+      if(data.rosterData && typeof data.rosterData==='object' && Object.keys(data.rosterData).length){
+        Object.assign(_rosterData, data.rosterData);
+        try{ localStorage.setItem('roster_data', JSON.stringify(_rosterData)); }catch(e){}
+      }
+      // 연차·특근·직원메모
+      if(data.leaveData && typeof data.leaveData==='object' && Object.keys(data.leaveData).length){
+        Object.assign(_leaveData, data.leaveData);
+        try{ localStorage.setItem('leave_data', JSON.stringify(_leaveData)); }catch(e){}
+      }
+      // 패턴 설정
+      if(data.rosterPatterns && typeof data.rosterPatterns==='object' && Object.keys(data.rosterPatterns).length){
+        Object.assign(_rosterPatterns, data.rosterPatterns);
+        try{ localStorage.setItem('roster_patterns', JSON.stringify(_rosterPatterns)); }catch(e){}
+      }
+      // 공지사항 메모
+      if(data.roster1siMemo){
+        try{ localStorage.setItem('roster_1si_memo', data.roster1siMemo); }catch(e){}
+      }
+      // 삭제된 지점명 스냅샷
+      if(data.branchSnapshot && typeof data.branchSnapshot==='object'){
+        try{
+          const localSnap = JSON.parse(localStorage.getItem('branch_snapshot')||'{}');
+          const merged = {...localSnap, ...data.branchSnapshot};
+          localStorage.setItem('branch_snapshot', JSON.stringify(merged));
+        }catch(e){}
+      }
+      // 분담업무 (월별)
+      if(data.dutyAll && typeof data.dutyAll==='object'){
+        Object.entries(data.dutyAll).forEach(([month, val])=>{
+          try{ localStorage.setItem(`duty_data_${month}`, JSON.stringify(val)); }catch(e){}
+        });
+      }
     }
     if(data._deletedIds?.length){
       if(!S._deletedIds) S._deletedIds=[];
@@ -3027,6 +3074,51 @@ async function syncPull(){
     // 구버전 data 키 완전 무시 (data.staff 등으로 덮어쓰기 방지)
     pruneLocalCalls(LOCAL_DAYS);
     try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
+    // ── 추가 동기화 항목 ──
+    if(data.rosterData && typeof data.rosterData==='object' && Object.keys(data.rosterData).length){
+      // 로컬에 없는 날짜만 병합 (로컬 우선)
+      Object.keys(data.rosterData).forEach(ds=>{
+        if(!_rosterData[ds]) _rosterData[ds]=data.rosterData[ds];
+      });
+      try{ localStorage.setItem('roster_data',JSON.stringify(_rosterData)); }catch(e){}
+    }
+    if(data.leaveData && typeof data.leaveData==='object'){
+      Object.keys(data.leaveData).forEach(name=>{
+        if(!_leaveData[name]) _leaveData[name]=data.leaveData[name];
+        else {
+          // 메모, yearSnapshot 등 누락 필드만 보완
+          const ld=data.leaveData[name];
+          if(!_leaveData[name].memo && ld.memo) _leaveData[name].memo=ld.memo;
+          if(!_leaveData[name].yearSnapshot && ld.yearSnapshot) _leaveData[name].yearSnapshot=ld.yearSnapshot;
+          if(!_leaveData[name].overtime?.length && ld.overtime?.length) _leaveData[name].overtime=ld.overtime;
+          if(!_leaveData[name].overtimeUsed?.length && ld.overtimeUsed?.length) _leaveData[name].overtimeUsed=ld.overtimeUsed;
+          if(_leaveData[name].joinDate===undefined && ld.joinDate) _leaveData[name].joinDate=ld.joinDate;
+        }
+      });
+      try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
+    }
+    if(data.rosterPatterns && typeof data.rosterPatterns==='object' && Object.keys(data.rosterPatterns).length){
+      Object.assign(_rosterPatterns, data.rosterPatterns);
+      try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
+    }
+    if(data.roster1siMemo && !localStorage.getItem('roster_1si_memo')){
+      try{ localStorage.setItem('roster_1si_memo', data.roster1siMemo); }catch(e){}
+    }
+    if(data.branchSnapshot && typeof data.branchSnapshot==='object'){
+      try{
+        const local=JSON.parse(localStorage.getItem('branch_snapshot')||'{}');
+        const merged={...data.branchSnapshot,...local};
+        localStorage.setItem('branch_snapshot',JSON.stringify(merged));
+      }catch(e){}
+    }
+    if(data.dutyAll && typeof data.dutyAll==='object'){
+      Object.keys(data.dutyAll).forEach(month=>{
+        const key=`duty_data_${month}`;
+        if(!localStorage.getItem(key)){
+          try{ localStorage.setItem(key,JSON.stringify(data.dutyAll[month])); }catch(e){}
+        }
+      });
+    }
     _lastSyncedAt=new Date().toISOString();
     try{localStorage.setItem('mclinic_sync_last',_lastSyncedAt);}catch(e){}
     syncNotesPull();
@@ -3813,6 +3905,66 @@ const _procSel={};
 let _editCallId=null, _editCallDate=null;
 let _editProcId=null;
 const _incDetailMap={}; // 인센티브 상세 모달용 콜 데이터 임시 저장
+
+function openIncDetail(callId){
+  const d=_incDetailMap[callId];
+  if(!d){ toast('⚠️ 상세 정보를 찾을 수 없습니다'); return; }
+  const isSucc=!d.result||(d.result==='통화성공'||d.result==='예약완료');
+  document.getElementById('inc-detail-title').textContent=`📋 아웃콜 상세 정보`;
+  document.getElementById('inc-detail-body').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#f8fafc;border-radius:10px;padding:12px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px">👤 고객명</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">${d.name||'미입력'}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:12px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px">📞 연락처</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">${d.phone||'미입력'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:#f8fafc;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">📅 날짜</div>
+          <div style="font-size:13px;font-weight:700">${d.date||'-'}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">🕐 시간</div>
+          <div style="font-size:13px;font-weight:700">${d.time||'-'}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">👩 담당</div>
+          <div style="font-size:13px;font-weight:700">${d.staffName||'-'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:#f8fafc;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">🏥 지점</div>
+          <div style="font-size:13px;font-weight:700">${d.branch||'-'}</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">📋 통화 결과</div>
+          <div style="font-size:13px;font-weight:700;color:${d.result==='통화성공'||d.result==='예약완료'?'#15803d':'#dc2626'}">${d.result||'-'}</div>
+        </div>
+      </div>
+      ${d.purpose?`
+      <div style="background:#f8fafc;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">📌 발신 목적</div>
+        <div style="font-size:13px;font-weight:700">${d.purpose}</div>
+      </div>`:''}
+      ${d.noapptReason?`
+      <div style="background:#fff7ed;border-radius:10px;padding:10px;border:1px solid #fed7aa">
+        <div style="font-size:10px;color:#d97706;margin-bottom:3px">미예약 사유</div>
+        <div style="font-size:13px;font-weight:700;color:#92400e">${d.noapptReason}${d.noapptMemo?' · '+d.noapptMemo:''}</div>
+      </div>`:''}
+      ${d.memo?`
+      <div style="background:#f8fafc;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">📝 메모</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">${escHtml(d.memo)}</div>
+      </div>`:''}
+    </div>`;
+  document.getElementById('modal-inc-detail').classList.add('open');
+}
 
 function setMedium(m){
   _callMedium=m;
@@ -5490,10 +5642,12 @@ function renderIncentive(){
         : '';
       _incDetailMap[c.id]={
         name:c.outPtname||'', phone:c.outPtphone||'',
-        branch:bname, purpose:c.outPurpose||'', degree:c.degree,
-        time:c.time||'', date:c.date||'',
+        branch:branch?branch.name+'점':'',
+        purpose:c.outPurpose||'', result:c.outResult||'통화성공',
+        degree:c.degree, time:c.time||'', date:c.date||'',
         pttype:c.pttype||'', memo:c.memo||'',
-        staffName:s.name
+        staffName:s.name,
+        noapptReason:c.noapptReason||'', noapptMemo:c.noapptMemo||''
       };
       return `<div onclick="openIncDetail('${c.id}')"
         style="padding:8px 10px;border-left:3px solid var(--green);margin:4px 0;background:var(--s2);border-radius:0 8px 8px 0;cursor:pointer"
@@ -5513,10 +5667,27 @@ function renderIncentive(){
     }).join('');
 
     const failList=failCalls.length?`
-      <div style="margin-top:6px;font-size:11px;color:var(--text3);padding:6px 10px;background:#fef2f2;border-radius:8px;border-left:3px solid var(--red)">
-        ❌ 미예약 ${failCalls.length}건
-        ${failCalls.map(c=>`<span style="margin-left:8px;color:#dc2626">${c.outPtname||'미입력'} (${c.outResult||'결과없음'})</span>`).join('')}
-      </div>`:'';
+      <div style="margin-top:6px;padding:6px 10px;background:#fef2f2;border-radius:8px;border-left:3px solid var(--red)">
+        <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:4px">❌ 미예약 ${failCalls.length}건</div>
+        ${failCalls.map(c=>{
+          _incDetailMap[c.id]={
+            name:c.outPtname||'', phone:c.outPtphone||'',
+            branch:(S.branches.find(b=>b.id===c.bid)?.name||'')+'점',
+            purpose:c.outPurpose||'', result:c.outResult||'',
+            degree:c.degree, time:c.time||'', date:c.date||'',
+            pttype:c.pttype||'', memo:c.memo||'', staffName:s.name,
+            noapptReason:c.noapptReason||'', noapptMemo:c.noapptMemo||''
+          };
+          return '<div onclick="openIncDetail(\'' + c.id + '\')"'
+            + ' style="display:flex;align-items:center;gap:6px;padding:5px 4px;border-radius:6px;cursor:pointer;margin-top:2px"'
+            + ' onmouseover="this.style.background=\'rgba(220,38,38,.06)\'" onmouseout="this.style.background=\'transparent\'">'
+            + '<span style="font-size:11px;font-weight:700;color:#dc2626">✗ ' + (c.outPtname||'이름 미입력') + '</span>'
+            + '<span style="font-size:10px;color:var(--text3)">' + (c.outPtphone||'') + '</span>'
+            + '<span style="font-size:10px;color:#dc2626;margin-left:auto">' + (c.outResult||'') + '</span>'
+            + '<span style="font-size:10px;color:var(--accent)">상세 ›</span>'
+            + '</div>';
+        }).join('')}
+      </div>`:''
 
     return `<div class="inc-card" style="min-width:280px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
@@ -11193,6 +11364,7 @@ function loadDutyData(){
 function dutyLocalSave(){
   const key=dutyStorageKey(_dutyData?.month||_dutyMonth);
   try{ localStorage.setItem(key,JSON.stringify(_dutyData)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
 }
 function dutyMoveMonth(delta){
   const [y,m]=_dutyMonth.split('-').map(Number);
@@ -11238,6 +11410,7 @@ function renderDutyPage(){
 }
 function saveLeaveData(){
   try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
 }
 function dutyCopyFromPrev(){
   const prevKey=dutyStorageKey(getPrevMonth(_dutyMonth));
@@ -11503,7 +11676,7 @@ function rosterNoticeSave(){
   const cancelBtn=document.getElementById('roster-notice-cancel-btn');
   if(!ta) return;
   const val=ta.value;
-  try{ localStorage.setItem('roster_1si_memo',val); }catch(e){}
+  try{ localStorage.setItem('roster_1si_memo',val); markConfigDirty(); scheduleSyncPush(); }catch(e){}
   if(view){ view.textContent=val||'(공지사항 없음 - 클릭하여 입력)'; view.style.display='block'; }
   ta.style.display='none';
   if(editBtn) editBtn.style.display='inline-block';
@@ -11534,6 +11707,7 @@ function loadRosterSettings(){
 }
 function rosterLocalSave(){
   try{ localStorage.setItem('roster_data',JSON.stringify(_rosterData)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
   // 연차 사용 내역 스냅샷 갱신 (현재 연도)
   const curYr=new Date().getFullYear();
   loadLeaveDataFromStorage();
@@ -11827,6 +12001,7 @@ function setRosterPatternShift(sid, dow, shiftLabel){
 }
 function saveRosterPatterns(){
   try{ localStorage.setItem('roster_patterns',JSON.stringify(_rosterPatterns)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
   closeModal('modal-roster-patterns');
   toast('✅ 패턴 저장됨');
 }
@@ -11905,6 +12080,7 @@ function calcAnnualLeave(joinDateStr){
 
 function saveLeaveData2(){
   try{ localStorage.setItem('leave_data',JSON.stringify(_leaveData)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
 }
 function loadLeaveDataFromStorage(){
   try{ const s=localStorage.getItem('leave_data'); if(s) _leaveData=JSON.parse(s); }catch(e){}
