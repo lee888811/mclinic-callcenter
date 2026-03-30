@@ -778,6 +778,7 @@ td:first-child{text-align:left;padding-left:13px}
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl">📋 VOC 목록</span>
           <span id="voc-count" style="font-size:14px;color:var(--text3)"></span>
+          <button onclick="exportVocExcel()" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1px solid #16a34a;background:#dcfce7;color:#16a34a;font-size:13px;font-weight:700;cursor:pointer">📥 엑셀 다운로드</button>
         </div>
         <div id="voc-list"></div>
       </div>
@@ -12435,17 +12436,61 @@ function renderVocList(){
         ${staffName?`<span style="font-size:13px;color:var(--text3)">${staffName}</span>`:''}
       </div>
       <div style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:12px">${escHtml(v.content||'')}</div>
-      <div style="display:flex;gap:7px;align-items:center">
-        <span style="font-size:13px;color:var(--text3);font-weight:600">처리 상태:</span>
-        ${['접수','처리중','완료'].map(st=>{
-          const isAct=v.status===st;
-          const [bg,clr]=(statusColors[st]||'#f1f5f9,#64748b').split(',');
-          return `<button onclick="updateVocStatus('${v.callId}','${v.date}','${st}')"
-            style="padding:5px 14px;border-radius:8px;border:1.5px solid ${isAct?clr:'var(--border)'};background:${isAct?bg:'transparent'};color:${isAct?clr:'var(--text3)'};font-size:13px;font-weight:${isAct?700:500};cursor:pointer">${st}</button>`;
-        }).join('')}
+      <div style="display:flex;gap:7px;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:7px;align-items:center">
+          <span style="font-size:13px;color:var(--text3);font-weight:600">처리 상태:</span>
+          ${['접수','처리중','완료'].map(st=>{
+            const isAct=v.status===st;
+            const [bg,clr]=(statusColors[st]||'#f1f5f9,#64748b').split(',');
+            return `<button onclick="updateVocStatus('${v.callId}','${v.date}','${st}')"
+              style="padding:5px 14px;border-radius:8px;border:1.5px solid ${isAct?clr:'var(--border)'};background:${isAct?bg:'transparent'};color:${isAct?clr:'var(--text3)'};font-size:13px;font-weight:${isAct?700:500};cursor:pointer">${st}</button>`;
+          }).join('')}
+        </div>
+        <button onclick="deleteVoc('${v.callId}','${v.date}')"
+          style="padding:5px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fff1f2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer">🗑 삭제</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function deleteVoc(callId, ds){
+  showConfirmToast('이 VOC를 삭제할까요?', ()=>{
+    const dayData=S.calls[ds]||[];
+    const call=dayData.find(c=>c.id===callId);
+    if(!call){ toast('⚠️ VOC를 찾을 수 없습니다'); return; }
+    delete call.voc;
+    try{ localStorage.setItem('mclinic_v2',JSON.stringify(S)); }catch(e){}
+    scheduleSyncPush(ds);
+    renderVocList();
+    toast('🗑 VOC 삭제됨');
+  }, '삭제', '#ef4444');
+}
+
+function exportVocExcel(){
+  const days=_vocRange||30;
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
+  const cutoffStr=localDateStr(cutoff);
+  const vocs=getAllVocs().filter(v=>v.date>=cutoffStr);
+  if(!vocs.length){ toast('⚠️ 내보낼 VOC 데이터가 없습니다'); return; }
+
+  const headers=['날짜','유형','처리상태','지점','담당자','내용','시술'];
+  const rows=vocs.map(v=>{
+    const brName=S.branches.find(b=>b.id===v.bid)?.name||'';
+    const staffName=S.staff.find(s=>s.id===v.sid)?.name||'';
+    const procs=(v.procs||[]).map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?.name||pid;}).join(', ');
+    return [v.date||'', v.type||'', v.status||'', brName, staffName, v.content||'', procs];
+  });
+
+  // CSV 생성 (엑셀 한글 호환 BOM 포함)
+  const BOM='\uFEFF';
+  const csv=BOM+[headers,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`VOC_${todayStr()}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast(`✅ VOC ${vocs.length}건 다운로드`);
 }
 
 function updateVocStatus(callId, ds, newStatus){
