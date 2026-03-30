@@ -1733,6 +1733,30 @@ td:first-child{text-align:left;padding-left:13px}
   <div class="mbox" style="width:340px">
     <div class="mt" id="roster-quick-title">근무 입력</div>
     <div id="roster-quick-shift-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+    <!-- 직접 입력 섹션 -->
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">✏️ 직접 입력 (조 + 점심시간 커스텀)</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">조 선택</div>
+          <select id="quick-custom-shift" style="width:100%;padding:5px 8px;border-radius:7px;border:1px solid var(--border);font-size:12px;font-weight:600;background:var(--s2);color:var(--text)">
+            <option value="9시조">9시조</option>
+            <option value="9시30분조">9시30분조</option>
+            <option value="10시조(점심1시)">10시조(점심1시)</option>
+            <option value="10시조(점심1시30)">10시조(점심1시30)</option>
+            <option value="10시조(점심2시)">10시조(점심2시)</option>
+            <option value="1시조">1시조</option>
+            <option value="토요일 근무">토요일 근무</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">점심시간 변경</div>
+          <input type="text" id="quick-custom-lunch" placeholder="예: 13:00" maxlength="5"
+            style="width:100%;padding:5px 8px;border-radius:7px;border:1px solid var(--border);font-size:12px;background:var(--s2);color:var(--text);box-sizing:border-box;font-family:'DM Mono',monospace">
+        </div>
+      </div>
+      <button onclick="applyQuickCustom()" style="width:100%;padding:8px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ 적용</button>
+    </div>
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-roster-quick')">닫기</button>
       <button class="btn btn-r btn-sm" onclick="rosterQuickDelete()" style="margin-right:auto">🗑 삭제</button>
@@ -3487,7 +3511,24 @@ function go(pid,el){
   else if(pid==='marketing') initMarketingPage();
   else if(pid==='voc') initVocPage();
   else if(pid==='mymemo') loadMyMemos();
-  else if(pid==='duty'){ loadDutyData(); renderDutyPage(); }
+  else if(pid==='duty'){
+    loadDutyData(); renderDutyPage();
+    // Firebase에서 최신 분담업무 데이터 pull 후 갱신
+    if(_syncUrl){
+      const base=_syncUrl.replace(/\/+$/,'');
+      fbFetch(base+'/mclinic.json')
+        .then(r=>r.json())
+        .then(data=>{
+          if(data?.dutyAll && typeof data.dutyAll==='object'){
+            Object.entries(data.dutyAll).forEach(([month,val])=>{
+              try{ localStorage.setItem(`duty_data_${month}`,JSON.stringify(val)); }catch(e){}
+            });
+            // 현재 보고 있는 달 데이터 갱신
+            loadDutyData(); renderDutyPage();
+          }
+        }).catch(()=>{});
+    }
+  }
   else if(pid==='roster'){
     rosterSyncLoad().then(()=>renderRosterCalendar()); renderRosterCalendar();
     // 1시조 순번 메모 로드
@@ -11654,6 +11695,9 @@ function saveDutyEdit(){
     sec.items=items;
   });
   dutyLocalSave();
+  // Firebase 즉시 동기화
+  markConfigDirty();
+  syncPush(false).then(()=>{ /* 동기화 완료 */ }).catch(()=>{});
   closeModal('modal-duty-edit');
   // 화면 갱신 (약간의 딜레이로 모달 닫힘 후 렌더)
   setTimeout(()=>{ renderDutyPage(); }, 50);
@@ -11749,8 +11793,33 @@ function openRosterQuickInput(ds){
   }).join('');
 
   document.getElementById('modal-roster-quick')?.classList.add('open');
+  // 직접 입력 섹션 기존 값 세팅
+  const existingEntry = (_rosterData[_quickTargetDs]?.entries||[]).find(e=>e.staff===_quickStaff);
+  const customShiftEl = document.getElementById('quick-custom-shift');
+  const customLunchEl = document.getElementById('quick-custom-lunch');
+  if(customShiftEl && existingEntry?.shift) customShiftEl.value = existingEntry.shift;
+  if(customLunchEl) customLunchEl.value = existingEntry?.lunch || '';
 }
 
+function applyQuickCustom(){
+  if(!_quickTargetDs||!_quickStaff) return;
+  const shiftLabel = document.getElementById('quick-custom-shift')?.value || '9시조';
+  const customLunch = document.getElementById('quick-custom-lunch')?.value.trim() || '';
+  const info = SHIFT_TIMES[shiftLabel] || {start:'09:00', end:'18:00', lunch:'', type:'오전'};
+  // 점심시간: 직접 입력값 우선, 없으면 SHIFT_TIMES 기본값
+  const lunch = customLunch || info.lunch || '';
+  const ds = _quickTargetDs;
+  if(!_rosterData[ds]) _rosterData[ds]={entries:[],notice:''};
+  const entries = _rosterData[ds].entries;
+  const idx = entries.findIndex(e=>e.staff===_quickStaff);
+  const entry = {staff:_quickStaff, type:info.type, shift:shiftLabel, start:info.start, end:info.end, lunch, memo:''};
+  if(idx>=0) entries[idx]=entry;
+  else entries.push(entry);
+  rosterLocalSave();
+  renderRosterCalendar();
+  closeModal('modal-roster-quick');
+  toast(`✅ ${_quickStaff} · ${ds.slice(5)} · ${shiftLabel}${lunch?' 점심'+lunch:''}`);
+}
 function applyQuickShift(shiftLabel){
   if(!_quickTargetDs||!_quickStaff) return;
   const ds = _quickTargetDs;
