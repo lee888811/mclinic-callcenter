@@ -281,6 +281,27 @@ td:first-child{text-align:left;padding-left:13px}
 
     <span class="login-label">직원 선택</span>
     <div class="login-staff-grid" id="login-staff-grid"></div>
+    <div id="login-sync-wrap" style="display:none;margin-bottom:12px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">
+      <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:6px">⚙️ Firebase URL 입력 후 직원 목록을 불러오세요</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="login-firebase-url" placeholder="https://xxx-default-rtdb.firebaseio.com"
+          style="flex:1;padding:6px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace">
+        <button onclick="loginLoadFromFirebase()" style="padding:6px 12px;border:none;background:#2563eb;color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">불러오기</button>
+      </div>
+    </div>
+    <!-- Firebase URL 항상 표시 (접기 가능) -->
+    <div style="margin-bottom:10px;text-align:center">
+      <span onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display==='none'?'block':'none'"
+        style="font-size:11px;color:#94a3b8;cursor:pointer">⚙️ Firebase 연동 설정</span>
+    </div>
+    <div id="login-sync-inline" style="display:none;margin-bottom:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600">Firebase URL</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="login-firebase-url-inline" placeholder="https://xxx-default-rtdb.firebaseio.com"
+          style="flex:1;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;background:#fff">
+        <button onclick="loginLoadFromFirebaseInline()" style="padding:6px 12px;border:none;background:#2563eb;color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">연동</button>
+      </div>
+    </div>
 
     <div class="login-pw-wrap">
       <span class="login-label">비밀번호</span>
@@ -341,6 +362,8 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="closingrpt" onclick="go('closingrpt',this)"><span class="sico">📢</span>일일 보고</div>
     <div class="si" data-page="trend" onclick="go('trend',this)"><span class="sico">📈</span>월간 보고</div>
     <div class="si" data-page="procmatrix" onclick="go('procmatrix',this)"><span class="sico">📊</span>시술×지점 분석</div>
+    <div class="si" data-page="roster" onclick="go('roster',this)"><span class="sico">📅</span>직원 근태관리</div>
+    <div class="si" data-page="duty" onclick="go('duty',this)"><span class="sico">📋</span>분담업무</div>
     <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 인입</div>
     <div class="si" data-page="voc" onclick="go('voc',this)"><span class="sico">💬</span>VOC</div>
     <div class="si" data-page="retention" onclick="go('retention',this)"><span class="sico">🔁</span>신환 재방문율</div>
@@ -351,8 +374,6 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>지점근무현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
-    <div class="si" data-page="roster" onclick="go('roster',this)"><span class="sico">📅</span>직원 근태관리</div>
-    <div class="si" data-page="duty" onclick="go('duty',this)"><span class="sico">📋</span>분담업무</div>
     <div class="sdiv"></div>
     <div class="sg">관리</div>
     <div class="si" data-page="staff" onclick="go('staff',this)"><span class="sico">👤</span>직원근무현황</div>
@@ -2506,7 +2527,11 @@ try{
   if(v){
     const saved=JSON.parse(v);
     // 저장된 데이터가 있는 경우에만 덮어쓰기 (빈 배열 방지)
-    if(saved.staff&&saved.staff.length>0) S.staff=saved.staff;
+    if(saved.staff&&saved.staff.length>0){
+      // 활성 직원(비퇴직)이 최소 1명 있을 때만 덮어쓰기
+      const activeCount = saved.staff.filter(s=>!s.retired).length;
+      if(activeCount > 0) S.staff=saved.staff;
+    }
     if(saved.branches&&saved.branches.length>0) S.branches=saved.branches;
     if(saved.procedures&&saved.procedures.length>0) S.procedures=saved.procedures;
     if(saved.channels&&saved.channels.length>0) S.channels=saved.channels;
@@ -2663,7 +2688,17 @@ function renderLoginScreen(){
   if(!S.staff||!S.staff.length){
     document.getElementById('login-staff-grid').innerHTML=
       '<div style="grid-column:1/-1;text-align:center;padding:18px;font-size:13px;color:var(--text3)">⏳ 직원 정보 불러오는 중…</div>';
+    document.getElementById('login-sync-wrap').style.display='block';
+    // 저장된 Firebase URL 자동 입력
+    const savedUrl=localStorage.getItem('mclinic_sync_url')||'';
+    if(savedUrl) document.getElementById('login-firebase-url').value=savedUrl;
+    const il=document.getElementById('login-firebase-url-inline');
+    if(il&&savedUrl) il.value=savedUrl;
   } else {
+    document.getElementById('login-sync-wrap').style.display='none';
+    const savedUrl2=localStorage.getItem('mclinic_sync_url')||'';
+    const il2=document.getElementById('login-firebase-url-inline');
+    if(il2&&savedUrl2) il2.value=savedUrl2;
     document.getElementById('login-staff-grid').innerHTML = S.staff.filter(s=>!s.retired).map(s=>`
       <div class="login-staff-btn" id="lsb-${s.id}" onclick="selectLoginStaff('${s.id}')">
         <span class="lsb-name">${s.name}</span>
@@ -2676,6 +2711,43 @@ function renderLoginScreen(){
   document.getElementById('master-pw').value='';
 }
 
+function loginLoadFromFirebaseInline(){
+  const url=(document.getElementById('login-firebase-url-inline')?.value||'').trim();
+  if(!url){ toast('⚠️ Firebase URL을 입력하세요'); return; }
+  document.getElementById('login-firebase-url').value=url;
+  loginLoadFromFirebase();
+}
+function loginLoadFromFirebase(){
+  const url=(document.getElementById('login-firebase-url')?.value||'').trim();
+  if(!url){ toast('⚠️ Firebase URL을 입력하세요'); return; }
+  const base=url.replace(/\/+$/,'');
+  document.getElementById('login-staff-grid').innerHTML=
+    '<div style="grid-column:1/-1;text-align:center;padding:14px;font-size:13px;color:var(--text3)">⏳ 불러오는 중...</div>';
+  fetch(base+'/mclinic.json')
+    .then(r=>r.json())
+    .then(json=>{
+      if(!json||!json.staff?.length) throw new Error('no staff');
+      ['branches','staff','procedures','channels','roles'].forEach(k=>{
+        if(json[k]?.length) S[k]=json[k];
+      });
+      if(json.masterPw) S.masterPw=json.masterPw;
+      if(json.perfGoals) S.perfGoals=json.perfGoals;
+      if(json.notes) S.notes=json.notes;
+      if(json.faqs) S.faqs=json.faqs;
+      if(json.roiCosts) S.roiCosts=json.roiCosts;
+      if(json.roiLogs) S.roiLogs=json.roiLogs;
+      // Firebase URL 저장
+      _syncUrl=base;
+      localStorage.setItem('mclinic_sync_url', base);
+      try{ localStorage.setItem('mclinic_v2',JSON.stringify(S)); }catch(e){}
+      renderLoginScreen();
+      toast('✅ 직원 목록 불러옴');
+    })
+    .catch(()=>{
+      document.getElementById('login-staff-grid').innerHTML=
+        '<div style="grid-column:1/-1;text-align:center;padding:14px;font-size:12px;color:#ef4444">⚠️ 불러오기 실패 — URL을 확인하세요</div>';
+    });
+}
 let _loginSelectedSid = null;
 function selectLoginStaff(sid){
   _loginSelectedSid = sid;
@@ -11508,7 +11580,12 @@ function renderDutyEditForm(){
   el.innerHTML=_dutyData.sections.map((sec,si)=>{
     const clr=SECTION_COLORS[si%SECTION_COLORS.length];
     return `<div style="background:${clr.bg};border:1.5px solid ${clr.border};border-radius:10px;padding:12px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:800;color:${clr.title};margin-bottom:8px">${escHtml(sec.title)}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input id="duty-edit-title-${si}" value="${escHtml(sec.title||'')}" placeholder="섹션 제목 (예: ■ 분담1)"
+          style="flex:1;padding:5px 10px;border-radius:6px;border:2px solid ${clr.border};font-size:13px;font-weight:800;color:${clr.title};background:#fff">
+        <button onclick="dutyDeleteSection(${si})" title="섹션 삭제"
+          style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🗑 섹션 삭제</button>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <input id="duty-edit-staff-${si}" value="${escHtml(sec.staff||'')}" placeholder="담당자" style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:12px;min-width:80px">
         <input id="duty-edit-staffnote-${si}" value="${escHtml(sec.staffNote||'')}" placeholder="메모" style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:12px;min-width:80px">
@@ -11522,7 +11599,23 @@ function renderDutyEditForm(){
       </div>
       <button onclick="dutyAddItem(${si})" style="margin-top:4px;border:none;background:rgba(37,99,235,.1);color:#2563eb;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">＋ 항목 추가</button>
     </div>`;
-  }).join('');
+  }).join('')
+  + `<button onclick="dutyAddSection()" style="width:100%;padding:10px;border:2px dashed var(--border2);border-radius:10px;background:var(--s2);color:var(--text3);font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">＋ 섹션 추가</button>`;
+}
+function dutyAddSection(){
+  if(!_dutyData) return;
+  _dutyData.sections.push({
+    id:'duty_'+Date.now(), title:'■ 새 분담', staff:'', staffNote:'', backup:'', items:['']
+  });
+  renderDutyEditForm();
+}
+function dutyDeleteSection(si){
+  if(!_dutyData) return;
+  if(_dutyData.sections.length<=1){ toast('⚠️ 최소 1개 섹션이 필요합니다'); return; }
+  showConfirmToast(`"${_dutyData.sections[si].title}" 섹션을 삭제할까요?`, ()=>{
+    _dutyData.sections.splice(si,1);
+    renderDutyEditForm();
+  }, '삭제', '#ef4444');
 }
 function dutyAddItem(si){
   if(!_dutyData) return;
@@ -11535,8 +11628,10 @@ function dutyDeleteItem(si,ii){
   renderDutyEditForm();
 }
 function saveDutyEdit(){
-  if(!_dutyData) return;
+  if(!_dutyData) loadDutyData();
+  if(!_dutyData){ toast('⚠️ 데이터를 불러올 수 없습니다'); return; }
   _dutyData.sections.forEach((sec,si)=>{
+    const t=document.getElementById(`duty-edit-title-${si}`); if(t) sec.title=t.value;
     const s=document.getElementById(`duty-edit-staff-${si}`); if(s) sec.staff=s.value;
     const b=document.getElementById(`duty-edit-backup-${si}`); if(b) sec.backup=b.value;
     const n=document.getElementById(`duty-edit-staffnote-${si}`); if(n) sec.staffNote=n.value;
@@ -11550,7 +11645,8 @@ function saveDutyEdit(){
   });
   dutyLocalSave();
   closeModal('modal-duty-edit');
-  renderDutyPage();
+  // 화면 갱신 (약간의 딜레이로 모달 닫힘 후 렌더)
+  setTimeout(()=>{ renderDutyPage(); }, 50);
   toast('✅ 분담업무 저장됨');
 }
 
