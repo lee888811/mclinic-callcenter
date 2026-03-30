@@ -4551,6 +4551,16 @@ function confirmCall(){
     if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
     return;
   }
+  // VOC 섹션이 열려있고 내용 입력했는데 타입 미선택 시 차단
+  const vocSec=document.getElementById('voc-section');
+  if(vocSec && vocSec.style.display!=='none'){
+    const vocContent=document.getElementById('cf-voc-content')?.value.trim()||'';
+    if(vocContent && !_vocType){
+      toast('⚠️ VOC 유형을 선택해주세요 (긍정 VOC / 컴플레인)');
+      document.getElementById('voc-type-pos')?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+  }
   // 아웃콜 필수 항목 검증
   if(_callType==='out'){
     const ptname=document.getElementById('out-ptname')?.value.trim()||'';
