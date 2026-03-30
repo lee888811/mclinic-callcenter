@@ -11955,6 +11955,29 @@ function switchRosterTab(tab){
   });
   if(tab==='leave') renderLeaveCards();
 }
+function getKoreanHolidays(yr){
+  // 고정 공휴일 (MM-DD)
+  const fixed=[
+    '01-01', // 신정
+    '03-01', // 삼일절
+    '05-05', // 어린이날
+    '06-06', // 현충일
+    '08-15', // 광복절
+    '10-03', // 개천절
+    '10-09', // 한글날
+    '12-25', // 크리스마스
+  ];
+  const set=new Set(fixed.map(d=>`${yr}-${d}`));
+  // 음력 기반 공휴일 (연도별 양력 날짜 하드코딩 - 2024~2027)
+  const lunar={
+    2024:['02-09','02-10','02-12','04-10','05-06','09-16','09-17','09-18'],
+    2025:['01-28','01-29','01-30','05-05','05-06','10-05','10-06','10-07','10-08'],
+    2026:['02-16','02-17','02-18','02-19','05-25','09-24','09-25','09-28'],
+    2027:['02-06','02-08','02-09','05-05','09-14','09-15','09-16'],
+  };
+  (lunar[yr]||[]).forEach(d=>set.add(`${yr}-${d}`));
+  return set;
+}
 function renderRosterCalendar(){
   loadRosterSettings();
   const yr=_rosterYear, mo=_rosterMonth;
@@ -11990,7 +12013,9 @@ function renderRosterCalendar(){
       const isToday=ds===today;
       // 월요일 시작: col 5=토, col 6=일
       const isSat=col===5, isSun=col===6;
-      const numClr=isSun?'#ef4444':isSat?'#3b82f6':'#374151';
+      const holidays=getKoreanHolidays(yr);
+      const isHoliday=holidays.has(ds);
+      const numClr=(isSun||isHoliday)?'#ef4444':isSat?'#3b82f6':'#374151';
       const tags=entries.map((e,i)=>{
         const st=ROSTER_TYPE_STYLE[e.type]||ROSTER_TYPE_STYLE['오전'];
         const timeStr=e.start&&e.end?`${e.start.slice(0,5)}~${e.end.slice(0,5)}`:'';
@@ -12001,7 +12026,7 @@ function renderRosterCalendar(){
         return `<div onclick="_quickStaff='${safeStaff}';renderRosterQuickStaffPills();openRosterQuickInput('${ds}')" style="margin-bottom:2px;padding:2px 5px;border-radius:4px;background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:11px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.staff} ${e.shift||e.type} ${timeStr}${lunchStr}">${e.staff} <span style="font-weight:400;opacity:.9">${dispLabel}</span></div>`;
       }).join('');
       const noticeHtml=notice?`<div style="margin-top:2px;padding:2px 5px;border-radius:4px;background:#fef08a;color:#713f12;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📌 ${notice}</div>`:'';
-      html+=`<td style="border:1px solid #e2e8f0;background:${isToday?'#eff6ff':'#fff'};vertical-align:top;padding:4px;min-height:80px">
+      html+=`<td style="border:1px solid #e2e8f0;background:${isToday?'#eff6ff':isHoliday?'#fff5f5':'#fff'};vertical-align:top;padding:4px;min-height:80px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
           <span style="font-size:12px;font-weight:800;color:${numClr}${isToday?';background:#2563eb;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px':''}">${day}</span>
           <div style="display:flex;gap:2px">
