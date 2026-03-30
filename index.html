@@ -1729,8 +1729,8 @@ td:first-child{text-align:left;padding-left:13px}
 </div>
 
 <!-- Modal: 빠른 근무 입력 -->
-<div class="modal" id="modal-roster-quick" style="z-index:800">
-  <div class="mbox" style="width:340px">
+<div class="modal" id="modal-roster-quick" style="z-index:1200">
+  <div class="mbox" style="width:340px;max-height:90vh;overflow-y:auto;pointer-events:auto">
     <div class="mt" id="roster-quick-title">근무 입력</div>
     <div id="roster-quick-shift-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
     <!-- 직접 입력 섹션 -->
@@ -11992,6 +11992,7 @@ function renderRosterCalendar(){
   const lastDate=new Date(yr,mo+1,0).getDate();
   const DOW=['월','화','수','목','금','토','일'];
   const today=todayStr();
+  const holidays=getKoreanHolidays(yr);
   let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>`;
   DOW.forEach((d,i)=>{
     const c=i===5?'#3b82f6':i===6?'#ef4444':'#374151';
@@ -12013,7 +12014,6 @@ function renderRosterCalendar(){
       const isToday=ds===today;
       // 월요일 시작: col 5=토, col 6=일
       const isSat=col===5, isSun=col===6;
-      const holidays=getKoreanHolidays(yr);
       const isHoliday=holidays.has(ds);
       const numClr=(isSun||isHoliday)?'#ef4444':isSat?'#3b82f6':'#374151';
       const tags=entries.map((e,i)=>{
