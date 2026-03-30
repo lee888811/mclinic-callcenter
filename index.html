@@ -2009,12 +2009,12 @@ td:first-child{text-align:left;padding-left:13px}
         <div class="ml">📋 고객 정보</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;margin-bottom:10px">
           <div>
-            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">고객명</label>
-            <input type="text" id="out-ptname" placeholder="이름 입력" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">고객명 <span style="color:#ef4444">*</span></label>
+            <input type="text" id="out-ptname" placeholder="이름 입력 (필수)" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">연락처</label>
-            <input type="tel" id="out-ptphone" placeholder="010-0000-0000" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box;font-family:'DM Mono',monospace">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px">연락처 <span style="color:#ef4444">*</span></label>
+            <input type="tel" id="out-ptphone" placeholder="010-0000-0000 (필수)" style="width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;box-sizing:border-box;font-family:'DM Mono',monospace">
           </div>
         </div>
 
@@ -2185,7 +2185,11 @@ td:first-child{text-align:left;padding-left:13px}
         <!-- 관련 시술 -->
         <div style="margin-bottom:8px">
           <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">관련 시술 (선택)</div>
-          <div id="voc-proc-pills" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          <input type="text" id="voc-proc-search" placeholder="🔍 시술명 검색..." autocomplete="off"
+            oninput="renderVocProcPills()"
+            onkeydown="if(event.key==='Enter')event.preventDefault()"
+            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--s2);color:var(--text);margin-bottom:6px;box-sizing:border-box">
+          <div id="voc-proc-pills" style="display:flex;flex-wrap:wrap;gap:4px;max-height:120px;overflow-y:auto"></div>
         </div>
         <!-- 내용 -->
         <div style="margin-bottom:8px">
@@ -4473,6 +4477,21 @@ function confirmCall(){
     const hint=document.getElementById('branch-required-hint');
     if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
     return;
+  }
+  // 아웃콜 필수 항목 검증
+  if(_callType==='out'){
+    const ptname=document.getElementById('out-ptname')?.value.trim()||'';
+    const ptphone=document.getElementById('out-ptphone')?.value.trim()||'';
+    if(!ptname){
+      toast('⚠️ 고객명을 입력해주세요');
+      document.getElementById('out-ptname')?.focus();
+      return;
+    }
+    if(!ptphone){
+      toast('⚠️ 연락처를 입력해주세요');
+      document.getElementById('out-ptphone')?.focus();
+      return;
+    }
   }
   // 다중 지점이면 대표 지점(첫번째)을 bid로, 전체는 bids 배열로 저장
   const bidsArr=[..._callBids];
@@ -12583,6 +12602,7 @@ function resetVocFields(){
   if(icon) icon.textContent='▾';
   const typeEl=document.getElementById('cf-voc-type'); if(typeEl) typeEl.value='';
   const contentEl=document.getElementById('cf-voc-content'); if(contentEl) contentEl.value='';
+  const vocSearch=document.getElementById('voc-proc-search'); if(vocSearch) vocSearch.value='';
   // VOC 타입 버튼 초기화
   setVocType('');
   const radio=document.querySelector('input[name="voc-status"][value="접수"]');
@@ -13153,9 +13173,18 @@ let _vocProcSel=new Set();
 
 function renderVocProcPills(){
   const el=document.getElementById('voc-proc-pills'); if(!el) return;
-  el.innerHTML=(S.procedures||[]).map(p=>{
+  const q=(document.getElementById('voc-proc-search')?.value||'').trim().toLowerCase();
+  const procs=q
+    ? (S.procedures||[]).filter(p=>
+        p.name?.toLowerCase().includes(q)||
+        (p.subs||[]).some(s=>s.name?.toLowerCase().includes(q)))
+    : (S.procedures||[]);
+  if(!procs.length){
+    el.innerHTML=`<div style="font-size:11px;color:var(--text3);padding:4px">검색 결과 없음</div>`;
+    return;
+  }
+  el.innerHTML=procs.map(p=>{
     const sel=_vocProcSel.has(p.id);
-    const clr=bclr(S.branches[0]?.id||'');
     return `<div onclick="toggleVocProc('${p.id}')" style="padding:3px 10px;border-radius:12px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s2)'};color:${sel?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${p.icon||''} ${p.name}</div>`;
   }).join('');
 }
