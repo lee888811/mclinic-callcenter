@@ -1694,6 +1694,41 @@ td:first-child{text-align:left;padding-left:13px}
   </div>
 </div>
 
+<!-- Modal: 직원 권한 설정 -->
+<div class="modal" id="modal-staff-perm" style="z-index:700">
+  <div class="mbox" style="width:460px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span class="mt" id="perm-modal-title" style="margin:0">🔑 권한 설정</span>
+      <button onclick="closeModal('modal-staff-perm')" style="border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">
+      체크한 페이지만 이 직원이 로그인 후 접근할 수 있어요. 체크 없으면 본인 콜 입력만 가능해요.
+    </div>
+    <input type="hidden" id="perm-sid">
+    <!-- 탭 헤더 -->
+    <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid var(--border);padding-bottom:0">
+      <button id="perm-tab-btn-analysis" onclick="switchPermTab('analysis')"
+        style="padding:7px 14px;border:none;border-bottom:2px solid #2563eb;background:none;color:#2563eb;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:-2px">📊 분석</button>
+      <button id="perm-tab-btn-info" onclick="switchPermTab('info')"
+        style="padding:7px 14px;border:none;border-bottom:2px solid transparent;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:-2px">📒 정보</button>
+      <button id="perm-tab-btn-mgmt" onclick="switchPermTab('mgmt')"
+        style="padding:7px 14px;border:none;border-bottom:2px solid transparent;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:-2px">⚙️ 관리</button>
+    </div>
+    <!-- 탭 컨텐츠 -->
+    <div id="perm-tab-analysis" style="display:flex;flex-direction:column;gap:7px"></div>
+    <div id="perm-tab-info" style="display:none;flex-direction:column;gap:7px"></div>
+    <div id="perm-tab-mgmt" style="display:none;flex-direction:column;gap:7px"></div>
+    <div id="perm-checkboxes" style="display:none"></div>
+    <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px">
+      <button onclick="permSelectAll(true)" style="border:none;background:none;color:#2563eb;font-size:12px;cursor:pointer">전체 선택</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-g" onclick="closeModal('modal-staff-perm')">취소</button>
+        <button class="btn btn-p" onclick="savePermissions()">💾 저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: 직원 패턴 설정 -->
 <div class="modal" id="modal-roster-patterns" style="z-index:700;align-items:flex-start;padding-top:30px">
   <div class="mbox" style="width:680px;max-height:88vh;overflow-y:auto">
@@ -2112,6 +2147,17 @@ td:first-child{text-align:left;padding-left:13px}
       <span style="font-size:11px;color:#f59e0b;margin-left:6px">※ 2개 지점 예약 시 콜 기록을 따로 작성해주세요</span>
     </div>
     <div class="branch-pills" id="modal-branch-pills"></div>
+    <!-- 잔여시술 특수 버튼 -->
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <button onclick="selectResidualBranch('bp')" id="residual-btn-bp"
+        style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #0891b2;background:var(--s2);color:#0891b2;transition:all .15s">
+        💊 부평/구월잔여시술
+      </button>
+      <button onclick="selectResidualBranch('gn')" id="residual-btn-gn"
+        style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #7c3aed;background:var(--s2);color:#7c3aed;transition:all .15s">
+        💊 강남/구월잔여시술
+      </button>
+    </div>
 
     <div id="below-branch-wrap">
     <div class="ml">환자 구분</div>
@@ -2852,6 +2898,96 @@ function logout(){
 
 // ── 권한 체크 ──
 // admin > manager > staff
+// ════════════════════════════════════
+// 직원 페이지 권한 관리
+// ════════════════════════════════════
+const PERM_PAGES = [
+  // 분석 탭
+  {key:'ceo',       label:'대표 보고',        tab:'analysis'},
+  {key:'brsum',     label:'지점별 현황',       tab:'analysis'},
+  {key:'closingrpt',label:'일일 보고',         tab:'analysis'},
+  {key:'trend',     label:'월간 보고',         tab:'analysis'},
+  {key:'procmatrix',label:'시술×지점 분석',    tab:'analysis'},
+  {key:'channel',   label:'채널 인입',         tab:'analysis'},
+  {key:'voc',       label:'VOC',              tab:'analysis'},
+  {key:'retention', label:'신환 재방문율',     tab:'analysis'},
+  {key:'funnel',    label:'예약 전환율',       tab:'analysis'},
+  {key:'roi',       label:'채널별 광고 ROI',   tab:'analysis'},
+  // 정보 탭
+  {key:'notes',     label:'수가표·병원정보',   tab:'info'},
+  {key:'marketing', label:'마케팅',            tab:'info'},
+  {key:'roster',    label:'직원 근태관리',     tab:'info'},
+  {key:'duty',      label:'분담업무',          tab:'info'},
+  // 관리 탭
+  {key:'staff',     label:'직원근무현황',      tab:'mgmt'},
+  {key:'viewOthers',label:'다른 직원 콜 조회', tab:'mgmt'},
+  {key:'incentive', label:'아웃콜 현황',       tab:'mgmt'},
+  {key:'perf',      label:'성과 관리',         tab:'mgmt'},
+];
+
+function switchPermTab(tab){
+  ['analysis','info','mgmt'].forEach(t=>{
+    const content=document.getElementById('perm-tab-'+t);
+    const btn=document.getElementById('perm-tab-btn-'+t);
+    if(content) content.style.display=(t===tab)?'flex':'none';
+    if(btn){
+      btn.style.color=(t===tab)?'#2563eb':'var(--text3)';
+      btn.style.borderBottomColor=(t===tab)?'#2563eb':'transparent';
+      btn.style.fontWeight=(t===tab)?'700':'600';
+    }
+  });
+}
+
+function permSelectAll(val){
+  PERM_PAGES.forEach(p=>{
+    const el=document.getElementById('perm-'+p.key);
+    if(el) el.checked=val;
+  });
+}
+
+function openPermModal(sid){
+  const s = S.staff.find(x=>x.id===sid);
+  if(!s) return;
+  document.getElementById('perm-sid').value = sid;
+  document.getElementById('perm-modal-title').textContent = `🔑 ${s.name} 권한 설정`;
+  const perms = s.perms || {};
+
+  // 탭별로 체크박스 렌더
+  ['analysis','info','mgmt'].forEach(tab=>{
+    const pages = PERM_PAGES.filter(p=>p.tab===tab);
+    document.getElementById('perm-tab-'+tab).innerHTML = pages.map(p=>`
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);cursor:pointer;user-select:none">
+        <input type="checkbox" id="perm-${p.key}" ${perms[p.key]?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${p.label}</span>
+      </label>`).join('');
+  });
+
+  // 기본 탭 활성화
+  switchPermTab('analysis');
+  document.getElementById('modal-staff-perm').classList.add('open');
+}
+
+function savePermissions(){
+  const sid = document.getElementById('perm-sid').value;
+  const s = S.staff.find(x=>x.id===sid);
+  if(!s) return;
+  const perms = {};
+  PERM_PAGES.forEach(p=>{
+    if(document.getElementById('perm-'+p.key)?.checked) perms[p.key]=true;
+  });
+  s.perms = perms;
+  markConfigDirty();
+  autoSave();
+  syncPush(true);
+  closeModal('modal-staff-perm');
+  toast(`✅ ${s.name} 권한 저장됨`);
+}
+
+function hasPagePerm(page){
+  if(hasPermission('admin')) return true;
+  const s = S.staff.find(x=>x.id===_currentUser?.sid);
+  return !!(s?.perms?.[page]);
+}
 function hasPermission(required){
   if(!_currentUser) return false;
   const levels = {admin:3, manager:2, staff:1};
@@ -2865,23 +3001,59 @@ function applyPermissions(){
   // 사이드바 직원 목록 먼저 렌더 (로그인 후 처음 실행)
   renderSidebar();
 
-  // 관리 메뉴 전체를 관리자만 표시
-  ['staff','procs','channels-mgmt','incentive','perf','retention','funnel','roi','branches'].forEach(page=>{
-    const el=document.querySelector(`.si[data-page="${page}"]`);
-    if(el) el.style.display=isAdmin?'':'none';
-  });
-  // 관리 섹션 헤더(sg)도 관리자만 표시
-  document.querySelectorAll('.sg').forEach(el=>{
-    if(el.textContent.trim()==='관리') el.style.display=isAdmin?'':'none';
-  });
+  if(isAdmin){
+    // 관리자: 모든 메뉴 표시
+    document.querySelectorAll('.si[data-page]').forEach(el=>el.style.display='');
+    document.querySelectorAll('.sg').forEach(el=>el.style.display='');
+  } else {
+    // 일반/팀장: 권한에 따라 메뉴 표시/숨김
+    const s = S.staff.find(x=>x.id===_currentUser?.sid);
+    const perms = s?.perms || {};
 
-  // 첫 진입 페이지: 관리자는 대표 보고, 일반 직원은 본인 입력 페이지
-  if(hasPermission('admin')){
+    // 모든 분석/관리 메뉴 기본 숨김
+    ['ceo','brsum','closingrpt','trend','procmatrix','channel','voc','retention','funnel','roi',
+     'notes','marketing','roster','duty','staff','procs','channels-mgmt','incentive','perf','branches'].forEach(page=>{
+      const el=document.querySelector(`.si[data-page="${page}"]`);
+      if(el) el.style.display='none';
+    });
+    // 관리 전용 (항상 숨김 - 관리자만)
+    ['procs','channels-mgmt','branches'].forEach(page=>{
+      const el=document.querySelector(`.si[data-page="${page}"]`);
+      if(el) el.style.display='none';
+    });
+    // 권한 있는 페이지만 표시
+    PERM_PAGES.forEach(p=>{
+      if(perms[p.key]){
+        const el=document.querySelector(`.si[data-page="${p.key}"]`);
+        if(el) el.style.display='';
+      }
+    });
+    // 섹션 헤더(sg) — 해당 섹션에 보이는 항목 있을 때만 표시
+    document.querySelectorAll('.sg').forEach(sg=>{
+      let next = sg.nextElementSibling;
+      let hasVisible = false;
+      while(next && !next.classList.contains('sg') && !next.classList.contains('sdiv')){
+        if(next.classList.contains('si') && next.style.display!=='none') hasVisible=true;
+        next=next.nextElementSibling;
+      }
+      sg.style.display = hasVisible?'':'none';
+    });
+  }
+
+  // 첫 진입 페이지
+  if(isAdmin){
     go('ceo', document.querySelector('.si[data-page="ceo"]'));
   } else {
+    const s = S.staff.find(x=>x.id===_currentUser?.sid);
+    const perms = s?.perms || {};
+    const firstPerm = PERM_PAGES.find(p=>perms[p.key]);
     setTimeout(()=>{
-      const navEl = document.getElementById('snav-'+_currentUser.sid);
-      goSI(_currentUser.sid, navEl);
+      if(firstPerm){
+        go(firstPerm.key, document.querySelector(`.si[data-page="${firstPerm.key}"]`));
+      } else {
+        const navEl = document.getElementById('snav-'+_currentUser.sid);
+        goSI(_currentUser.sid, navEl);
+      }
     }, 100);
   }
 }
@@ -3540,8 +3712,9 @@ function go(pid,el){
   }
 }
 function goSI(sid,el){
-  // 본인 또는 관리자만 접근 가능
-  if(!hasPermission('admin') && _currentUser && _currentUser.sid !== sid){
+  // 본인 or 관리자 or viewOthers 권한 있으면 접근 가능
+  const canView = hasPermission('admin') || (_currentUser && _currentUser.sid===sid) || hasPagePerm('viewOthers');
+  if(!canView){
     toast('⛔ 본인 입력 페이지만 접근할 수 있습니다');return;
   }
   const pid='si-'+sid;
@@ -3563,9 +3736,10 @@ function goSI(sid,el){
 // ═══════════════════════════════════
 function renderSidebar(){
   const ds=todayStr();
-  // 관리자는 전체 직원 목록, 일반 직원은 본인만 표시
-  const visibleStaff = hasPermission('admin')
-    ? S.staff
+  // 관리자 또는 viewOthers 권한 있으면 전체 직원 목록 표시
+  const canViewOthers = hasPermission('admin') || hasPagePerm('viewOthers');
+  const visibleStaff = canViewOthers
+    ? S.staff.filter(s=>!s.retired)
     : S.staff.filter(s=>_currentUser && s.id===_currentUser.sid);
   document.getElementById('staffNavList').innerHTML=visibleStaff.map(s=>{
     const cnt=getDayCalls(ds).filter(c=>c.sid===s.id).length;
@@ -3695,7 +3869,7 @@ function renderStaffInputPage(sid){
         <div class="ps">${s.role} · 개인 콜 입력</div>
       </div>
       <div class="pbtns">
-        <button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')" style="font-size:18px;padding:12px 28px;font-weight:800;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,.3)">＋ 콜 기록</button>
+        ${(_currentUser?.sid===sid || hasPermission('admin')) ? `<button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')" style="font-size:18px;padding:12px 28px;font-weight:800;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,.3)">＋ 콜 기록</button>` : `<div style="font-size:12px;color:var(--text3);padding:8px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">👁 열람 전용 — 콜 입력 불가</div>`}
       </div>
     </div>
 
@@ -3884,7 +4058,7 @@ function renderStaffInputPage(sid){
                 ${memo?`<div style="font-size:12px;color:#b45309;margin-top:2px">📝 ${escHtml(memo)}</div>`:''}
                 ${c.memo?`<div style="font-size:12px;color:var(--text3);margin-top:2px">💬 ${escHtml(c.memo)}</div>`:''}
               </div>
-              <button onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;flex-shrink:0">✏️</button>
+              <button onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="border:none;background:rgba(37,99,235,.08);color:#2563eb;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;flex-shrink:0;display:${(_currentUser?.sid===sid||hasPermission('admin'))?'':'none'}">✏️</button>
             </div>`;
           }).join('')}
       </div>
@@ -3985,7 +4159,7 @@ function renderCallEntry(c){
       ${stats.length?`<div class="ce-stats">${stats.map(s=>`<span class="ce-stat">${s}</span>`).join('')}</div>`:''}
       ${c.memo?`<div style="font-size:22px;color:var(--text2);margin-top:3px">📝 ${c.memo}</div>`:''}
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-self:flex-start">
+    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-self:flex-start;display:${(_currentUser?.sid===c.sid||hasPermission('admin'))?'flex':'none'}">
       <button class="ce-del" title="수정" onclick="openEditModal('${c.id}','${c.sid||''}','${c.date}')" style="color:var(--accent);font-size:24px;padding:3px 7px">✏️</button>
       <button class="ce-del" title="삭제" onclick="deleteCall('${c.id}','${c.sid||''}','${c.date||todayStr()}')" style="font-size:24px;padding:3px 7px">🗑</button>
     </div>
@@ -4214,6 +4388,11 @@ function openCallModal(sid){
   const noapptMemo=document.getElementById('cf-noappt-reason-memo'); if(noapptMemo) noapptMemo.value='';
   const noapptHidden=document.getElementById('cf-noappt-reason'); if(noapptHidden) noapptHidden.value='';
   resetVocFields();
+  // 잔여시술 특수 버튼 초기화
+  ['residual-btn-bp','residual-btn-gn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.dataset.active='0'; el.style.background='var(--s2)'; el.style.color=id.includes('bp')?'#0891b2':'#7c3aed'; el.style.borderColor=id.includes('bp')?'#0891b2':'#7c3aed'; }
+  });
   document.getElementById('modal-branch-pills').innerHTML=activeBranches().map(b=>{
     return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
   }).join('');
@@ -4370,6 +4549,54 @@ function setOutResult(v, el){
   // 부재중이면 재콜 예정일 표시
   const recallWrap=document.getElementById('out-recall-wrap');
   if(recallWrap) recallWrap.style.display=(v==='부재중')?'block':'none';
+}
+function selectResidualBranch(type){
+  // type: 'bp'=부평/구월잔여시술, 'gn'=강남/구월잔여시술
+  const label = type==='bp' ? '부평/구월잔여시술' : '강남/구월잔여시술';
+  // 집계 지점 찾기
+  const targetName = type==='bp' ? '부평' : '강남';
+  const targetBranch = S.branches.find(b=>b.name.includes(targetName)&&!b.inactive);
+
+  // 잔여시술 버튼 활성화 토글
+  const btnBp=document.getElementById('residual-btn-bp');
+  const btnGn=document.getElementById('residual-btn-gn');
+  const isAlreadyActive = (type==='bp' && btnBp?.dataset.active==='1') || (type==='gn' && btnGn?.dataset.active==='1');
+
+  // 활성화 해제 시
+  if(isAlreadyActive){
+    if(btnBp){ btnBp.dataset.active='0'; btnBp.style.background='var(--s2)'; btnBp.style.color='#0891b2'; }
+    if(btnGn){ btnGn.dataset.active='0'; btnGn.style.background='var(--s2)'; btnGn.style.color='#7c3aed'; }
+    // 메모에서 잔여시술 태그 제거
+    const memo=document.getElementById('cf-memo');
+    if(memo) memo.value=memo.value.replace(/\[.*잔여시술\]\s*/g,'').trim();
+    _callBid=null; _callBids=new Set();
+    document.querySelectorAll('.br-pill').forEach(p=>{p.className='br-pill';p.style.cssText='';});
+    return;
+  }
+
+  // 기존 잔여시술 버튼 해제
+  if(btnBp){ btnBp.dataset.active='0'; btnBp.style.background='var(--s2)'; btnBp.style.color='#0891b2'; }
+  if(btnGn){ btnGn.dataset.active='0'; btnGn.style.background='var(--s2)'; btnGn.style.color='#7c3aed'; }
+
+  // 선택한 버튼 활성화
+  const activeBtn = type==='bp' ? btnBp : btnGn;
+  const activeColor = type==='bp' ? '#0891b2' : '#7c3aed';
+  if(activeBtn){ activeBtn.dataset.active='1'; activeBtn.style.background=activeColor+'22'; activeBtn.style.color=activeColor; activeBtn.style.borderColor=activeColor; }
+
+  // 지점 선택 (집계용)
+  if(targetBranch){
+    selectBranch(targetBranch.id);
+  }
+
+  // 메모에 잔여시술 태그 자동 기입
+  const memo=document.getElementById('cf-memo');
+  if(memo){
+    const base=memo.value.replace(/\[.*잔여시술\]\s*/g,'').trim();
+    memo.value = base ? `[${label}] ${base}` : `[${label}]`;
+  }
+
+  const hint=document.getElementById('branch-required-hint');
+  if(hint) hint.style.display='none';
 }
 function selectBranch(bid){
   // 단일 선택
@@ -5076,6 +5303,7 @@ function renderStaffMgmt(){
       <td style="padding:10px 14px;text-align:center">
         <button id="ssave-${s.id}" onclick="saveStaffRow('${s.id}')"
           style="display:none;background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px">💾 저장</button>
+        <button onclick="openPermModal('${s.id}')" style="background:none;border:1px solid #c4b5fd;color:#7c3aed;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;margin-right:4px" title="페이지 접근 권한 설정">🔑 권한</button>
         <button onclick="retireST('${s.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer" title="퇴직 처리 (데이터 보존)">퇴직</button>
       </td>
     </tr>`).join('');
@@ -5088,7 +5316,7 @@ function renderStaffMgmt(){
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">이름</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">입사일</th>
             <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2)">비밀번호</th>
-            <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">저장/삭제</th>
+            <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">저장/권한/퇴직</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -8223,6 +8451,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   if(topProcs.length){
     txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 TOP\n';
     topProcs.forEach((p,i)=>{ txt+=`${i+1}. ${p.name} ${p.n}건 (신환 ${p.shin}·구환 ${p.gu}·잔여 ${p.rem||0})\n`; });
+    txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
   }
   txt+='\n'+'─'.repeat(28)+'\n이상 보고드립니다. 🙏';
 
@@ -8436,6 +8665,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     if(p.shin||p.gu||p.rem) line+=`  (신환 ${p.shin} · 구환 ${p.gu} · 잔여 ${p.rem||0})`;
     return line;
   }).join('\n');
+  // 한 줄 시술 요약: "보톡스1 인모드2 실리프팅3"
+  const procSummaryLine=topProcs.map(p=>`${p.name}${p.n}`).join('  ');
 
   // VOC 수집 (해당 지점, 해당 날짜 범위)
   const allDates = allCallsOverride
@@ -8471,7 +8702,8 @@ ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.
   미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}
 ${topProcs.length?`
 💉 예약 시술 TOP ${topProcs.length}
-${procLines}`:''}${vocSection}
+${procLines}
+└ ${procSummaryLine}`:''}${vocSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 이상 보고드립니다. 🙏`;
 
