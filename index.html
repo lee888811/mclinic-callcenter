@@ -1739,26 +1739,20 @@ td:first-child{text-align:left;padding-left:13px}
       <span class="mt" style="margin:0">⭐ 즐겨찾기 저장</span>
       <button onclick="closeModal('modal-preset-alias')" style="border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">여러 시술을 하나의 이름으로 묶어서 보고할 수 있어요. 예) 써마지·첫)써마지·아이써마지 → <strong>써마지</strong></div>
-
-    <!-- 즐겨찾기 이름 -->
-    <div style="margin-bottom:16px">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">
+      같은 <strong>보고 이름</strong>을 입력한 시술들은 합산돼요.<br>
+      예) 써마지·첫)써마지·아이써마지 → 보고 이름 <strong>써마지</strong> 입력 → 보고에서 "써마지 N건"으로 표시
+    </div>
+    <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">즐겨찾기 이름</div>
-      <input type="text" id="preset-alias-label" placeholder="예: 고정 보고, 김형석 고정 등"
+      <input type="text" id="preset-alias-label" placeholder="예: 고정 보고, 김형석 고정"
         style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
     </div>
-
-    <!-- 그룹 설정 영역 -->
-    <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:8px">
-      🗂 그룹 설정
-      <span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:6px">시술을 선택해서 그룹명을 지정하세요</span>
+    <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">
+      시술별 보고 이름 설정
+      <span style="font-weight:400;color:var(--text3);margin-left:4px">— 비워두면 원래 이름, 같은 이름 입력 시 자동 합산</span>
     </div>
-    <div id="preset-group-builder" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
-    <button onclick="addPresetGroup()"
-      style="width:100%;padding:8px;border:1.5px dashed var(--border2);border-radius:8px;background:var(--s2);color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:16px">
-      + 그룹 추가
-    </button>
-
+    <div id="preset-group-builder" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:12px">
       <button class="btn btn-g" onclick="closeModal('modal-preset-alias')">취소</button>
       <button class="btn btn-p" onclick="confirmSaveDpProcPreset()">⭐ 저장</button>
@@ -8690,18 +8684,31 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     const bBook=bc.reduce((a,c)=>a+(+c.today||0),0);
     return {name:b.name,total:bc.length,shin:bShin,gu:bGu,rem:bRem,absence:bAbsence,cancel:bCancel,booked:bBook,color:bclr(b.id)};
   }).filter(Boolean);
+  // 시술별 집계 (하위 카테고리 포함)
   const pCntAll={},pCntShin={},pCntGu={};
+  const pNameMapAll={};
   allCalls.forEach(c=>{
     if(!c.procs) return;
-    Object.entries(c.procs).forEach(([pid,n])=>{
-      pCntAll[pid]=(pCntAll[pid]||0)+n;
-      if(c.pttype==='신환') pCntShin[pid]=(pCntShin[pid]||0)+n;
-      else pCntGu[pid]=(pCntGu[pid]||0)+n;
+    Object.entries(c.procs).forEach(([key,n])=>{
+      if(!n) return;
+      if(!pNameMapAll[key]){
+        if(key.includes(':')){
+          const [pid,idxStr]=key.split(':');
+          const proc=S.procedures.find(x=>x.id===pid);
+          const sub=proc?.subs?.[parseInt(idxStr)];
+          pNameMapAll[key]=sub?sub.name:(proc?proc.name:key);
+        } else {
+          const proc=S.procedures.find(x=>x.id===key);
+          pNameMapAll[key]=proc?proc.name:key;
+        }
+      }
+      pCntAll[key]=(pCntAll[key]||0)+n;
+      if(c.pttype==='신환') pCntShin[key]=(pCntShin[key]||0)+n;
+      else pCntGu[key]=(pCntGu[key]||0)+n;
     });
   });
-  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([pid,n])=>{
-    const p=S.procedures.find(x=>x.id===pid);
-    return p?{icon:p.icon,name:p.name,n,shin:pCntShin[pid]||0,gu:pCntGu[pid]||0}:null;
+  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([key,n])=>{
+    return {name:pNameMapAll[key]||key, n, shin:pCntShin[key]||0, gu:pCntGu[key]||0};
   }).filter(Boolean);
 
   let txt='🏢 미클리닉 전 지점 합산 일일 보고\n';
@@ -8908,21 +8915,35 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     return total>0?{icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch,rem:rem_ch}:null;
   }).filter(Boolean);
 
-  // 시술별 집계
+  // 시술별 집계 (하위 카테고리 포함)
   const pCntAll={},pCntShin={},pCntGu={},pCntRem={};
+  // key→표시이름 맵
+  const pNameMap={};
   calls.forEach(c=>{
     if(!c.procs) return;
-    Object.entries(c.procs).forEach(([pid,n])=>{
-      pCntAll[pid]=(pCntAll[pid]||0)+n;
-      if(c.pttype==='신환') pCntShin[pid]=(pCntShin[pid]||0)+n;
-      else if(c.pttype==='잔여시술') pCntRem[pid]=(pCntRem[pid]||0)+n;
-      else if(c.pttype==='구환(신규상담)'||c.pttype==='구환') pCntGu[pid]=(pCntGu[pid]||0)+n;
+    Object.entries(c.procs).forEach(([key,n])=>{
+      if(!n) return;
+      // 표시 이름 결정
+      if(!pNameMap[key]){
+        if(key.includes(':')){
+          const [pid,idxStr]=key.split(':');
+          const proc=S.procedures.find(x=>x.id===pid);
+          const sub=proc?.subs?.[parseInt(idxStr)];
+          pNameMap[key]=sub?sub.name:(proc?proc.name:key);
+        } else {
+          const proc=S.procedures.find(x=>x.id===key);
+          pNameMap[key]=proc?proc.name:key;
+        }
+      }
+      pCntAll[key]=(pCntAll[key]||0)+n;
+      if(c.pttype==='신환') pCntShin[key]=(pCntShin[key]||0)+n;
+      else if(c.pttype==='잔여시술') pCntRem[key]=(pCntRem[key]||0)+n;
+      else if(c.pttype==='구환(신규상담)'||c.pttype==='구환') pCntGu[key]=(pCntGu[key]||0)+n;
     });
   });
-  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,8)
-    .map(([pid,n])=>{
-      const p=S.procedures.find(x=>x.id===pid);
-      return p?{icon:p.icon,name:p.name,n,shin:pCntShin[pid]||0,gu:pCntGu[pid]||0,rem:pCntRem[pid]||0}:null;
+  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,15)
+    .map(([key,n])=>{
+      return {name:pNameMap[key]||key, n, shin:pCntShin[key]||0, gu:pCntGu[key]||0, rem:pCntRem[key]||0};
     }).filter(Boolean);
 
   // 텍스트 보고서
@@ -10515,8 +10536,7 @@ function saveDpProcPreset(){
   document.getElementById('preset-alias-label').value = defaultLabel.length>30 ? defaultLabel.slice(0,30)+'...' : defaultLabel;
   delete document.getElementById('modal-preset-alias').dataset.editId;
   _presetBuilderPids = pids;
-  // 기본 그룹 1개 (전체 시술 포함, 그룹명 없음)
-  _presetGroups = [{name:'', pids:[...pids]}];
+  _presetRowGroups = {};
   renderPresetGroupBuilder();
   document.getElementById('modal-preset-alias').classList.add('open');
 }
@@ -10528,23 +10548,18 @@ function editDpProcPreset(presetId){
   document.getElementById('preset-alias-label').value = p.label;
   document.getElementById('modal-preset-alias').dataset.editId = presetId;
   _presetBuilderPids = p.pids||[];
-  // 기존 groups 복원
-  if(p.groupDefs && p.groupDefs.length){
-    _presetGroups = p.groupDefs.map(g=>({name:g.name, pids:[...g.pids]}));
-    // groupDefs에 없는 시술들은 미그룹 처리
-    const assignedPids = new Set(_presetGroups.flatMap(g=>g.pids));
-    const unassigned = _presetBuilderPids.filter(pid=>!assignedPids.has(pid));
-    if(unassigned.length) _presetGroups.push({name:'', pids:unassigned});
-  } else {
-    // 구버전 groups 포맷 변환
-    const groupMap = p.groups||{};
-    const grouped = {};
-    _presetBuilderPids.forEach(pid=>{
-      const g = groupMap[pid]||'';
-      if(!grouped[g]) grouped[g]=[];
-      grouped[g].push(pid);
+  // 기존 groups 복원 (rowGroups 포맷)
+  _presetRowGroups = {};
+  const items = getSubProcList(_presetBuilderPids);
+  if(p.rowGroups){
+    _presetRowGroups = {...p.rowGroups};
+  } else if(p.groups){
+    // 구버전: groups는 상위pid → groupName
+    items.forEach(item=>{
+      const pid = item.key.includes(':') ? item.key.split(':')[0] : item.key;
+      const g = p.groups[pid]||p.groups[item.key]||'';
+      if(g) _presetRowGroups[item.key]=g;
     });
-    _presetGroups = Object.entries(grouped).map(([name,pids])=>({name, pids}));
   }
   renderPresetGroupBuilder();
   document.getElementById('modal-preset-alias').classList.add('open');
@@ -10552,76 +10567,67 @@ function editDpProcPreset(presetId){
 
 // 그룹 빌더 상태
 let _presetBuilderPids = [];
-let _presetGroups = [{name:'', pids:[]}]; // [{name, pids:[]}]
+let _presetRowGroups = {}; // pid_or_key → groupName
+
+function getSubProcList(pids){
+  // pids(상위) → 하위 시술 포함한 전체 키 목록 [{key, name, parent}]
+  const items=[];
+  pids.forEach(pid=>{
+    const proc=S.procedures.find(x=>x.id===pid);
+    if(!proc) return;
+    if(proc.subs && proc.subs.length>0){
+      proc.subs.forEach((sub,i)=>{
+        items.push({key:`${pid}:${i}`, name:sub.name, parent:proc.name});
+      });
+    } else {
+      items.push({key:pid, name:proc.name, parent:''});
+    }
+  });
+  return items;
+}
 
 function renderPresetGroupBuilder(){
-  const el = document.getElementById('preset-group-builder');
+  const el=document.getElementById('preset-group-builder');
   if(!el) return;
-  const allPids = _presetBuilderPids;
-  // 각 pid가 어느 그룹에 있는지
-  const pidGroupIdx = {};
-  _presetGroups.forEach((g,gi)=>g.pids.forEach(pid=>pidGroupIdx[pid]=gi));
+  const items=getSubProcList(_presetBuilderPids);
+  if(!items.length){ el.innerHTML='<div style="padding:14px;font-size:12px;color:var(--text3)">선택된 시술 없음</div>'; return; }
 
-  el.innerHTML = _presetGroups.map((g,gi)=>{
-    const pills = allPids.map(pid=>{
-      const proc = S.procedures.find(x=>x.id===pid);
-      const name = proc?proc.name:pid;
-      const inThis = g.pids.includes(pid);
-      const inOther = pidGroupIdx[pid]!==undefined && pidGroupIdx[pid]!==gi;
-      const style = inThis
-        ? `background:#2563eb;color:#fff;border-color:#2563eb`
-        : inOther
-          ? `background:var(--s3);color:var(--text3);border-color:var(--border);opacity:.4;cursor:not-allowed`
-          : `background:var(--s2);color:var(--text2);border-color:var(--border)`;
-      return `<span onclick="togglePresetGroupPid(${gi},'${pid}')"
-        style="padding:3px 10px;border-radius:12px;border:1.5px solid;font-size:11px;font-weight:700;cursor:pointer;transition:all .1s;${style}">${name}</span>`;
-    }).join('');
-
-    return `<div style="background:var(--s1);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--text3);white-space:nowrap">표시 이름</span>
-        <input type="text" id="preset-group-name-${gi}" value="${escHtml(g.name)}"
-          placeholder="예: 써마지, 튠, 보톡스 (비워두면 개별 표시)"
-          oninput="_presetGroups[${gi}].name=this.value"
-          style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;background:#fff;color:var(--text)">
-        ${_presetGroups.length>1?`<button onclick="removePresetGroup(${gi})" style="border:none;background:#fee2e2;color:#ef4444;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr;background:var(--s2);border-bottom:1px solid var(--border)">
+      <div style="padding:8px 12px;font-size:11px;font-weight:700;color:var(--text3)">상위</div>
+      <div style="padding:8px 12px;font-size:11px;font-weight:700;color:var(--text3)">시술명</div>
+      <div style="padding:8px 12px;font-size:11px;font-weight:700;color:var(--text3)">보고 이름 <span style="font-weight:400">(비워두면 원래 이름)</span></div>
+    </div>
+    ${items.map((item,i)=>`
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr;border-bottom:1px solid var(--border);align-items:center;background:${i%2===0?'#fff':'var(--s1)'}">
+      <div style="padding:7px 12px;font-size:11px;color:var(--text3);white-space:nowrap">${item.parent||'-'}</div>
+      <div style="padding:7px 12px;font-size:12px;font-weight:700;color:var(--text2)">${item.name}</div>
+      <div style="padding:6px 8px">
+        <input type="text" id="pgr-${item.key.replace(/:/g,'_')}" value="${escHtml(_presetRowGroups[item.key]||'')}"
+          placeholder="${item.name}"
+          oninput="_presetRowGroups['${item.key}']=this.value"
+          style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px">${pills}</div>
-    </div>`;
-  }).join('');
+    </div>`).join('')}`;
 }
 
-function togglePresetGroupPid(gi, pid){
-  const g = _presetGroups[gi];
-  const idx = g.pids.indexOf(pid);
-  // 다른 그룹에 있으면 무시
-  const inOther = _presetGroups.some((og,oi)=>oi!==gi && og.pids.includes(pid));
-  if(inOther) return;
-  if(idx>=0) g.pids.splice(idx,1);
-  else g.pids.push(pid);
-  renderPresetGroupBuilder();
-}
-
-function addPresetGroup(){
-  _presetGroups.push({name:'', pids:[]});
-  renderPresetGroupBuilder();
-}
-
-function removePresetGroup(gi){
-  _presetGroups.splice(gi,1);
-  renderPresetGroupBuilder();
-}
+function togglePresetGroupPid(gi, pid){ /* deprecated */ }
+function addPresetGroup(){ /* deprecated */ }
+function removePresetGroup(gi){ /* deprecated */ }
 
 function confirmSaveDpProcPreset(){
   const label = document.getElementById('preset-alias-label')?.value.trim();
   if(!label){ toast('⚠️ 즐겨찾기 이름을 입력해주세요'); return; }
 
-  // groupDefs에서 groups/aliases 역산 (기존 집계 로직 호환)
-  const groups={}, aliases={};
-  _presetGroups.forEach(g=>{
-    if(g.name && g.pids.length>0){
-      g.pids.forEach(pid=>{ groups[pid]=g.name; });
-    }
+  // rowGroups: {key → groupName}
+  // groups(호환): 상위pid → groupName (집계용)
+  const rowGroups = {..._presetRowGroups};
+  const groups = {};
+  Object.entries(rowGroups).forEach(([key,g])=>{
+    if(!g) return;
+    const pid = key.includes(':') ? key.split(':')[0] : key;
+    groups[pid] = groups[pid] || g; // 첫 번째 그룹명 우선
+    groups[key] = g; // 키 그대로도 저장
   });
 
   const editId = document.getElementById('modal-preset-alias').dataset.editId||'';
@@ -10629,11 +10635,11 @@ function confirmSaveDpProcPreset(){
 
   if(editId){
     const idx = presets.findIndex(x=>x.id===editId);
-    if(idx>=0) presets[idx]={...presets[idx], label, pids:_presetBuilderPids, aliases, groups, groupDefs:[..._presetGroups]};
+    if(idx>=0) presets[idx]={...presets[idx], label, pids:_presetBuilderPids, groups, rowGroups};
     delete document.getElementById('modal-preset-alias').dataset.editId;
   } else {
     if(!_presetBuilderPids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
-    presets.push({ id:'preset_'+Date.now(), label, pids:_presetBuilderPids, aliases, groups, groupDefs:[..._presetGroups] });
+    presets.push({ id:'preset_'+Date.now(), label, pids:_presetBuilderPids, groups, rowGroups });
   }
 
   saveDpProcPresetData(presets);
@@ -10647,9 +10653,8 @@ function applyDpProcPreset(presetId){
   const p = presets.find(x=>x.id===presetId);
   if(!p) return;
   _selectedPids = new Set(p.pids);
-  // 별칭/그룹 정보 전역 저장 (테이블 렌더 시 사용)
-  _activePresetAliases = p.aliases||{};
-  _activePresetGroups = p.groups||{};
+  _activePresetAliases = {};
+  _activePresetGroups = p.rowGroups || p.groups || {};
   renderDailyProcTable();
   toast(`⭐ "${p.label}" 적용됨`);
 }
