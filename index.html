@@ -3340,6 +3340,7 @@ async function syncPush(showToast=false){
         rosterPatterns:_rosterPatterns||{},
         roster1siMemo:localStorage.getItem('roster_1si_memo')||'',
         branchSnapshot:(()=>{try{return JSON.parse(localStorage.getItem('branch_snapshot')||'{}')}catch(e){return {}}})(  ),
+        dpProcPresets:(()=>{try{return JSON.parse(localStorage.getItem('dp_proc_presets')||'[]')}catch(e){return []}})(  ),
         dutyAll};
       const r=await fbFetch(base+'/mclinic.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
       if(r.ok){ _dirtyConfig=false; _lastPushAt=Date.now(); }
@@ -3427,6 +3428,10 @@ async function syncPull(){
         Object.entries(data.dutyAll).forEach(([month, val])=>{
           try{ localStorage.setItem(`duty_data_${month}`, JSON.stringify(val)); }catch(e){}
         });
+      }
+      // 즐겨찾기 프리셋
+      if(Array.isArray(data.dpProcPresets) && data.dpProcPresets.length>0){
+        try{ localStorage.setItem('dp_proc_presets', JSON.stringify(data.dpProcPresets)); }catch(e){}
       }
     }
     if(data._deletedIds?.length){
