@@ -2473,6 +2473,12 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
           <input type="hidden" id="cf-voc-type" value="">
         </div>
+        <!-- 연락처 -->
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">연락처 <span style="color:#ef4444">*</span></div>
+          <input type="text" id="cf-voc-contact" placeholder="010-0000-0000 (필수)"
+            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--s2);color:var(--text);box-sizing:border-box">
+        </div>
         <!-- 관련 시술 -->
         <div style="margin-bottom:8px">
           <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">관련 시술 (선택)</div>
@@ -5186,6 +5192,14 @@ function confirmCall(){
       toast('⚠️ VOC 유형을 선택해주세요 (긍정 VOC / 컴플레인)');
       document.getElementById('voc-type-pos')?.scrollIntoView({behavior:'smooth',block:'center'});
       return;
+    }
+    if(vocContent && _vocType){
+      const vocContact=document.getElementById('cf-voc-contact')?.value.trim()||'';
+      if(!vocContact){
+        toast('⚠️ VOC 연락처를 입력해주세요');
+        document.getElementById('cf-voc-contact')?.focus();
+        return;
+      }
     }
   }
   // 아웃콜 필수 항목 검증
@@ -8441,6 +8455,22 @@ function toggleStaffSharedMemo(sid){
   if(_staffSharedMemoOpen[sid]) renderStaffSharedMemoList(sid);
 }
 
+function toggleSmemoContent(id){
+  const contentEl = document.getElementById('smemo-content-'+id);
+  const btn = contentEl?.nextElementSibling;
+  if(!contentEl || !btn) return;
+  const expanded = contentEl.dataset.expanded==='1';
+  if(expanded){
+    contentEl.textContent = btn.dataset.short;
+    contentEl.dataset.expanded = '';
+    btn.textContent = '더 보기 ▾';
+  } else {
+    contentEl.textContent = btn.dataset.full;
+    contentEl.dataset.expanded = '1';
+    btn.textContent = '접기 ▴';
+  }
+}
+
 function renderStaffSharedMemoList(sid){
   const el = document.getElementById(`si-shared-memo-list-${sid}`); if(!el) return;
   const allMemos = getSharedMemos();
@@ -8475,13 +8505,7 @@ function renderStaffSharedMemoList(sid){
           <span style="font-size:10px;color:var(--text3)">${dtStr}${m.author?' · '+m.author:''}</span>
         </div>
         <div id="smemo-content-${m.id}" style="font-size:12px;color:${isDone?'var(--text3)':'var(--text)'};line-height:1.5;${isDone?'text-decoration:line-through':''}white-space:pre-wrap">${escHtml(short)}</div>
-        ${isLong?`<button onclick="
-          const d=document.getElementById('smemo-content-${m.id}');
-          const expanded=d.dataset.expanded==='1';
-          d.innerHTML=expanded?escHtml('${escHtml(short)}'):escHtml('${escHtml(m.content||'')}');
-          d.dataset.expanded=expanded?'':'1';
-          this.textContent=expanded?'더 보기 ▾':'접기 ▴';
-        " style="border:none;background:none;color:#d97706;font-size:10px;font-weight:700;cursor:pointer;padding:2px 0">더 보기 ▾</button>`:''}
+        ${isLong?`<button onclick="toggleSmemoContent('${m.id}')" data-full="${escHtml(m.content||'')}" data-short="${escHtml(short)}" style="border:none;background:none;color:#d97706;font-size:10px;font-weight:700;cursor:pointer;padding:2px 0">더 보기 ▾</button>`:''}
       </div>
       <button onclick="toggleSharedMemoStatus('${m.id}');renderAllStaffSharedMemos()" 
         style="flex-shrink:0;padding:4px 9px;border-radius:7px;border:1.5px solid ${isDone?'var(--border)':'#d97706'};background:${isDone?'var(--s2)':'#fef9c3'};color:${isDone?'var(--text3)':'#854d0e'};font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
@@ -14741,16 +14765,18 @@ function getVocData(){
   if(!content) return null;
   const status=document.querySelector('input[name="voc-status"]:checked')?.value||'접수';
   const procs=[..._vocProcSel];
-  return {type, content, status, procs};
+  const contact=document.getElementById('cf-voc-contact')?.value.trim()||'';
+  return {type, content, status, procs, contact};
 }
 function resetVocFields(){
-  _vocType=''; _vocProcSel=new Set();
+  _vocType=''; _vocProcSel=new Set(); _vocFocusedPid=null;
   const sec=document.getElementById('voc-section');
   if(sec) sec.style.display='none';
   const icon=document.getElementById('voc-toggle-icon');
   if(icon) icon.textContent='▾';
   const typeEl=document.getElementById('cf-voc-type'); if(typeEl) typeEl.value='';
   const contentEl=document.getElementById('cf-voc-content'); if(contentEl) contentEl.value='';
+  const contactEl=document.getElementById('cf-voc-contact'); if(contactEl) contactEl.value='';
   const vocSearch=document.getElementById('voc-proc-search'); if(vocSearch) vocSearch.value='';
   // VOC 타입 버튼 초기화
   setVocType('');
@@ -15319,28 +15345,78 @@ function toggleVocSection(){
 
 let _vocType='';
 let _vocProcSel=new Set();
+let _vocFocusedPid=null; // 하위 카테고리 펼친 상위 pid
 
 function renderVocProcPills(){
   const el=document.getElementById('voc-proc-pills'); if(!el) return;
   const q=(document.getElementById('voc-proc-search')?.value||'').trim().toLowerCase();
-  const procs=q
-    ? (S.procedures||[]).filter(p=>
-        p.name?.toLowerCase().includes(q)||
-        (p.subs||[]).some(s=>s.name?.toLowerCase().includes(q)))
-    : (S.procedures||[]);
-  if(!procs.length){
-    el.innerHTML=`<div style="font-size:11px;color:var(--text3);padding:4px">검색 결과 없음</div>`;
+  const procs=(S.procedures||[]);
+
+  if(q){
+    // 검색 시: 상위+하위 모두 검색, 하위 결과는 pid:idx 키로 표시
+    const items=[];
+    procs.forEach(p=>{
+      const topMatch=p.name?.toLowerCase().includes(q);
+      if(p.subs&&p.subs.length){
+        p.subs.forEach((s,i)=>{
+          if(s.name?.toLowerCase().includes(q)||topMatch){
+            items.push({key:`${p.id}:${i}`,name:s.name,parentName:p.name});
+          }
+        });
+      } else if(topMatch){
+        items.push({key:p.id,name:p.name,parentName:null});
+      }
+    });
+    if(!items.length){ el.innerHTML=`<div style="font-size:11px;color:var(--text3);padding:4px">검색 결과 없음</div>`; return; }
+    el.innerHTML=items.map(item=>{
+      const sel=_vocProcSel.has(item.key);
+      return `<div onclick="toggleVocProc('${item.key}')" style="padding:3px 10px;border-radius:12px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s2)'};color:${sel?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">
+        ${item.parentName?`<span style="font-size:9px;opacity:.7">${item.parentName} › </span>`:''}${item.name}
+      </div>`;
+    }).join('');
     return;
   }
-  el.innerHTML=procs.map(p=>{
-    const sel=_vocProcSel.has(p.id);
-    return `<div onclick="toggleVocProc('${p.id}')" style="padding:3px 10px;border-radius:12px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s2)'};color:${sel?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${p.icon||''} ${p.name}</div>`;
+
+  // 검색 없음: 상위 카테고리 버튼 + 포커스된 상위의 하위 패널
+  let html=procs.map(p=>{
+    const hasSubs=p.subs&&p.subs.length>0;
+    const isFocused=_vocFocusedPid===p.id;
+    // 상위 선택 여부 (하위 중 하나라도 선택됐거나 상위 직접 선택)
+    const selCount=hasSubs ? p.subs.filter((_,i)=>_vocProcSel.has(`${p.id}:${i}`)).length : (_vocProcSel.has(p.id)?1:0);
+    const anySelected=selCount>0;
+    return `<div onclick="${hasSubs?`vocTopClick('${p.id}')`:`toggleVocProc('${p.id}')`}"
+      style="padding:3px 10px;border-radius:12px;border:1.5px solid ${anySelected?'var(--accent)':isFocused?'#94a3b8':'var(--border)'};background:${anySelected?'var(--accent)':isFocused?'var(--s1)':'var(--s2)'};color:${anySelected?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">
+      ${p.name}${hasSubs?`<span style="font-size:9px;margin-left:2px;opacity:.7">▾</span>`:''}${anySelected&&hasSubs?`<span style="font-size:9px;margin-left:3px;background:rgba(255,255,255,.3);padding:0 4px;border-radius:6px">${selCount}</span>`:''}
+    </div>`;
   }).join('');
+
+  // 포커스된 상위의 하위 패널
+  if(_vocFocusedPid){
+    const focusedProc=procs.find(p=>p.id===_vocFocusedPid);
+    if(focusedProc?.subs?.length){
+      html+=`<div style="width:100%;margin-top:6px;padding:6px 8px;background:var(--s1);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:5px">${focusedProc.name} 하위 선택</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${focusedProc.subs.map((s,i)=>{
+            const key=`${focusedProc.id}:${i}`;
+            const sel=_vocProcSel.has(key);
+            return `<div onclick="toggleVocProc('${key}')" style="padding:3px 10px;border-radius:12px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'#fff'};color:${sel?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${s.name}</div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+  }
+  el.innerHTML=html;
 }
 
-function toggleVocProc(pid){
-  if(_vocProcSel.has(pid)) _vocProcSel.delete(pid);
-  else _vocProcSel.add(pid);
+function vocTopClick(pid){
+  _vocFocusedPid = _vocFocusedPid===pid ? null : pid;
+  renderVocProcPills();
+}
+
+function toggleVocProc(key){
+  if(_vocProcSel.has(key)) _vocProcSel.delete(key);
+  else _vocProcSel.add(key);
   renderVocProcPills();
 }
 
