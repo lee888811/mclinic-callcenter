@@ -1433,6 +1433,9 @@ td:first-child{text-align:left;padding-left:13px}
               <div style="display:flex;gap:5px;flex-wrap:wrap" id="trend-proc-sub-pills"></div>
             </div>
             <div id="trend-proc-chart" style="overflow-x:auto"></div>
+            <div style="margin-top:8px;text-align:right">
+              <button onclick="copyTrendProcImage()" style="padding:5px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📸 이미지 복사</button>
+            </div>
           </div>
         </div>
 
@@ -9204,6 +9207,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   if(noapptCntAll) txt+=`  미예약      ${noapptCntAll}건${noapptReasonTxt?'\n  미예약 사유:\n'+noapptReasonTxt:''}\n`;
   const unclAll=allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll);
   if(unclAll>0) txt+=`  기타(미분류) ${unclAll}건\n`;
+  txt+=`  ${'─'.repeat(22)}\n`;
+  txt+=`  📅 신규 예약  ${bookedAll}건  (당일 ${bookedAll-futureBookedAll}건 · 추후 ${futureBookedAll}건)\n`;
 
 
   txt+='\n'+'─'.repeat(28)+'\n\n🏥 지점별 현황\n';
@@ -9523,6 +9528,8 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   신환(신규)   ${shin}건
   구환         ${gu}건
   잔여시술     ${rem||0}건${general?`\n  일반문의     ${general}건`:''}${absence?`\n  부재         ${absence}건`:''}${cancelCnt?`\n  예약 취소    ${cancelCnt}건`:''}${noapptCnt?`\n  미예약      ${noapptCnt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}`:''}${unclassified>0?`\n  기타(미분류) ${unclassified}건`:''}
+  ──────────────────────
+  📅 신규 예약  ${booked}건  (당일 ${booked-futureBooked}건 · 추후 ${futureBooked}건)
 
 ${chatChData.length?`
   ──────────────────────
@@ -12375,15 +12382,46 @@ function renderTrendProcChartByPeriod(){
   const step=Math.ceil(data.length/20);
   data.forEach((d,i)=>{if(i%step===0||i===data.length-1) lbls+=`<text x="${xi(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.label}</text>`;});
 
-  const legend=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">`+
+  // 별칭 적용: _activePresetGroups 또는 rowGroups에서 가져오기
+  const getTrendProcLabel=(key)=>{
+    const alias=_activePresetGroups?.[key]||_activePresetGroups?.[key.split(':')[0]];
+    return alias || getProcName(key) || key;
+  };
+
+  const legend=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:11px" id="trend-proc-legend">`+
     activeKeys2.map((key,pi)=>{
-      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${getProcName(key)||key}</span>`;
+      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${getTrendProcLabel(key)}</span>`;
     }).join('')+'</div>';
 
   document.getElementById('trend-proc-chart').innerHTML=legend+`
+    <div id="trend-proc-svg-wrap">
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:320px;overflow:visible;font-family:'DM Mono',monospace">
       ${grid}${paths}${dots}${lbls}
-    </svg>`;
+    </svg></div>`;
+}
+
+function copyTrendProcImage(){
+  const chartEl = document.getElementById('trend-proc-chart');
+  if(!chartEl || !chartEl.querySelector('svg')){ toast('⚠️ 먼저 차트를 생성해주세요'); return; }
+  toast('📸 이미지 생성 중...');
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:400px';
+  const clone = chartEl.cloneNode(true);
+  clone.style.overflow = 'visible';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper, { scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false })
+    .then(canvas=>{
+      document.body.removeChild(wrapper);
+      canvas.toBlob(blob=>{
+        if(!blob){ toast('⚠️ 실패'); return; }
+        try{
+          navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
+            .then(()=>toast('✅ 이미지 복사됨! 카톡에 붙여넣기 하세요'))
+            .catch(()=>{ const a=document.createElement('a'); a.download=`시술추이_${todayStr()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); toast('📥 이미지 다운로드됨'); });
+        }catch(e){ const a=document.createElement('a'); a.download=`시술추이_${todayStr()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); toast('📥 이미지 다운로드됨'); }
+      },'image/png');
+    }).catch(()=>{ document.body.removeChild(wrapper); toast('⚠️ 이미지 생성 실패'); });
 }
 
 // ── 1. 지점별 누적 막대 차트 ──
@@ -12720,11 +12758,14 @@ function renderTrendProcChart(monthDefs){
   });
   data.forEach((d,i)=>lbls+=`<text x="${xi(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text3)">${d.label}</text>`);
 
-  // legend
+  // legend (별칭 적용)
+  const getTrendProcLabel2=(key)=>{
+    const alias=_activePresetGroups?.[key]||_activePresetGroups?.[key.split(':')[0]];
+    return alias || getProcName(key) || key;
+  };
   const legend=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">`+
-    _trendProcs.map((pid,pi)=>{
-      const p=S.procedures.find(x=>x.id===pid);
-      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${p?.name||pid}</span>`;
+    activeKeys2.map((key,pi)=>{
+      return `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:${PCOLS[pi%PCOLS.length]};display:inline-block;border-radius:2px"></span>${getTrendProcLabel2(key)}</span>`;
     }).join('')+'</div>';
 
   document.getElementById('trend-proc-chart').innerHTML=legend+`
