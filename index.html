@@ -8908,6 +8908,9 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const gu=calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
   const rem=calls.filter(c=>c.pttype==='잔여시술').length;
   const absence=calls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
+  const general=calls.filter(c=>c.pttype==='일반문의').length;
+  const noapptCnt=calls.filter(c=>c.pttype==='미예약').length;
+  const cancelCnt=calls.filter(c=>c.pttype==='예약취소').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
@@ -9020,12 +9023,13 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   신환(신규)   ${shin}건
   구환         ${gu}건
   잔여시술     ${rem||0}건
-  부재      ${absence}건${chatChData.length?`
+  일반문의     ${general}건
+  부재         ${absence}건
+  예약 취소    ${cancel}건
+  미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}${chatChData.length?`
 
 📡 채널별 인입 현황
 ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
-  예약 취소    ${cancel}건
-  미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}
 ${topProcs.length?`
 💉 예약 시술 TOP ${topProcs.length}
 ${procLines}
@@ -10664,6 +10668,11 @@ function editDpProcPreset(presetId){
   document.getElementById('modal-preset-alias').classList.add('open');
 }
 
+function setPresetRowGroup(el){
+  const key = el.dataset.pkey;
+  if(key) _presetRowGroups[key] = el.value;
+}
+
 // 그룹 빌더 상태
 let _presetBuilderPids = [];
 let _presetRowGroups = {}; // pid_or_key → groupName
@@ -10712,12 +10721,19 @@ function renderPresetGroupBuilder(){
       <div style="padding:7px 12px;font-size:11px;color:var(--text3);white-space:nowrap">${item.parent||'-'}</div>
       <div style="padding:7px 12px;font-size:12px;font-weight:700;color:var(--text2)">${item.name}</div>
       <div style="padding:6px 8px">
-        <input type="text" id="pgr-${item.key.replace(/:/g,'_')}" value="${escHtml(_presetRowGroups[item.key]||'')}"
+        <input type="text" id="pgr-${item.key.replace(/:/g,'_')}"
           placeholder="${item.name}"
-          oninput="_presetRowGroups['${item.key}']=this.value"
+          data-pkey="${item.key}"
+          oninput="setPresetRowGroup(this)"
           style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
       </div>
     </div>`).join('')}`;
+
+  // value를 JS로 직접 세팅 (HTML 속성 이스케이프 문제 우회)
+  items.forEach(item=>{
+    const inp=document.getElementById('pgr-'+item.key.replace(/:/g,'_'));
+    if(inp) inp.value=_presetRowGroups[item.key]||'';
+  });
 }
 
 function togglePresetGroupPid(gi, pid){ /* deprecated */ }
