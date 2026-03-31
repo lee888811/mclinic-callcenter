@@ -1361,7 +1361,18 @@ td:first-child{text-align:left;padding-left:13px}
             </div>
           </div>
           <div class="pm-acc-body" id="acc-body-proc" style="display:none">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="trend-proc-filter"></div>
+            <!-- 즐겨찾기 -->
+            <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:11px;font-weight:800;color:#854d0e;white-space:nowrap">⭐ 즐겨찾기</span>
+              <div id="trend-proc-presets" style="display:flex;gap:5px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3)">없음</span></div>
+              <button onclick="saveTrendProcPreset()" style="margin-left:auto;padding:3px 10px;border-radius:8px;border:none;background:#d97706;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ 현재 저장</button>
+            </div>
+            <!-- 시술 필터 (상위+하위) -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px" id="trend-proc-filter"></div>
+            <div id="trend-proc-sub-filter" style="display:none;padding:6px 0 4px;border-top:1px solid var(--border);margin-bottom:6px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:5px">하위 카테고리 선택</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap" id="trend-proc-sub-pills"></div>
+            </div>
             <div id="trend-proc-chart" style="overflow-x:auto"></div>
           </div>
         </div>
@@ -3732,7 +3743,7 @@ function go(pid,el){
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); }
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets(); }
   else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   else if(pid==='closingrpt'){
     const cr=document.getElementById('cr-date');
@@ -5045,7 +5056,7 @@ function confirmCall(){
     else if(pid==='history') renderHistory();
     else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); }
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets(); }
     else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   }
   // 저장 후 토스트: 신규 콜이면 "다른 지점 예약 추가" 버튼 포함
@@ -10203,7 +10214,56 @@ setTimeout(checkWeeklyBackup, 5000); // 앱 시작 5초 후 체크
 let _trendMonths = 3;
 let _trendCustomFrom = null; // 'YYYY-MM'
 let _trendCustomTo = null;
-let _trendProcs = []; // 선택된 시술 IDs
+let _trendProcs = []; // 선택된 시술 키 (상위 pid 또는 "pid:subIdx")
+let _trendFocusedPid = null; // 하위 카테고리 보고 있는 상위 pid
+let _trendSubKeys = null; // null=전체, Set=선택된 하위 키
+
+// ── 시술별 추이 즐겨찾기 ──
+function renderTrendProcPresets(){
+  const el=document.getElementById('trend-proc-presets'); if(!el) return;
+  const presets=getDpProcPresets();
+  if(!presets.length){ el.innerHTML='<span style="font-size:11px;color:var(--text3)">없음</span>'; return; }
+  el.innerHTML=presets.map(p=>`
+    <div style="display:inline-flex;align-items:center;gap:3px;padding:3px 4px 3px 10px;border-radius:12px;background:#fef9c3;border:1.5px solid #fde68a;font-size:11px;font-weight:700;color:#854d0e">
+      <span onclick="applyTrendProcPreset('${p.id}')" style="cursor:pointer">${p.label}</span>
+      <span onclick="deleteDpProcPreset('${p.id}');renderTrendProcPresets();renderDpProcPresets();" style="cursor:pointer;color:#b45309;margin-left:1px;font-size:10px">✕</span>
+    </div>`).join('');
+}
+function saveTrendProcPreset(){
+  // 현재 선택된 키로 즐겨찾기 저장 (월간보고 즐겨찾기 공유)
+  const keys = _trendSubKeys ? [..._trendSubKeys] : _trendProcs;
+  if(!keys.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
+  // _presetBuilderPids에 세팅 후 모달 열기
+  _presetBuilderPids = keys;
+  _presetRowGroups = {};
+  const defaultLabel = [...new Set(keys.map(key=>getProcName(key)))].join(', ');
+  document.getElementById('preset-alias-label').value = defaultLabel.length>30 ? defaultLabel.slice(0,30)+'...' : defaultLabel;
+  delete document.getElementById('modal-preset-alias').dataset.editId;
+  renderPresetGroupBuilder();
+  document.getElementById('modal-preset-alias').classList.add('open');
+}
+function applyTrendProcPreset(presetId){
+  const presets=getDpProcPresets();
+  const p=presets.find(x=>x.id===presetId); if(!p) return;
+  const upperPids=new Set();
+  const subKeys=new Set();
+  (p.pids||[]).forEach(key=>{
+    if(key.includes(':')){ upperPids.add(key.split(':')[0]); subKeys.add(key); }
+    else upperPids.add(key);
+  });
+  _trendProcs=[...upperPids];
+  _trendSubKeys=subKeys.size>0?subKeys:null;
+  _trendFocusedPid=null;
+  renderTrendProcChartByPeriod();
+  toast(`⭐ "${p.label}" 적용됨`);
+}
+function toggleTrendProcSub(key){
+  if(!_trendSubKeys) _trendSubKeys=new Set();
+  if(_trendSubKeys.has(key)) _trendSubKeys.delete(key);
+  else _trendSubKeys.add(key);
+  if(_trendSubKeys.size===0) _trendSubKeys=null;
+  renderTrendProcChartByPeriod();
+}
 let _trendBid = null; // 지점별 시술 분석용 선택 지점
 let _trendProcPeriod = '6mo'; // 시술별 추이 기간
 let _dailyProcPeriod = 'today'; // 시술×지점 표 기간
@@ -11609,10 +11669,29 @@ function renderTrendProcChartByPeriod(){
     _trendProcs=Object.entries(allPCnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pid])=>pid);
     if(!_trendProcs.length) _trendProcs=S.procedures.slice(0,3).map(p=>p.id);
   }
+  // 상위 시술 필터 버튼
   document.getElementById('trend-proc-filter').innerHTML=S.procedures.map(p=>{
     const sel=_trendProcs.includes(p.id);
-    return `<button onclick="toggleTrendProc('${p.id}')" style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">${p.name}</button>`;
+    const hasSubs=p.subs&&p.subs.length>0;
+    const isFocused=_trendFocusedPid===p.id;
+    return `<button onclick="trendProcTopClick('${p.id}')"
+      style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">
+      ${p.name}${hasSubs?'<span style="font-size:9px;margin-left:2px;opacity:.7">▾</span>':''}
+    </button>`;
   }).join('');
+  // 하위 카테고리 패널
+  const focusedProc=_trendFocusedPid?S.procedures.find(x=>x.id===_trendFocusedPid):null;
+  const subPanel=document.getElementById('trend-proc-sub-filter');
+  const subPills=document.getElementById('trend-proc-sub-pills');
+  if(focusedProc?.subs?.length>0 && subPanel && subPills){
+    subPanel.style.display='block';
+    subPills.innerHTML=focusedProc.subs.map((sub,i)=>{
+      const key=`${focusedProc.id}:${i}`;
+      const sel=_trendSubKeys?_trendSubKeys.has(key):true;
+      return `<button onclick="toggleTrendProcSub('${key}')"
+        style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">${sub.name}</button>`;
+    }).join('');
+  } else if(subPanel){ subPanel.style.display='none'; }
 
   if(!_trendProcs.length){
     document.getElementById('trend-proc-chart').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px">시술을 선택하세요</div>';
@@ -11649,7 +11728,21 @@ function renderTrendProcChartByPeriod(){
     }
     // 지점 필터
     if(_chartProcBid!=='all') calls=calls.filter(c=>c.bid===_chartProcBid);
-    const byProc=_trendProcs.map(pid=>calls.reduce((a,c)=>a+(c.procs?.[pid]||0),0));
+    // 실제 집계 키: 하위 선택 있으면 하위 키별, 없으면 상위 pid
+    const activeKeys = _trendSubKeys ? [..._trendSubKeys] : _trendProcs;
+    const byProc=activeKeys.map(key=>{
+      if(key.includes(':')){
+        return calls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
+      } else {
+        // 상위: 직접 저장된 것 + 하위 합산
+        const proc=S.procedures.find(x=>x.id===key);
+        let total=calls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
+        if(proc?.subs) proc.subs.forEach((_,i)=>{
+          total+=calls.reduce((a,c)=>a+(c.procs?.[`${key}:${i}`]||0),0);
+        });
+        return total;
+      }
+    });
     return {label:g.label, byProc};
   });
 
@@ -11666,8 +11759,9 @@ function renderTrendProcChartByPeriod(){
     grid+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="1"/>
       <text x="${PL-4}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${Math.round(maxV*f)}</text>`;
   });
-  _trendProcs.forEach((pid,pi)=>{
-    const p=S.procedures.find(x=>x.id===pid);
+  const activeKeys2 = _trendSubKeys ? [..._trendSubKeys] : _trendProcs;
+  activeKeys2.forEach((key,pi)=>{
+    const pname=getProcName(key)||key;
     const cl=PCOLS[pi%PCOLS.length];
     let d='';
     data.forEach((m,i)=>{
@@ -11928,6 +12022,27 @@ function renderTrendProcFilter(monthDefs){
   renderTrendProcChart(monthDefs);
 }
 
+function trendProcTopClick(pid){
+  const proc=S.procedures.find(x=>x.id===pid);
+  if(proc?.subs?.length>0){
+    // 하위 있으면 포커스 토글
+    if(_trendFocusedPid===pid){
+      _trendFocusedPid=null;
+      _trendSubKeys=null;
+    } else {
+      _trendFocusedPid=pid;
+      _trendSubKeys=new Set(proc.subs.map((_,i)=>`${pid}:${i}`)); // 하위 전체 선택
+    }
+    // 상위 선택 상태도 토글
+    if(_trendProcs.includes(pid)) _trendProcs=_trendProcs.filter(x=>x!==pid);
+    else _trendProcs.push(pid);
+  } else {
+    if(_trendProcs.includes(pid)) _trendProcs=_trendProcs.filter(x=>x!==pid);
+    else _trendProcs.push(pid);
+    _trendFocusedPid=null; _trendSubKeys=null;
+  }
+  renderTrendProcChartByPeriod();
+}
 function toggleTrendProc(pid){
   if(_trendProcs.includes(pid)) _trendProcs=_trendProcs.filter(x=>x!==pid);
   else _trendProcs.push(pid);
@@ -11991,8 +12106,9 @@ function renderTrendProcChart(monthDefs){
       <text x="${PL-4}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${Math.round(maxV*f)}</text>`;
   });
 
-  _trendProcs.forEach((pid,pi)=>{
-    const p=S.procedures.find(x=>x.id===pid);
+  const activeKeys2 = _trendSubKeys ? [..._trendSubKeys] : _trendProcs;
+  activeKeys2.forEach((key,pi)=>{
+    const pname=getProcName(key)||key;
     const cl=PCOLS[pi%PCOLS.length];
     let d='';
     data.forEach((m,i)=>{
