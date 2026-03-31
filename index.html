@@ -10539,12 +10539,27 @@ function saveDpProcPresetData(presets){
 
 // 즐겨찾기 저장 버튼 → 그룹 설정 모달 열기
 function saveDpProcPreset(){
-  const pids = _selectedPids ? [..._selectedPids] : [];
-  if(!pids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
-  const defaultLabel = pids.map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
+  // 실제 선택된 키 수집: 하위 선택 있으면 하위 키, 없으면 상위 pid
+  let keys = [];
+  if(_selectedSubs && _selectedSubs.size>0){
+    keys = [..._selectedSubs]; // "pid:subIdx" 형태
+  } else if(_selectedPids && _selectedPids.size>0){
+    // 상위만 선택된 경우 → 하위가 있으면 하위 전체, 없으면 상위
+    [..._selectedPids].forEach(pid=>{
+      const p=S.procedures.find(x=>x.id===pid);
+      if(p?.subs?.length>0) p.subs.forEach((_,i)=>keys.push(`${pid}:${i}`));
+      else keys.push(pid);
+    });
+  }
+  if(!keys.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
+
+  const defaultLabel = [...new Set(keys.map(key=>{
+    if(key.includes(':')){const [pid]=key.split(':');const p=S.procedures.find(x=>x.id===pid);return p?p.name:pid;}
+    const p=S.procedures.find(x=>x.id===key); return p?p.name:key;
+  }))].join(', ');
   document.getElementById('preset-alias-label').value = defaultLabel.length>30 ? defaultLabel.slice(0,30)+'...' : defaultLabel;
   delete document.getElementById('modal-preset-alias').dataset.editId;
-  _presetBuilderPids = pids;
+  _presetBuilderPids = keys; // 이제 하위 키 목록
   _presetRowGroups = {};
   renderPresetGroupBuilder();
   document.getElementById('modal-preset-alias').classList.add('open');
@@ -10598,7 +10613,17 @@ function getSubProcList(pids){
 function renderPresetGroupBuilder(){
   const el=document.getElementById('preset-group-builder');
   if(!el) return;
-  const items=getSubProcList(_presetBuilderPids);
+  const items=_presetBuilderPids.map(key=>{
+    if(key.includes(':')){
+      const [pid,idxStr]=key.split(':');
+      const proc=S.procedures.find(x=>x.id===pid);
+      const sub=proc?.subs?.[parseInt(idxStr)];
+      return {key, name:sub?sub.name:key, parent:proc?proc.name:''};
+    } else {
+      const proc=S.procedures.find(x=>x.id===key);
+      return {key, name:proc?proc.name:key, parent:''};
+    }
+  });
   if(!items.length){ el.innerHTML='<div style="padding:14px;font-size:12px;color:var(--text3)">선택된 시술 없음</div>'; return; }
 
   el.innerHTML=`
@@ -10661,7 +10686,19 @@ function applyDpProcPreset(presetId){
   const presets = getDpProcPresets();
   const p = presets.find(x=>x.id===presetId);
   if(!p) return;
-  _selectedPids = new Set(p.pids);
+  // pids가 하위 키("pid:subIdx") 포함일 수 있으므로 상위 pid 추출
+  const upperPids = new Set();
+  const subKeys = new Set();
+  (p.pids||[]).forEach(key=>{
+    if(key.includes(':')){
+      upperPids.add(key.split(':')[0]);
+      subKeys.add(key);
+    } else {
+      upperPids.add(key);
+    }
+  });
+  _selectedPids = upperPids.size>0 ? upperPids : null;
+  _selectedSubs = subKeys.size>0 ? subKeys : null;
   _activePresetAliases = {};
   _activePresetGroups = p.rowGroups || p.groups || {};
   renderDailyProcTable();
@@ -10723,16 +10760,25 @@ function renderDpProcPills(allProcs, usedPids) {
   if(selDiv){
     if(_selectedPids && _selectedPids.size>0){
       selDiv.style.display='flex';
+      // 선택됨: 하위 카테고리가 있으면 하위로, 없으면 상위 이름 표시
+      const selItems=[];
+      [..._selectedPids].forEach(pid=>{
+        const p=S.procedures.find(x=>x.id===pid);
+        if(!p) return;
+        const clr=CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length]||'var(--accent)';
+        if(p.subs && p.subs.length>0){
+          p.subs.forEach((sub,i)=>{
+            selItems.push({label:sub.name, clr, removeKey:pid, subKey:`${pid}:${i}`});
+          });
+        } else {
+          selItems.push({label:p.name, clr, removeKey:pid, subKey:null});
+        }
+      });
       selDiv.innerHTML=`<span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0">✅ 선택됨:</span>`+
-        [..._selectedPids].map(pid=>{
-          const p=S.procedures.find(x=>x.id===pid);
-          if(!p) return '';
-          const clr=CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length]||'var(--accent)';
-          return `<span style="padding:2px 8px;border-radius:10px;background:${clr};color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
-            ${p.name}
-            <button onclick="dpToggleProc('${p.id}')" style="border:none;background:rgba(255,255,255,.3);color:#fff;border-radius:50%;width:14px;height:14px;font-size:10px;cursor:pointer;padding:0;line-height:1;display:inline-flex;align-items:center;justify-content:center">✕</button>
-          </span>`;
-        }).join('');
+        selItems.map(item=>`<span style="padding:2px 8px;border-radius:10px;background:${item.clr};color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+          ${item.label}
+          <button onclick="dpToggleProc('${item.removeKey}')" style="border:none;background:rgba(255,255,255,.3);color:#fff;border-radius:50%;width:14px;height:14px;font-size:10px;cursor:pointer;padding:0;line-height:1;display:inline-flex;align-items:center;justify-content:center">✕</button>
+        </span>`).join('');
     } else {
       selDiv.style.display='none';
     }
