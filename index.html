@@ -5074,7 +5074,17 @@ function renderBrSum(){
     const absence=bc.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
     const inc=bc.filter(c=>c.type==='in').length,cb=bc.filter(c=>c.type==='cb').length,out=bc.filter(c=>c.type==='out').length;
     const cancel=bc.reduce((a,c)=>a+(+c.cancel||0),0),noappt=bc.reduce((a,c)=>a+(+c.noappt||0),0);
-    const pSum={};bc.forEach(c=>{if(c.procs)Object.entries(c.procs).forEach(([pid,n])=>{pSum[pid]=(pSum[pid]||0)+n;});});
+    // 시술 집계 (하위 카테고리 포함)
+    const pSum={};const pNameCache={};
+    bc.forEach(c=>{
+      if(!c.procs) return;
+      Object.entries(c.procs).forEach(([key,n])=>{
+        if(!n) return;
+        if(!pNameCache[key]) pNameCache[key]=getProcName(key);
+        const name=pNameCache[key]||key;
+        pSum[name]=(pSum[name]||0)+n;
+      });
+    });
     const topP=Object.entries(pSum).sort((a,b)=>b[1]-a[1]).slice(0,5);
     const sRows=S.staff.map(s=>{
       const sc=bc.filter(c=>c.sid===s.id);if(!sc.length)return '';
@@ -5116,15 +5126,14 @@ function renderBrSum(){
         </div>
         <div>
           ${topP.length?`<div class="slbl" style="margin-bottom:8px">예약 시술 TOP</div>
-            <div class="proc-rank-list">${topP.map(([pid,n])=>{
-              const p=S.procedures.find(x=>x.id===pid);
+            <div class="proc-rank-list">${topP.map(([name,n])=>{
               const maxN=topP[0][1]||1;
-              return p?`<div class="proc-rank-row">
+              return `<div class="proc-rank-row">
                 <span style="font-size:16px"></span>
-                <span style="flex:1;font-size:12px;font-weight:600">${p.name}</span>
+                <span style="flex:1;font-size:12px;font-weight:600">${name}</span>
                 <div class="prr-bar-wrap"><div class="prr-bar" style="width:${Math.round(n/maxN*100)}%;background:${cl}"></div></div>
                 <span class="prr-cnt" style="color:${cl}">${n}</span>
-              </div>`:'';}).join('')}</div>`
+              </div>`;}).join('')}</div>`
             :'<div style="color:var(--text3);font-size:12px">시술 선택 없음</div>'}
         </div>
       </div></div>
