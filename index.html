@@ -1744,8 +1744,8 @@ td:first-child{text-align:left;padding-left:13px}
 </div>
 
 <!-- Modal: 즐겨찾기 별칭 설정 -->
-<div class="modal" id="modal-preset-alias" style="z-index:700">
-  <div class="mbox" style="width:560px;max-height:90vh;overflow-y:auto">
+<div class="modal" id="modal-preset-alias" style="z-index:1100">
+  <div class="mbox" style="width:560px;max-height:90vh;overflow-y:auto;pointer-events:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span class="mt" style="margin:0">⭐ 즐겨찾기 저장</span>
       <button onclick="closeModal('modal-preset-alias')" style="border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer">✕</button>
@@ -9027,6 +9027,7 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   부재         ${absence}건
   예약 취소    ${cancel}건
   미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}${chatChData.length?`
+  ──────────────────────
 
 📡 채널별 인입 현황
 ${chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu} · 잔여 ${ch.rem||0})`).join('\n')}`:''}
@@ -10725,7 +10726,7 @@ function renderPresetGroupBuilder(){
           placeholder="${item.name}"
           data-pkey="${item.key}"
           oninput="setPresetRowGroup(this)"
-          style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
+          style="width:100%;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#0f172a;box-sizing:border-box;outline:none" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='var(--border)'">
       </div>
     </div>`).join('')}`;
 
