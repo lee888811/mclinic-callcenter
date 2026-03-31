@@ -11058,6 +11058,8 @@ function getMonthCalls(mk){
   return allCalls;
 }
 function getMonthAnalysisCalls(mk){
+  // YYYY-MM-DD(일별) vs YYYY-MM(월별) 분기
+  if(mk && mk.length===10) return getAnalysisCalls(mk);
   return getMonthCalls(mk).filter(c=>c.type!=='out');
 }
 
@@ -11146,6 +11148,18 @@ function pmSetProcPeriod(period, el){
 function pmGetMonthDefs(chart){
   const acc=_pmAcc[chart];
   if(acc.from && acc.to) return getCustomMonthsData(acc.from.slice(0,7), acc.to.slice(0,7));
+  if(acc.months===1){
+    // 1개월: 최근 30일을 일별로 반환
+    const defs=[];
+    const today=new Date();
+    for(let i=29;i>=0;i--){
+      const d=new Date(today); d.setDate(today.getDate()-i);
+      const key=localDateStr(d);
+      const m=d.getMonth()+1, day=d.getDate();
+      defs.push({key, label:`${m}/${day}`, shortLabel:`${day}일`, year:d.getFullYear(), month:m, isDaily:true});
+    }
+    return defs;
+  }
   return getNMonthsData(acc.months||3);
 }
 
@@ -12619,9 +12633,10 @@ function renderTrendBrChart(monthDefs, filterBid){
       // 수치 (막대 위)
       if(v>0) vals += `<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-4).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${cl}">${v}</text>`;
     });
-    // 월 레이블
+    // 월 레이블 - 30일이면 5일 간격으로만 표시
     const cx = (groupX(i)+(barW*nBr+gap*(nBr-1))/2).toFixed(1);
-    xlbls += `<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text2)">${d.label}</text>`;
+    const showLbl = nMo<=12 || i===0 || i===nMo-1 || (i+1)%5===0;
+    if(showLbl) xlbls += `<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="${nMo>15?8:10}" fill="var(--text2)">${d.label}</text>`;
   });
 
   // ── 지점별 컬러 라인 (추이 연결) ──
@@ -12648,7 +12663,8 @@ function renderTrendBrChart(monthDefs, filterBid){
   if(tableEl){
     const thStyle='padding:6px 10px;border:1px solid var(--border);background:var(--s2);font-size:11px;font-weight:700;color:var(--text2);text-align:center;white-space:nowrap';
     const tdStyle='padding:5px 10px;border:1px solid var(--border);font-size:12px;font-weight:700;text-align:center;font-family:"DM Mono",monospace';
-    const header=`<tr><th style="${thStyle}">월</th>${activeBrs.map(b=>`<th style="${thStyle};color:${bclr(b.id)}">${b.name}</th>`).join('')}<th style="${thStyle}">합계</th></tr>`;
+    const isDaily = monthDefs[0]?.isDaily;
+    const header=`<tr><th style="${thStyle}">${isDaily?'날짜':'월'}</th>${activeBrs.map(b=>`<th style="${thStyle};color:${bclr(b.id)}">${b.name}</th>`).join('')}<th style="${thStyle}">합계</th></tr>`;
     const rows=data.map(d=>{
       const total=d.byBr.reduce((a,v)=>a+v,0);
       const cells=d.byBr.map((v,bi)=>`<td style="${tdStyle};color:${activeBrColors[bi]}">${v||'-'}</td>`).join('');
@@ -12739,7 +12755,8 @@ function renderTrendPtChart(monthDefs){
     dots+=`<circle cx="${xs}" cy="${yi(d.gu).toFixed(1)}" r="3.5" fill="#7c3aed" stroke="#fff" stroke-width="1.5"><title>${d.label} 구환: ${d.gu}</title></circle>`;
     if(d.shin>0) dots+=`<text x="${xs}" y="${(yi(d.shin)-7).toFixed(1)}" text-anchor="middle" font-size="8" fill="#059669" font-weight="700">${d.shin}</text>`;
     if(d.gu>0) dots+=`<text x="${xs}" y="${(yi(d.gu)+14).toFixed(1)}" text-anchor="middle" font-size="8" fill="#7c3aed" font-weight="700">${d.gu}</text>`;
-    lbls+=`<text x="${xs}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--text3)">${d.label}</text>`;
+    const showLbl = data.length<=12 || i===0 || i===data.length-1 || (i+1)%5===0;
+    if(showLbl) lbls+=`<text x="${xs}" y="${H-6}" text-anchor="middle" font-size="${data.length>15?8:10}" fill="var(--text3)">${d.label}</text>`;
   });
   // area fill
   const lastX=xi(data.length-1).toFixed(1);
