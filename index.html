@@ -4933,6 +4933,18 @@ function confirmCall(){
     if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
     return;
   }
+  // 미예약 선택 시 사유 필수
+  if(_callPttype==='미예약'){
+    const reason=document.getElementById('cf-noappt-reason')?.value||'';
+    if(!reason){
+      toast('⚠️ 미예약 사유를 선택해주세요');
+      document.getElementById('noappt-reason-section')?.scrollIntoView({behavior:'smooth',block:'center'});
+      // 사유 섹션 강조
+      const sec=document.getElementById('noappt-reason-section');
+      if(sec){ sec.style.border='1.5px solid #d97706'; setTimeout(()=>sec.style.border='1px solid rgba(217,119,6,.2)',2000); }
+      return;
+    }
+  }
   // VOC 섹션이 열려있고 내용 입력했는데 타입 미선택 시 차단
   const vocSec=document.getElementById('voc-section');
   if(vocSec && vocSec.style.display!=='none'){
