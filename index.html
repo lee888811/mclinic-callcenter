@@ -8966,8 +8966,23 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
       return {name:pNameMap[key]||key, n, shin:pCntShin[key]||0, gu:pCntGu[key]||0, rem:pCntRem[key]||0};
     }).filter(Boolean);
 
+  // 기타 전화 유형 집계
+  const miss=phoneCalls.filter(c=>c.type==='miss').length;
+  const ad=phoneCalls.filter(c=>c.type==='ad').length;
+  const absence1=phoneCalls.filter(c=>c.type==='absence1').length;
+  const absence2=phoneCalls.filter(c=>c.type==='absence2').length;
+
   // 텍스트 보고서
-  const phoneDetail=phoneCalls.length?`  ├ 수신(인콜)  ${incall}건\n  └ 콜백        ${cb}건`:'  (전화 상담 없음)';
+  const phoneLines=[];
+  if(incall>0) phoneLines.push(`  ├ 수신(인콜)  ${incall}건`);
+  if(cb>0)     phoneLines.push(`  ├ 콜백        ${cb}건`);
+  if(miss>0)   phoneLines.push(`  ├ 오발신      ${miss}건`);
+  if(ad>0)     phoneLines.push(`  ├ 광고        ${ad}건`);
+  if(absence1>0) phoneLines.push(`  ├ 비수신부재  ${absence1}건`);
+  if(absence2>0) phoneLines.push(`  ├ 미예약부재  ${absence2}건`);
+  // 마지막 항목 ├ → └ 변경
+  if(phoneLines.length>0) phoneLines[phoneLines.length-1]=phoneLines[phoneLines.length-1].replace('  ├','  └');
+  const phoneDetail=phoneCalls.length?phoneLines.join('\n'):'  (전화 상담 없음)';
   const chatDetail=chatCalls.length
     ? chatChData.map(ch=>`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건  (신환 ${ch.shin} · 구환 ${ch.gu})`).join('\n')
     : '  (채팅 상담 없음)';
@@ -8999,7 +9014,7 @@ ${posVocs.length ? `  😊 긍정 (${posVocs.length}건)\n${posVocs.map(v=>`    
 📊 전체 상담 현황
   총 상담      ${calls.length}건
   ├ 전화 상담  ${phoneCalls.length}건
-${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.trim()).join('\n') : ''}
+${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').replace(/^[├└]\s*/,'')).map((l,i,a)=>'  │  '+(i===a.length-1?'└ ':'├ ')+l).join('\n') : ''}
   └ 채팅 상담  ${chatCalls.length}건
   ──────────────────────
   신환(신규)   ${shin}건
@@ -10820,20 +10835,26 @@ function renderDpProcPills(allProcs, usedPids) {
   if(selDiv){
     if(_selectedPids && _selectedPids.size>0){
       selDiv.style.display='flex';
-      // 선택됨: 하위 카테고리가 있으면 하위로, 없으면 상위 이름 표시
       const selItems=[];
-      [..._selectedPids].forEach(pid=>{
-        const p=S.procedures.find(x=>x.id===pid);
-        if(!p) return;
-        const clr=CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length]||'var(--accent)';
-        if(p.subs && p.subs.length>0){
-          p.subs.forEach((sub,i)=>{
-            selItems.push({label:sub.name, clr, removeKey:pid, subKey:`${pid}:${i}`});
-          });
-        } else {
-          selItems.push({label:p.name, clr, removeKey:pid, subKey:null});
-        }
-      });
+      if(_selectedSubs && _selectedSubs.size>0){
+        // 하위 선택된 것만 표시
+        [..._selectedSubs].forEach(key=>{
+          const [pid,idxStr]=key.split(':');
+          const proc=S.procedures.find(x=>x.id===pid);
+          const sub=proc?.subs?.[parseInt(idxStr)];
+          if(!sub) return;
+          const clr=CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length]||'var(--accent)';
+          selItems.push({label:sub.name, clr, removeKey:pid, key});
+        });
+      } else {
+        // 하위 선택 없으면 상위 이름만 표시
+        [..._selectedPids].forEach(pid=>{
+          const p=S.procedures.find(x=>x.id===pid);
+          if(!p) return;
+          const clr=CLR[S.procedures.findIndex(x=>x.id===pid)%CLR.length]||'var(--accent)';
+          selItems.push({label:p.name, clr, removeKey:pid, key:pid});
+        });
+      }
       selDiv.innerHTML=`<span style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0">✅ 선택됨:</span>`+
         selItems.map(item=>`<span style="padding:2px 8px;border-radius:10px;background:${item.clr};color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
           ${item.label}
