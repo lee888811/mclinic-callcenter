@@ -2319,10 +2319,6 @@ td:first-child{text-align:left;padding-left:13px}
             <input type="radio" name="booking_type" value="추후" style="accent-color:#7c3aed"> 📆 추후 예약
           </label>
         </div>
-        <div id="booking-date-wrap" style="display:none;margin-top:8px">
-          <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">예약 날짜</label>
-          <input type="date" id="cf-booking-date" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text);font-size:13px;width:100%;box-sizing:border-box">
-        </div>
       </div>
       <!-- hidden inputs for backward compat -->
       <input type="hidden" id="cf-today" value="1">
@@ -3215,7 +3211,27 @@ function loadSyncSettings(){
     _lastSyncedAt=localStorage.getItem('mclinic_sync_last')||null;
   }catch(e){}
   updateSyncUI();
-  if(_syncUrl) startSyncPoll();
+  if(_syncUrl){
+    startSyncPoll();
+    // 앱 시작 시 즐겨찾기 즉시 pull
+    const base=_syncUrl.replace(/\/+$/,'');
+    fbFetch(base+'/mclinic/dpProcPresets.json').then(r=>r.json()).then(data=>{
+      if(Array.isArray(data)&&data.length>0){
+        try{localStorage.setItem('dp_proc_presets',JSON.stringify(data));}catch(e){}
+        try{renderDpProcPresets();}catch(e){}
+        try{renderTrendProcPresets();}catch(e){}
+      }
+    }).catch(()=>{
+      // 전체 경로에서 재시도
+      fbFetch(base+'/mclinic.json').then(r=>r.json()).then(data=>{
+        if(Array.isArray(data?.dpProcPresets)&&data.dpProcPresets.length>0){
+          try{localStorage.setItem('dp_proc_presets',JSON.stringify(data.dpProcPresets));}catch(e){}
+          try{renderDpProcPresets();}catch(e){}
+          try{renderTrendProcPresets();}catch(e){}
+        }
+      }).catch(()=>{});
+    });
+  }
 }
 
 function saveSyncSettings(){
@@ -3429,13 +3445,12 @@ async function syncPull(){
           try{ localStorage.setItem(`duty_data_${month}`, JSON.stringify(val)); }catch(e){}
         });
       }
-      // 즐겨찾기 프리셋
-      if(Array.isArray(data.dpProcPresets) && data.dpProcPresets.length>0){
-        try{ localStorage.setItem('dp_proc_presets', JSON.stringify(data.dpProcPresets)); }catch(e){}
-        // 현재 월간보고 탭이 열려있으면 즐겨찾기 즉시 재렌더
-        try{ renderDpProcPresets(); }catch(e){}
-        try{ renderTrendProcPresets(); }catch(e){}
-      }
+    }
+    // 즐겨찾기 프리셋 — canOverwrite 무관하게 항상 최신으로 업데이트
+    if(Array.isArray(data.dpProcPresets) && data.dpProcPresets.length>0){
+      try{ localStorage.setItem('dp_proc_presets', JSON.stringify(data.dpProcPresets)); }catch(e){}
+      try{ renderDpProcPresets(); }catch(e){}
+      try{ renderTrendProcPresets(); }catch(e){}
     }
     if(data._deletedIds?.length){
       if(!S._deletedIds) S._deletedIds=[];
@@ -4816,8 +4831,6 @@ function selectBookingType(type){
     lbl.style.background=isAct?'rgba(37,99,235,.08)':'var(--s2)';
     lbl.style.color=isAct?'var(--accent)':'var(--text2)';
   });
-  const dateWrap=document.getElementById('booking-date-wrap');
-  if(dateWrap) dateWrap.style.display=type==='추후'?'block':'none';
 }
 
 function filterProcGrid(q){
@@ -8737,6 +8750,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const absence=allCalls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
+  const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
+  const futureBooked=calls.filter(c=>c.bookingType==='추후').length;
   const out=phoneCalls.filter(c=>c.type==='out').length;
   const cancel=allCalls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=allCalls.reduce((a,c)=>a+(+c.noappt||0),0);
@@ -8967,6 +8982,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const unclassified=calls.length-classifiedTotal;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
+  const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
+  const futureBooked=calls.filter(c=>c.bookingType==='추후').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=calls.reduce((a,c)=>a+(+c.noappt||0),0);
 
@@ -9080,6 +9097,7 @@ ${posVocs.length ? `  😊 긍정 (${posVocs.length}건)\n${posVocs.map(v=>`    
 ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').replace(/^[├└]\s*/,'')).map((l,i,a)=>'  │  '+(i===a.length-1?'└ ':'├ ')+l).join('\n') : ''}
   └ 채팅 상담  ${chatCalls.length}건
   ──────────────────────
+  예약        ${booked}건 (당일 ${booked-futureBooked}건 · 추후 ${futureBooked}건)
   신환(신규)   ${shin}건
   구환         ${gu}건
   잔여시술     ${rem||0}건${general?`\n  일반문의     ${general}건`:''}${absence?`\n  부재         ${absence}건`:''}${cancelCnt?`\n  예약 취소    ${cancelCnt}건`:''}${noapptCnt?`\n  미예약      ${noapptCnt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}`:''}${unclassified>0?`\n  기타(미분류) ${unclassified}건`:''}
@@ -10671,6 +10689,11 @@ function getDpProcPresets(){
 }
 function saveDpProcPresetData(presets){
   try{ localStorage.setItem('dp_proc_presets', JSON.stringify(presets)); }catch(e){}
+  // Firebase 별도 경로에 즉시 저장
+  if(_syncUrl){
+    const base=_syncUrl.replace(/\/+$/,'');
+    fbFetch(base+'/mclinic/dpProcPresets.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(presets)}).catch(()=>{});
+  }
   markConfigDirty(); scheduleSyncPush();
 }
 
@@ -11832,6 +11855,18 @@ function renderTrendProcChartByPeriod(){
         style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent)':'var(--s1)'};color:${sel?'#fff':'var(--text2)'};cursor:pointer">${sub.name}</button>`;
     }).join('');
   } else if(subPanel){ subPanel.style.display='none'; }
+
+  if(!_trendProcs.length){
+    // 자동으로 가장 많이 사용된 시술 TOP 3 선택
+    const allPCnt={};
+    dates.forEach(ds=>filteredCalls(ds).forEach(c=>{
+      if(c.procs) Object.entries(c.procs).forEach(([key,n])=>{allPCnt[key]=(allPCnt[key]||0)+n;});
+    }));
+    _trendProcs=Object.entries(allPCnt).sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([key])=>key.includes(':')?key.split(':')[0]:key)
+      .filter((v,i,a)=>a.indexOf(v)===i); // 상위 pid 중복 제거
+    if(!_trendProcs.length) _trendProcs=S.procedures.slice(0,3).map(p=>p.id);
+  }
 
   if(!_trendProcs.length){
     document.getElementById('trend-proc-chart').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px">시술을 선택하세요</div>';
