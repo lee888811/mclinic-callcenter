@@ -1734,31 +1734,30 @@ td:first-child{text-align:left;padding-left:13px}
 
 <!-- Modal: 즐겨찾기 별칭 설정 -->
 <div class="modal" id="modal-preset-alias" style="z-index:700">
-  <div class="mbox" style="width:500px;max-height:90vh;overflow-y:auto">
+  <div class="mbox" style="width:560px;max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span class="mt" style="margin:0">⭐ 즐겨찾기 저장</span>
       <button onclick="closeModal('modal-preset-alias')" style="border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">각 시술의 표시 이름을 바꾸거나, 여러 시술을 하나로 묶을 수 있어요.</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">여러 시술을 하나의 이름으로 묶어서 보고할 수 있어요. 예) 써마지·첫)써마지·아이써마지 → <strong>써마지</strong></div>
 
     <!-- 즐겨찾기 이름 -->
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">즐겨찾기 이름</div>
       <input type="text" id="preset-alias-label" placeholder="예: 고정 보고, 김형석 고정 등"
         style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
     </div>
 
-    <!-- 시술별 별칭 + 그룹 -->
-    <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">시술별 표시 이름 변경 (비워두면 원래 이름 사용)</div>
-    <div id="preset-alias-rows" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
-
-    <!-- 그룹 묶기 안내 -->
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#1d4ed8">
-      💡 <strong>그룹 묶기:</strong> 같은 그룹명을 입력한 시술들은 보고 시 합산되어 그룹명으로 표시돼요.<br>
-      예) 튠페이스·튠아이즈·튠라이너 모두 그룹명 "튠" → 보고에서 "튠 3건"으로 표시
+    <!-- 그룹 설정 영역 -->
+    <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:8px">
+      🗂 그룹 설정
+      <span style="font-size:11px;font-weight:400;color:var(--text3);margin-left:6px">시술을 선택해서 그룹명을 지정하세요</span>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">그룹 묶기 (같은 이름으로 입력 시 합산)</div>
-    <div id="preset-alias-group-rows" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+    <div id="preset-group-builder" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
+    <button onclick="addPresetGroup()"
+      style="width:100%;padding:8px;border:1.5px dashed var(--border2);border-radius:8px;background:var(--s2);color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:16px">
+      + 그룹 추가
+    </button>
 
     <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:12px">
       <button class="btn btn-g" onclick="closeModal('modal-preset-alias')">취소</button>
@@ -10508,39 +10507,17 @@ function saveDpProcPresetData(presets){
   markConfigDirty(); scheduleSyncPush();
 }
 
-// 즐겨찾기 저장 버튼 → 별칭 설정 모달 열기
+// 즐겨찾기 저장 버튼 → 그룹 설정 모달 열기
 function saveDpProcPreset(){
   const pids = _selectedPids ? [..._selectedPids] : [];
   if(!pids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
-
-  // 기본 이름 세팅
   const defaultLabel = pids.map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
   document.getElementById('preset-alias-label').value = defaultLabel.length>30 ? defaultLabel.slice(0,30)+'...' : defaultLabel;
-
-  // 시술별 별칭 행 렌더
-  document.getElementById('preset-alias-rows').innerHTML = pids.map(pid=>{
-    const p=S.procedures.find(x=>x.id===pid);
-    const name=p?p.name:pid;
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
-      <span style="font-size:12px;color:var(--text3)">→</span>
-      <input type="text" id="alias-${pid}" placeholder="${name}" data-pid="${pid}"
-        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
-    </div>`;
-  }).join('');
-
-  // 그룹 묶기 행 렌더
-  document.getElementById('preset-alias-group-rows').innerHTML = pids.map(pid=>{
-    const p=S.procedures.find(x=>x.id===pid);
-    const name=p?p.name:pid;
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
-      <span style="font-size:12px;color:var(--text3)">그룹명:</span>
-      <input type="text" id="group-${pid}" placeholder="예: 튠 (비워두면 그룹 없음)" data-pid="${pid}"
-        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
-    </div>`;
-  }).join('');
-
+  delete document.getElementById('modal-preset-alias').dataset.editId;
+  _presetBuilderPids = pids;
+  // 기본 그룹 1개 (전체 시술 포함, 그룹명 없음)
+  _presetGroups = [{name:'', pids:[...pids]}];
+  renderPresetGroupBuilder();
   document.getElementById('modal-preset-alias').classList.add('open');
 }
 
@@ -10548,75 +10525,115 @@ function editDpProcPreset(presetId){
   const presets = getDpProcPresets();
   const p = presets.find(x=>x.id===presetId);
   if(!p) return;
-
-  // 현재 프리셋 pids로 모달 열기
-  const prevPids = _selectedPids ? [..._selectedPids] : [];
-  _selectedPids = new Set(p.pids);
-
   document.getElementById('preset-alias-label').value = p.label;
-
-  // 시술별 별칭 행 렌더 (기존값 채워서)
-  document.getElementById('preset-alias-rows').innerHTML = p.pids.map(pid=>{
-    const proc=S.procedures.find(x=>x.id===pid);
-    const name=proc?proc.name:pid;
-    const existAlias=p.aliases?.[pid]||'';
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
-      <span style="font-size:12px;color:var(--text3)">→</span>
-      <input type="text" id="alias-${pid}" placeholder="${name}" value="${escHtml(existAlias)}" data-pid="${pid}"
-        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
-    </div>`;
-  }).join('');
-
-  document.getElementById('preset-alias-group-rows').innerHTML = p.pids.map(pid=>{
-    const proc=S.procedures.find(x=>x.id===pid);
-    const name=proc?proc.name:pid;
-    const existGroup=p.groups?.[pid]||'';
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
-      <span style="font-size:12px;color:var(--text3)">그룹명:</span>
-      <input type="text" id="group-${pid}" placeholder="예: 튠 (비워두면 그룹 없음)" value="${escHtml(existGroup)}" data-pid="${pid}"
-        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
-    </div>`;
-  }).join('');
-
-  // 저장 시 기존 프리셋 덮어쓰기 위해 id 숨겨두기
   document.getElementById('modal-preset-alias').dataset.editId = presetId;
+  _presetBuilderPids = p.pids||[];
+  // 기존 groups 복원
+  if(p.groupDefs && p.groupDefs.length){
+    _presetGroups = p.groupDefs.map(g=>({name:g.name, pids:[...g.pids]}));
+    // groupDefs에 없는 시술들은 미그룹 처리
+    const assignedPids = new Set(_presetGroups.flatMap(g=>g.pids));
+    const unassigned = _presetBuilderPids.filter(pid=>!assignedPids.has(pid));
+    if(unassigned.length) _presetGroups.push({name:'', pids:unassigned});
+  } else {
+    // 구버전 groups 포맷 변환
+    const groupMap = p.groups||{};
+    const grouped = {};
+    _presetBuilderPids.forEach(pid=>{
+      const g = groupMap[pid]||'';
+      if(!grouped[g]) grouped[g]=[];
+      grouped[g].push(pid);
+    });
+    _presetGroups = Object.entries(grouped).map(([name,pids])=>({name, pids}));
+  }
+  renderPresetGroupBuilder();
   document.getElementById('modal-preset-alias').classList.add('open');
+}
 
-  // 원래 선택 복원
-  _selectedPids = prevPids.length ? new Set(prevPids) : null;
+// 그룹 빌더 상태
+let _presetBuilderPids = [];
+let _presetGroups = [{name:'', pids:[]}]; // [{name, pids:[]}]
+
+function renderPresetGroupBuilder(){
+  const el = document.getElementById('preset-group-builder');
+  if(!el) return;
+  const allPids = _presetBuilderPids;
+  // 각 pid가 어느 그룹에 있는지
+  const pidGroupIdx = {};
+  _presetGroups.forEach((g,gi)=>g.pids.forEach(pid=>pidGroupIdx[pid]=gi));
+
+  el.innerHTML = _presetGroups.map((g,gi)=>{
+    const pills = allPids.map(pid=>{
+      const proc = S.procedures.find(x=>x.id===pid);
+      const name = proc?proc.name:pid;
+      const inThis = g.pids.includes(pid);
+      const inOther = pidGroupIdx[pid]!==undefined && pidGroupIdx[pid]!==gi;
+      const style = inThis
+        ? `background:#2563eb;color:#fff;border-color:#2563eb`
+        : inOther
+          ? `background:var(--s3);color:var(--text3);border-color:var(--border);opacity:.4;cursor:not-allowed`
+          : `background:var(--s2);color:var(--text2);border-color:var(--border)`;
+      return `<span onclick="togglePresetGroupPid(${gi},'${pid}')"
+        style="padding:3px 10px;border-radius:12px;border:1.5px solid;font-size:11px;font-weight:700;cursor:pointer;transition:all .1s;${style}">${name}</span>`;
+    }).join('');
+
+    return `<div style="background:var(--s1);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);white-space:nowrap">표시 이름</span>
+        <input type="text" id="preset-group-name-${gi}" value="${escHtml(g.name)}"
+          placeholder="예: 써마지, 튠, 보톡스 (비워두면 개별 표시)"
+          oninput="_presetGroups[${gi}].name=this.value"
+          style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;background:#fff;color:var(--text)">
+        ${_presetGroups.length>1?`<button onclick="removePresetGroup(${gi})" style="border:none;background:#fee2e2;color:#ef4444;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${pills}</div>
+    </div>`;
+  }).join('');
+}
+
+function togglePresetGroupPid(gi, pid){
+  const g = _presetGroups[gi];
+  const idx = g.pids.indexOf(pid);
+  // 다른 그룹에 있으면 무시
+  const inOther = _presetGroups.some((og,oi)=>oi!==gi && og.pids.includes(pid));
+  if(inOther) return;
+  if(idx>=0) g.pids.splice(idx,1);
+  else g.pids.push(pid);
+  renderPresetGroupBuilder();
+}
+
+function addPresetGroup(){
+  _presetGroups.push({name:'', pids:[]});
+  renderPresetGroupBuilder();
+}
+
+function removePresetGroup(gi){
+  _presetGroups.splice(gi,1);
+  renderPresetGroupBuilder();
 }
 
 function confirmSaveDpProcPreset(){
-  const pids = _selectedPids ? [..._selectedPids] : [];
   const label = document.getElementById('preset-alias-label')?.value.trim();
   if(!label){ toast('⚠️ 즐겨찾기 이름을 입력해주세요'); return; }
 
-  const aliases={};
-  pids.forEach(pid=>{
-    const v=document.getElementById('alias-'+pid)?.value.trim();
-    if(v) aliases[pid]=v;
-  });
-
-  const groups={};
-  pids.forEach(pid=>{
-    const v=document.getElementById('group-'+pid)?.value.trim();
-    if(v) groups[pid]=v;
+  // groupDefs에서 groups/aliases 역산 (기존 집계 로직 호환)
+  const groups={}, aliases={};
+  _presetGroups.forEach(g=>{
+    if(g.name && g.pids.length>0){
+      g.pids.forEach(pid=>{ groups[pid]=g.name; });
+    }
   });
 
   const editId = document.getElementById('modal-preset-alias').dataset.editId||'';
   let presets = getDpProcPresets();
 
   if(editId){
-    // 편집 모드: 기존 프리셋 덮어쓰기
     const idx = presets.findIndex(x=>x.id===editId);
-    if(idx>=0) presets[idx]={...presets[idx], label, aliases, groups};
+    if(idx>=0) presets[idx]={...presets[idx], label, pids:_presetBuilderPids, aliases, groups, groupDefs:[..._presetGroups]};
     delete document.getElementById('modal-preset-alias').dataset.editId;
   } else {
-    // 새 저장
-    if(!pids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
-    presets.push({ id:'preset_'+Date.now(), label, pids, aliases, groups });
+    if(!_presetBuilderPids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
+    presets.push({ id:'preset_'+Date.now(), label, pids:_presetBuilderPids, aliases, groups, groupDefs:[..._presetGroups] });
   }
 
   saveDpProcPresetData(presets);
