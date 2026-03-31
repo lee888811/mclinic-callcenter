@@ -363,6 +363,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="trend" onclick="go('trend',this)"><span class="sico">📈</span>월간 보고</div>
     <div class="si" data-page="procmatrix" onclick="go('procmatrix',this)"><span class="sico">📊</span>시술×지점 분석</div>
     <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 인입</div>
+    <div class="si" data-page="noappt" onclick="go('noappt',this)"><span class="sico">⏳</span>미예약 현황</div>
     <div class="si" data-page="voc" onclick="go('voc',this)"><span class="sico">💬</span>VOC</div>
     <div class="si" data-page="retention" onclick="go('retention',this)"><span class="sico">🔁</span>신환 재방문율</div>
     <div class="si" data-page="funnel" onclick="go('funnel',this)"><span class="sico">🔽</span>예약 전환율</div>
@@ -761,6 +762,29 @@ td:first-child{text-align:left;padding-left:13px}
     ══════════════════════════════════════════ -->
     <!-- ═══ 마케팅 페이지 ═══ -->
     <!-- VOC 페이지 -->
+    <!-- 미예약 현황 -->
+    <div class="page" id="page-noappt">
+      <div class="ph">
+        <div><div class="pt">⏳ 미예약 현황</div><div class="ps">지점별 미예약 목록 · 아웃콜 대상 관리</div></div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:700;color:var(--text2)">기간</span>
+          <button id="noappt-period-btn-today" onclick="setNoapptPeriod('today',this)" class="period-btn act">당일</button>
+          <button id="noappt-period-btn-week"  onclick="setNoapptPeriod('week',this)"  class="period-btn">이번주</button>
+          <button id="noappt-period-btn-month" onclick="setNoapptPeriod('month',this)" class="period-btn">이번달</button>
+          <button id="noappt-period-btn-custom" onclick="setNoapptPeriod('custom',this)" class="period-btn">직접선택</button>
+          <div id="noappt-custom-range" style="display:none;align-items:center;gap:4px">
+            <input type="date" id="noappt-from" onchange="renderNoapptPage()" style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+            <span style="font-size:11px;color:var(--text3)">~</span>
+            <input type="date" id="noappt-to"   onchange="renderNoapptPage()" style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+          </div>
+          <button onclick="renderNoapptPage()" style="padding:4px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto">🔄 새로고침</button>
+        </div>
+      </div>
+      <div id="noappt-content"></div>
+    </div>
+
     <div class="page" id="page-voc">
       <div class="ph">
         <div><div class="pt">💬 VOC 보고서</div><div class="ps">긍정 VOC · 컴플레인 현황 · 처리 상태 관리</div></div>
@@ -1419,6 +1443,15 @@ td:first-child{text-align:left;padding-left:13px}
           <!-- 선택된 시술 표시 -->
           <div id="dp-selected-procs" style="display:none;margin-bottom:8px;padding:6px 10px;background:#fff;border:1.5px solid var(--accent);border-radius:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
             <span style="font-size:11px;color:var(--text3);white-space:nowrap">선택됨:</span>
+          </div>
+          <!-- 시술 프리셋 -->
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);white-space:nowrap">⭐ 즐겨찾기:</span>
+            <div id="dp-proc-presets" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+            <button onclick="saveDpProcPreset()"
+              style="padding:3px 10px;border-radius:10px;border:1.5px dashed var(--border2);background:var(--s2);color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">
+              + 현재 선택 저장
+            </button>
           </div>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
             <span style="font-size:15px;font-weight:800;color:#0f172a;white-space:nowrap">시술 선택</span>
@@ -2144,7 +2177,7 @@ td:first-child{text-align:left;padding-left:13px}
     </div>
 
     <div class="ml">지점 * <span id="branch-required-hint" style="font-size:10px;color:#dc2626;font-weight:600;display:none">← 지점을 선택해주세요</span>
-      <span style="font-size:11px;color:#f59e0b;margin-left:6px">※ 2개 지점 예약 시 콜 기록을 따로 작성해주세요</span>
+      <span style="font-size:11px;color:#94a3b8;margin-left:6px">복수 선택 가능 · 동행 예약 시 동행 버튼 사용</span>
     </div>
     <div class="branch-pills" id="modal-branch-pills"></div>
     <!-- 잔여시술 특수 버튼 -->
@@ -2157,6 +2190,27 @@ td:first-child{text-align:left;padding-left:13px}
         style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #7c3aed;background:var(--s2);color:#7c3aed;transition:all .15s">
         💊 강남/구월잔여시술
       </button>
+    </div>
+    <!-- 동행 버튼 -->
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;color:var(--text3)">👥 동행:</span>
+      <button id="together-btn-1" onclick="setTogetherCount(1)"
+        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--accent);color:#fff;transition:all .15s">
+        1명 (기본)
+      </button>
+      <button id="together-btn-2" onclick="setTogetherCount(2)"
+        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
+        2명
+      </button>
+      <button id="together-btn-3" onclick="setTogetherCount(3)"
+        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
+        3명
+      </button>
+      <button id="together-btn-4" onclick="setTogetherCount(4)"
+        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
+        4명
+      </button>
+      <span id="together-hint" style="font-size:11px;color:#f59e0b;display:none">→ 저장 시 콜 N개 자동 생성</span>
     </div>
 
     <div id="below-branch-wrap">
@@ -2909,6 +2963,7 @@ const PERM_PAGES = [
   {key:'trend',     label:'월간 보고',         tab:'analysis'},
   {key:'procmatrix',label:'시술×지점 분석',    tab:'analysis'},
   {key:'channel',   label:'채널 인입',         tab:'analysis'},
+  {key:'noappt',    label:'미예약 현황',        tab:'analysis'},
   {key:'voc',       label:'VOC',              tab:'analysis'},
   {key:'retention', label:'신환 재방문율',     tab:'analysis'},
   {key:'funnel',    label:'예약 전환율',       tab:'analysis'},
@@ -3643,7 +3698,8 @@ function go(pid,el){
   else if(pid==='procs') renderProcMgmt();
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); }
+  else if(pid==='noappt') renderNoapptPage();
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); }
   else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   else if(pid==='closingrpt'){
     const cr=document.getElementById('cr-date');
@@ -4190,6 +4246,7 @@ function deleteCall(cid,sid,ds){
 // CALL MODAL
 // ═══════════════════════════════════
 let _callType='in',_callDegree=3,_callBids=new Set(),_callBid=null,_callPttypes=new Set(['신환']),_callPttype='신환',_callMedium='phone',_callBookingType='당일';
+let _togetherCount=1;
 let _outPurpose='예약안내', _outResult='통화성공';
 const _procSel={};
 let _editCallId=null, _editCallDate=null;
@@ -4393,6 +4450,9 @@ function openCallModal(sid){
     const el=document.getElementById(id);
     if(el){ el.dataset.active='0'; el.style.background='var(--s2)'; el.style.color=id.includes('bp')?'#0891b2':'#7c3aed'; el.style.borderColor=id.includes('bp')?'#0891b2':'#7c3aed'; }
   });
+  // 동행 버튼 초기화
+  _togetherCount=1;
+  setTogetherCount(1);
   document.getElementById('modal-branch-pills').innerHTML=activeBranches().map(b=>{
     return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
   }).join('');
@@ -4598,13 +4658,34 @@ function selectResidualBranch(type){
   const hint=document.getElementById('branch-required-hint');
   if(hint) hint.style.display='none';
 }
+function setTogetherCount(n){
+  _togetherCount=n;
+  [1,2,3,4].forEach(i=>{
+    const btn=document.getElementById('together-btn-'+i);
+    if(!btn) return;
+    const isAct=(i===n);
+    btn.style.background=isAct?'var(--accent)':'var(--s2)';
+    btn.style.color=isAct?'#fff':'var(--text2)';
+    btn.style.borderColor=isAct?'var(--accent)':'var(--border)';
+  });
+  const hint=document.getElementById('together-hint');
+  if(hint){
+    hint.style.display=n>1?'inline':'none';
+    hint.textContent=`→ 저장 시 콜 ${n}개 자동 생성`;
+  }
+}
+
 function selectBranch(bid){
-  // 단일 선택
-  _callBid = (_callBid === bid) ? null : bid;
-  _callBids = new Set(_callBid ? [_callBid] : []);
+  // 복수 선택 토글
+  if(_callBids.has(bid)){
+    _callBids.delete(bid);
+  } else {
+    _callBids.add(bid);
+  }
+  _callBid=[..._callBids][0]||null;
   document.querySelectorAll('.br-pill').forEach(p=>{
     const id=p.id.replace('bpill-','');
-    const isAct=(id===_callBid);
+    const isAct=_callBids.has(id);
     const cl=bclr(id);
     p.className='br-pill'+(isAct?' act':'');
     p.style.cssText=isAct?`background:${cl};border-color:${cl};color:#fff`:'';
@@ -4891,7 +4972,20 @@ function confirmCall(){
   } else {
     const ds=_curDate||todayStr();
     if(!S.calls[ds]) S.calls[ds]=[];
-    S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:nowTime(),...callData,bids:undefined});
+    const bidsArr2=[..._callBids];
+    const targetBids = bidsArr2.length>1 ? bidsArr2 : [primaryBid];
+    // 복수 지점 × 동행 인원 조합으로 콜 생성
+    const t=nowTime();
+    for(const tbid of targetBids){
+      for(let ti=0;ti<_togetherCount;ti++){
+        const togetherNote = _togetherCount>1 ? `[동행${_togetherCount}명${ti>0?' '+( ti+1)+'번째':''}]` : '';
+        const baseMemo = callData.memo||'';
+        const finalMemo = togetherNote ? (baseMemo ? togetherNote+' '+baseMemo : togetherNote) : baseMemo;
+        S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:t,...callData,bid:tbid,bids:undefined,memo:finalMemo});
+      }
+    }
+    const totalSaved = targetBids.length * _togetherCount;
+    if(totalSaved>1) toastMsg=`✅ ${totalSaved}건 저장됨 (지점 ${targetBids.length}개 × 동행 ${_togetherCount}명)`;
   }
   const _savedDate = _editCallDate || _curDate || todayStr();
   scheduleSyncPush(_savedDate);
@@ -4905,7 +4999,8 @@ function confirmCall(){
     else if(pid==='brsum') renderBrSum();
     else if(pid==='history') renderHistory();
     else if(pid==='channel') renderChannelPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); }
+  else if(pid==='noappt') renderNoapptPage();
+  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); }
     else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   }
   // 저장 후 토스트: 신규 콜이면 "다른 지점 예약 추가" 버튼 포함
@@ -7980,6 +8075,130 @@ function setChPeriod(period, el){
   }
   renderChannelPage();
 }
+// ════════════════════════════════════
+// 미예약 현황 페이지
+// ════════════════════════════════════
+let _noapptPeriod = 'today';
+
+function setNoapptPeriod(p, el){
+  _noapptPeriod = p;
+  ['today','week','month','custom'].forEach(x=>{
+    const b=document.getElementById('noappt-period-btn-'+x);
+    if(b) b.className='period-btn'+(x===p?' act':'');
+  });
+  const cr=document.getElementById('noappt-custom-range');
+  if(cr) cr.style.display=p==='custom'?'flex':'none';
+  renderNoapptPage();
+}
+
+function getNoapptRange(){
+  const today=todayStr();
+  if(_noapptPeriod==='today') return {from:today, to:today};
+  if(_noapptPeriod==='week'){
+    const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
+    return {from:localDateStr(d), to:today};
+  }
+  if(_noapptPeriod==='month'){
+    const d=new Date();
+    return {from:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`, to:today};
+  }
+  return {
+    from:document.getElementById('noappt-from')?.value||today,
+    to:document.getElementById('noappt-to')?.value||today
+  };
+}
+
+function renderNoapptPage(){
+  const el=document.getElementById('noappt-content');
+  if(!el) return;
+  const {from,to}=getNoapptRange();
+
+  // 기간 내 미예약 콜 수집
+  const noapptCalls=[];
+  Object.keys(S.calls).filter(ds=>ds>=from&&ds<=to).forEach(ds=>{
+    (S.calls[ds]||[]).forEach(c=>{ if(c.pttype==='미예약'||c.noappt>0) noapptCalls.push(c); });
+  });
+
+  if(!noapptCalls.length){
+    el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3);background:var(--s1);border:1px solid var(--border);border-radius:12px">
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-weight:700">해당 기간 미예약 없음</div>
+    </div>`;
+    return;
+  }
+
+  // 사유별 전체 요약
+  const reasonMap={};
+  noapptCalls.forEach(c=>{ const r=c.noapptReason||'사유미입력'; reasonMap[r]=(reasonMap[r]||0)+1; });
+  const reasonHtml=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]).map(([r,n])=>
+    `<span style="padding:3px 10px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:12px;font-weight:700;color:#d97706">${r} ${n}건</span>`
+  ).join('');
+
+  // 지점별 섹션 생성
+  const branches=activeBranches();
+  const branchSections=branches.map(b=>{
+    const bCalls=noapptCalls.filter(c=>c.bid===b.id).sort((a,c2)=>(c2.date+c2.time||'').localeCompare(a.date+a.time||''));
+    const bc=bclr(b.id);
+    if(!bCalls.length) return `
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:${bc}12;border-bottom:1px solid ${bc}33">
+          <span style="font-size:15px;font-weight:800;color:${bc}">${b.name}점</span>
+          <span style="font-size:12px;background:var(--s2);color:var(--text3);padding:2px 10px;border-radius:10px;font-weight:600">미예약 없음</span>
+        </div>
+      </div>`;
+    const cards=bCalls.map(c=>{
+      const procs=Object.entries(c.procs||{}).filter(([,n])=>n>0).map(([pid])=>getProcName(pid)).join(', ');
+      const staff=S.staff.find(x=>x.id===c.sid);
+      const reason=c.noapptReason||'';
+      const memo=c.noapptMemo||c.memo||'';
+      return `<div style="background:#fff;border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:${procs||memo?'5px':'0'}">
+          ${reason?`<span style="font-size:12px;background:#fff7ed;color:#d97706;padding:2px 9px;border-radius:8px;border:1px solid #fed7aa;font-weight:700">${reason}</span>`:'<span style="font-size:12px;color:var(--text3)">사유미입력</span>'}
+          <span style="font-size:11px;color:var(--text3);margin-left:auto">${c.date||''} ${c.time||''}</span>
+          ${staff?`<span style="font-size:11px;font-weight:600;color:var(--text2)">${staff.name}</span>`:''}
+        </div>
+        ${procs?`<div style="font-size:12px;color:var(--text2);margin-bottom:2px">🎯 ${procs}</div>`:''}
+        ${memo?`<div style="font-size:12px;color:#b45309">📝 ${escHtml(memo)}</div>`:''}
+      </div>`;
+    }).join('');
+    return `
+      <div style="background:var(--s1);border:1.5px solid ${bc}44;border-radius:12px;margin-bottom:14px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:${bc}12;border-bottom:1px solid ${bc}33">
+          <span style="font-size:16px;font-weight:800;color:${bc}">${b.name}점</span>
+          <span style="font-size:13px;background:${bc};color:#fff;padding:2px 12px;border-radius:10px;font-weight:700">${bCalls.length}건</span>
+        </div>
+        <div style="padding:10px 12px">${cards}</div>
+      </div>`;
+  }).join('');
+
+  // 지점 미배정 미예약
+  const unassigned=noapptCalls.filter(c=>!c.bid||!branches.find(b=>b.id===c.bid));
+  const unassignedSection=unassigned.length?`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--s2);border-bottom:1px solid var(--border)">
+        <span style="font-size:15px;font-weight:800;color:var(--text2)">지점 미배정</span>
+        <span style="font-size:12px;background:#e2e8f0;color:#64748b;padding:2px 10px;border-radius:10px;font-weight:700">${unassigned.length}건</span>
+      </div>
+      <div style="padding:10px 12px">${unassigned.map(c=>{
+        const procs=Object.entries(c.procs||{}).filter(([,n])=>n>0).map(([pid])=>getProcName(pid)).join(', ');
+        const staff=S.staff.find(x=>x.id===c.sid);
+        return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px;color:var(--text2)">
+          ${c.noapptReason||'사유미입력'} · ${c.date||''} ${c.time||''}${staff?' · '+staff.name:''}${procs?' · 🎯'+procs:''}
+        </div>`;
+      }).join('')}</div>
+    </div>`:'';
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:14px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:var(--text2)">전체 미예약 ${noapptCalls.length}건</span>
+        <span style="font-size:11px;color:var(--text3)">${from===to?from:from+' ~ '+to}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${reasonHtml||'<span style="color:var(--text3);font-size:12px">사유 없음</span>'}</div>
+    </div>
+    ${branchSections}${unassignedSection}`;
+}
+
+
 function renderChannelPage(){
   const {from,to}=getPeriodDates(_chPeriod,'ch-date-from','ch-date-to');
   document.getElementById('ch-date-lbl').textContent=periodLabel(from,to);
@@ -10227,6 +10446,56 @@ function setDailyProcPeriod(period, el){
 
 // 시술 pill 필터 렌더링 — S.procedures 전체 표시, 데이터 없으면 흐리게
 let _selectedPids = null;    // null=전체, Set=선택된 상위 pid
+
+// ── 시술 프리셋 ────────────────────────────────
+function getDpProcPresets(){
+  try{ return JSON.parse(localStorage.getItem('dp_proc_presets')||'[]'); }catch(e){ return []; }
+}
+function saveDpProcPresetData(presets){
+  try{ localStorage.setItem('dp_proc_presets', JSON.stringify(presets)); }catch(e){}
+  markConfigDirty(); scheduleSyncPush();
+}
+function saveDpProcPreset(){
+  const pids = _selectedPids ? [..._selectedPids] : [];
+  if(!pids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
+  const names = pids.map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
+  const label = prompt(`즐겨찾기 이름을 입력해주세요\n(선택된 시술: ${names})`, names.length>20?names.slice(0,20)+'..':names);
+  if(!label) return;
+  const presets = getDpProcPresets();
+  presets.push({ id:'preset_'+Date.now(), label, pids });
+  saveDpProcPresetData(presets);
+  renderDpProcPresets();
+  toast(`⭐ "${label}" 즐겨찾기 저장됨`);
+}
+function applyDpProcPreset(presetId){
+  const presets = getDpProcPresets();
+  const p = presets.find(x=>x.id===presetId);
+  if(!p) return;
+  _selectedPids = new Set(p.pids);
+  renderDailyProcTable();
+  toast(`⭐ "${p.label}" 적용됨`);
+}
+function deleteDpProcPreset(presetId){
+  const presets = getDpProcPresets().filter(x=>x.id!==presetId);
+  saveDpProcPresetData(presets);
+  renderDpProcPresets();
+  toast('🗑 즐겨찾기 삭제됨');
+}
+function renderDpProcPresets(){
+  const el = document.getElementById('dp-proc-presets');
+  if(!el) return;
+  const presets = getDpProcPresets();
+  if(!presets.length){
+    el.innerHTML='<span style="font-size:11px;color:var(--text3)">없음</span>';
+    return;
+  }
+  el.innerHTML = presets.map(p=>`
+    <div style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px 3px 10px;border-radius:12px;background:#fef9c3;border:1.5px solid #fde68a;font-size:11px;font-weight:700;color:#854d0e">
+      <span onclick="applyDpProcPreset('${p.id}')" style="cursor:pointer">${p.label}</span>
+      <span onclick="deleteDpProcPreset('${p.id}')" style="cursor:pointer;color:#b45309;margin-left:2px;font-size:10px">✕</span>
+    </div>`).join('');
+}
+
 let _selectedSubs = null;    // null=전체, Set=선택된 하위 키("pid:subIdx")
 let _focusedPid = null;      // 하위 카테고리 표시 중인 상위 pid
 
