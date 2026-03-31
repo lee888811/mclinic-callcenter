@@ -1592,10 +1592,18 @@ td:first-child{text-align:left;padding-left:13px}
             style="padding:2px 10px;border-radius:12px;border:1.5px solid var(--accent);font-size:11px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;transition:all .15s">전체</button>
           <div id="dp-br-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
         </div>
+        <!-- 표/그래프 탭 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;gap:4px">
+            <button id="dp-tab-table" onclick="switchDpTab('table')" style="padding:4px 14px;border-radius:8px;border:2px solid #2563eb;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📋 표</button>
+            <button id="dp-tab-chart" onclick="switchDpTab('chart')" style="padding:4px 14px;border-radius:8px;border:2px solid var(--border);background:var(--s1);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer">📊 그래프</button>
+          </div>
+          <button id="dp-copy-btn" onclick="copyDpViewImage()" style="padding:4px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📸 이미지 복사</button>
+        </div>
         <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
+        <div id="daily-proc-chart" style="display:none;overflow-x:auto"></div>
         <div id="branch-call-table" style="overflow-x:auto;font-size:11px;margin-top:16px"></div>
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button onclick="copyDpTableImage()" style="padding:6px 14px;background:#2563eb;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;color:#fff">📸 표 이미지 복사</button>
           <button onclick="downloadBranchCallTemplate()" style="padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">📥 CSV 양식 다운로드</button>
           <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">
             📂 과거 엑셀 업로드
@@ -2915,14 +2923,40 @@ function initAuth(){
   }catch(e){}
   // 세션 없으면 로그인 화면 표시
   renderLoginScreen();
-  // Firebase에서 직원 목록 받아오기 (로그인 화면 직원 목록 갱신용)
-  if(_syncUrl){
+  // 활성 직원이 없고 Firebase URL이 있으면 즉시 직원 불러오기
+  const activeStaff = (S.staff||[]).filter(s=>!s.retired);
+  if(!activeStaff.length && _syncUrl && !_loginAutoFetching){
+    _loginAutoFetching = true;
+    const base=_syncUrl.replace(/\/+$/,'');
+    fetch(base+'/mclinic.json')
+      .then(r=>r.json())
+      .then(json=>{
+        _loginAutoFetching=false;
+        if(json){
+          ['branches','staff','procedures','channels','roles'].forEach(k=>{
+            if(json[k]&&json[k].length>0) S[k]=json[k];
+          });
+          if(json.calls) S.calls=json.calls;
+          if(json.notes) S.notes=json.notes;
+          if(json.faqs) S.faqs=json.faqs;
+          if(json.perfGoals) S.perfGoals=json.perfGoals;
+          if(json.adBudgets) S.adBudgets=json.adBudgets;
+          if(json.incentive) S.incentive=json.incentive;
+          if(json.masterPw) S.masterPw=json.masterPw;
+          try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
+        }
+        if(!_currentUser) renderLoginScreen();
+      })
+      .catch(()=>{
+        _loginAutoFetching=false;
+      });
+  } else if(_syncUrl){
+    // 직원은 있지만 최신 데이터 갱신
     const base=_syncUrl.replace(/\/+$/,'');
     fetch(base+'/mclinic.json')
       .then(r=>r.json())
       .then(json=>{
         if(json){
-          // staff/branches 등 최신 설정 반영 - 빈 배열은 무시
           ['branches','staff','procedures','channels','roles'].forEach(k=>{
             if(json[k]&&json[k].length>0) S[k]=json[k];
           });
@@ -2934,33 +2968,36 @@ function initAuth(){
           if(json.incentive) S.incentive=json.incentive;
           try{localStorage.setItem('mclinic_v2',JSON.stringify(S));}catch(e){}
         }
-        // 아직 로그인 전이면 직원 목록 다시 그리기
         if(!_currentUser) renderLoginScreen();
       })
-      .catch(()=>{
-        // 실패해도 기존 로그인 화면 유지
-      });
+      .catch(()=>{});
   }
 }
 
 function renderLoginScreen(){
   document.getElementById('login-screen').classList.remove('hidden');
   // 직원 목록 렌더
-  if(!S.staff||!S.staff.length){
+  const activeStaff = (S.staff||[]).filter(s=>!s.retired);
+  if(!activeStaff.length){
     document.getElementById('login-staff-grid').innerHTML=
-      '<div style="grid-column:1/-1;text-align:center;padding:18px;font-size:13px;color:var(--text3)">⏳ 직원 정보 불러오는 중…</div>';
+      '<div style="grid-column:1/-1;text-align:center;padding:18px;font-size:13px;color:var(--text3)">⏳ Firebase에서 직원 정보를 불러오세요</div>';
     document.getElementById('login-sync-wrap').style.display='block';
     // 저장된 Firebase URL 자동 입력
     const savedUrl=localStorage.getItem('mclinic_sync_url')||'';
     if(savedUrl) document.getElementById('login-firebase-url').value=savedUrl;
     const il=document.getElementById('login-firebase-url-inline');
     if(il&&savedUrl) il.value=savedUrl;
+    // URL 있으면 자동으로 불러오기
+    if(savedUrl && !_loginAutoFetching){
+      _loginAutoFetching = true;
+      loginLoadFromFirebase();
+    }
   } else {
     document.getElementById('login-sync-wrap').style.display='none';
     const savedUrl2=localStorage.getItem('mclinic_sync_url')||'';
     const il2=document.getElementById('login-firebase-url-inline');
     if(il2&&savedUrl2) il2.value=savedUrl2;
-    document.getElementById('login-staff-grid').innerHTML = S.staff.filter(s=>!s.retired).map(s=>`
+    document.getElementById('login-staff-grid').innerHTML = activeStaff.map(s=>`
       <div class="login-staff-btn" id="lsb-${s.id}" onclick="selectLoginStaff('${s.id}')">
         <span class="lsb-name">${s.name}</span>
       </div>`).join('');
@@ -2977,15 +3014,17 @@ function loginLoadFromFirebaseInline(){
   document.getElementById('login-firebase-url').value=url;
   loginLoadFromFirebase();
 }
+let _loginAutoFetching = false;
 function loginLoadFromFirebase(){
-  const url=(document.getElementById('login-firebase-url')?.value||'').trim();
-  if(!url){ toast('⚠️ Firebase URL을 입력하세요'); return; }
+  const url=(document.getElementById('login-firebase-url')?.value||localStorage.getItem('mclinic_sync_url')||'').trim();
+  if(!url){ _loginAutoFetching=false; toast('⚠️ Firebase URL을 입력하세요'); return; }
   const base=url.replace(/\/+$/,'');
   document.getElementById('login-staff-grid').innerHTML=
     '<div style="grid-column:1/-1;text-align:center;padding:14px;font-size:13px;color:var(--text3)">⏳ 불러오는 중...</div>';
   fetch(base+'/mclinic.json')
     .then(r=>r.json())
     .then(json=>{
+      _loginAutoFetching=false;
       if(!json||!json.staff?.length) throw new Error('no staff');
       ['branches','staff','procedures','channels','roles'].forEach(k=>{
         if(json[k]?.length) S[k]=json[k];
@@ -3004,6 +3043,7 @@ function loginLoadFromFirebase(){
       toast('✅ 직원 목록 불러옴');
     })
     .catch(()=>{
+      _loginAutoFetching=false;
       document.getElementById('login-staff-grid').innerHTML=
         '<div style="grid-column:1/-1;text-align:center;padding:14px;font-size:12px;color:#ef4444">⚠️ 불러오기 실패 — URL을 확인하세요</div>';
     });
@@ -8738,9 +8778,10 @@ function renderChannelPage(){
   const container=document.getElementById('channel-content');
 
   // aggregate channel data
-  const totalByChannel={}, shinByChannel={}, guByChannel={}, remByChannel={}, branchByChannel={};
+  const totalByChannel={}, shinByChannel={}, guByChannel={}, remByChannel={}, generalByChannel={}, cancelByChannel={}, noapptByChannel={}, branchByChannel={};
   S.channels.forEach(ch=>{
     totalByChannel[ch.id]=0; shinByChannel[ch.id]=0; guByChannel[ch.id]=0; remByChannel[ch.id]=0;
+    generalByChannel[ch.id]=0; cancelByChannel[ch.id]=0; noapptByChannel[ch.id]=0;
     branchByChannel[ch.id]={};
     activeBranches().forEach(b=>{ branchByChannel[ch.id][b.id]=0; });
   });
@@ -8754,10 +8795,13 @@ function renderChannelPage(){
         if(c.pttype==='신환') shinByChannel[cid]=(shinByChannel[cid]||0)+n;
         if(c.pttype==='구환'||c.pttype==='구환(신규상담)') guByChannel[cid]=(guByChannel[cid]||0)+n;
         if(c.pttype==='잔여시술') remByChannel[cid]=(remByChannel[cid]||0)+n;
+        if(c.pttype==='일반'||c.pttype==='일반문의') generalByChannel[cid]=(generalByChannel[cid]||0)+n;
+        if(c.pttype==='예약취소') cancelByChannel[cid]=(cancelByChannel[cid]||0)+n;
+        if(c.pttype==='미예약') noapptByChannel[cid]=(noapptByChannel[cid]||0)+n;
         if(branchByChannel[cid]) branchByChannel[cid][c.bid]=(branchByChannel[cid][c.bid]||0)+n;
       });
     }
-    // 전화: c.channel (단일) - ch0 고정이 아닌 실제 선택 채널
+    // 전화: c.channel (단일)
     else if(c.medium==='phone'||!c.medium){
       const cid = c.channel||'ch0';
       if(totalByChannel.hasOwnProperty(cid)){
@@ -8765,6 +8809,9 @@ function renderChannelPage(){
         if(c.pttype==='신환') shinByChannel[cid]=(shinByChannel[cid]||0)+1;
         if(c.pttype==='구환'||c.pttype==='구환(신규상담)') guByChannel[cid]=(guByChannel[cid]||0)+1;
         if(c.pttype==='잔여시술') remByChannel[cid]=(remByChannel[cid]||0)+1;
+        if(c.pttype==='일반'||c.pttype==='일반문의') generalByChannel[cid]=(generalByChannel[cid]||0)+1;
+        if(c.pttype==='예약취소') cancelByChannel[cid]=(cancelByChannel[cid]||0)+1;
+        if(c.pttype==='미예약') noapptByChannel[cid]=(noapptByChannel[cid]||0)+1;
         if(branchByChannel[cid]) branchByChannel[cid][c.bid]=(branchByChannel[cid][c.bid]||0)+1;
       }
     }
@@ -8788,10 +8835,13 @@ function renderChannelPage(){
       <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:3px">${ch.name}</div>
       <div style="font-size:26px;font-weight:900;font-family:'DM Mono',monospace;color:${clr}">${n}</div>
       <div style="font-size:10px;color:var(--text3);margin-top:2px">전체의 ${pct}%</div>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <span style="font-size:10px;color:var(--green);font-weight:700">신규 ${shinByChannel[ch.id]||0}</span>
-        <span style="font-size:10px;color:#7c3aed;font-weight:700">재방문 ${guByChannel[ch.id]||0}</span>
-        <span style="font-size:10px;color:#0891b2;font-weight:700">잔여 ${remByChannel[ch.id]||0}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">
+        ${shinByChannel[ch.id]?`<span style="font-size:10px;color:#059669;font-weight:700">신환 ${shinByChannel[ch.id]}</span>`:''}
+        ${guByChannel[ch.id]?`<span style="font-size:10px;color:#7c3aed;font-weight:700">구환 ${guByChannel[ch.id]}</span>`:''}
+        ${remByChannel[ch.id]?`<span style="font-size:10px;color:#0891b2;font-weight:700">잔여 ${remByChannel[ch.id]}</span>`:''}
+        ${generalByChannel[ch.id]?`<span style="font-size:10px;color:#64748b;font-weight:700">일반 ${generalByChannel[ch.id]}</span>`:''}
+        ${cancelByChannel[ch.id]?`<span style="font-size:10px;color:#dc2626;font-weight:700">취소 ${cancelByChannel[ch.id]}</span>`:''}
+        ${noapptByChannel[ch.id]?`<span style="font-size:10px;color:#f59e0b;font-weight:700">미예약 ${noapptByChannel[ch.id]}</span>`:''}
       </div>
     </div>`;
   });
@@ -9244,6 +9294,11 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     });
   }
   const futureBookedAll=allCalls.filter(c=>c.bookingType==='추후'&&(+c.today||0)>0).length;
+  // 신환/구환 당일·추후 분리
+  const shinTodayAll=allCalls.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+  const shinFutureAll=allCalls.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType==='추후').length;
+  const guTodayAll=allCalls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+  const guFutureAll=allCalls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType==='추후').length;
   // 전화 세부
   const incallA=phoneCalls.filter(c=>c.type==='in').length;
   const cbA=phoneCalls.filter(c=>c.type==='cb').length;
@@ -9267,8 +9322,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+=`  └ 채팅 상담  ${chatCalls.length}건\n`;
   txt+='  '+'─'.repeat(22)+'\n';
   txt+=`  📋 환자 구분 (합계 = 총 상담)\n`;
-  txt+=`  신환(신규)   ${shin}건\n`;
-  txt+=`  구환         ${gu}건\n`;
+  txt+=`  신환(신규)   ${shin}건${shin>0?`  (당일 ${shinTodayAll} · 추후 ${shinFutureAll})`:''}\n`;
+  txt+=`  구환         ${gu}건${gu>0?`  (당일 ${guTodayAll} · 추후 ${guFutureAll})`:''}\n`;
   txt+=`  잔여시술     ${rem||0}건\n`;
   if(generalAll)   txt+=`  일반문의     ${generalAll}건\n`;
   if(absence)      txt+=`  부재         ${absence}건\n`;
@@ -9277,7 +9332,6 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const unclAll=allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll);
   if(unclAll>0) txt+=`  기타(미분류) ${unclAll}건\n`;
   txt+=`  ${'─'.repeat(22)}\n`;
-  txt+=`  📅 신규 예약  ${bookedAll}건  (당일 ${bookedAll-futureBookedAll}건 · 추후 ${futureBookedAll}건)\n`;
 
   if(channelRowsAll.length){
     txt+='\n'+'─'.repeat(28)+'\n\n📡 채널별 인입 현황\n';
@@ -9475,6 +9529,11 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   const futureBooked=calls.filter(c=>c.bookingType==='추후'&&(+c.today||0)>0).length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=calls.reduce((a,c)=>a+(+c.noappt||0),0);
+  // 신환/구환 당일·추후 분리
+  const shinToday=calls.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+  const shinFuture=calls.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType==='추후').length;
+  const guToday=calls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+  const guFuture=calls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType==='추후').length;
 
   // 미예약 사유 집계 (pttype==='미예약' 기준)
   const noapptReasonMap={};
@@ -9607,11 +9666,10 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   └ 채팅 상담  ${chatCalls.length}건
   ──────────────────────
   📋 환자 구분 (합계 = 총 상담)
-  신환(신규)   ${shin}건
-  구환         ${gu}건
+  신환(신규)   ${shin}건${shin>0?`  (당일 ${shinToday} · 추후 ${shinFuture})`:''}
+  구환         ${gu}건${gu>0?`  (당일 ${guToday} · 추후 ${guFuture})`:''}
   잔여시술     ${rem||0}건${general?`\n  일반문의     ${general}건`:''}${absence?`\n  부재         ${absence}건`:''}${cancelCnt?`\n  예약 취소    ${cancelCnt}건`:''}${noapptCnt?`\n  미예약      ${noapptCnt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}`:''}${unclassified>0?`\n  기타(미분류) ${unclassified}건`:''}
   ──────────────────────
-  📅 신규 예약  ${booked}건  (당일 ${booked-futureBooked}건 · 추후 ${futureBooked}건)
 
 ${chatChData.length?`
   ──────────────────────
@@ -11742,41 +11800,172 @@ function dpToggleBr(bid) {
   renderDailyProcTable();
 }
 
-function copyDpTableImage(){
-  const el = document.getElementById('daily-proc-table');
-  if(!el || !el.querySelector('table')){
-    toast('⚠️ 먼저 표를 생성해주세요'); return;
+let _dpTabMode = 'table'; // 'table' | 'chart'
+
+function switchDpTab(mode){
+  _dpTabMode = mode;
+  const tableEl = document.getElementById('daily-proc-table');
+  const chartEl = document.getElementById('daily-proc-chart');
+  const btnTable = document.getElementById('dp-tab-table');
+  const btnChart = document.getElementById('dp-tab-chart');
+  if(!tableEl || !chartEl) return;
+  if(mode === 'table'){
+    tableEl.style.display = '';
+    chartEl.style.display = 'none';
+    if(btnTable){ btnTable.style.background='#2563eb'; btnTable.style.color='#fff'; btnTable.style.borderColor='#2563eb'; }
+    if(btnChart){ btnChart.style.background='var(--s1)'; btnChart.style.color='var(--text2)'; btnChart.style.borderColor='var(--border)'; }
+  } else {
+    tableEl.style.display = 'none';
+    chartEl.style.display = '';
+    if(btnChart){ btnChart.style.background='#2563eb'; btnChart.style.color='#fff'; btnChart.style.borderColor='#2563eb'; }
+    if(btnTable){ btnTable.style.background='var(--s1)'; btnTable.style.color='var(--text2)'; btnTable.style.borderColor='var(--border)'; }
+    renderDpChart();
+  }
+}
+
+function renderDpChart(){
+  const chartEl = document.getElementById('daily-proc-chart');
+  if(!chartEl) return;
+  const tableEl = document.getElementById('daily-proc-table');
+  const tbl = tableEl?.querySelector('table');
+  if(!tbl){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">먼저 기간과 시술을 선택해주세요.</div>'; return; }
+
+  // 표에서 데이터 추출
+  const rows = [...tbl.querySelectorAll('tbody tr')];
+  const headers = [...tbl.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+  // 합계행에서 지점별/시술별 합계 구성
+  const sumRows = rows.filter(r=>r.querySelector('td')?.getAttribute('rowspan')==='1'||true);
+
+  // 표 구조: 날짜 | 지점 | 구분(신환/구환) | 시술... | 합계
+  // 시술명 컬럼 인덱스 찾기 (3번째부터 합계 전까지)
+  const procStart = 3; // 날짜, 지점, 구분 다음
+  const procCols = headers.slice(procStart, headers.length - 1);
+  if(!procCols.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">시술을 선택해주세요.</div>'; return; }
+
+  // 합계 행에서 지점별 데이터 추출
+  const branchData = {}; // {지점명: {시술명: 합계}}
+  let curBranch = '';
+  rows.forEach(r=>{
+    const cells = [...r.querySelectorAll('td')];
+    if(!cells.length) return;
+    // 지점명 cell (rowspan 있음)
+    const brCell = cells.find(c=>parseInt(c.getAttribute('rowspan')||'1')>1);
+    if(brCell) curBranch = brCell.textContent.trim();
+    if(!curBranch) return;
+    // 구분 확인 (신환/구환/합계)
+    const divCell = cells.find(c=>['신환','구환','잔여','합계'].includes(c.textContent.trim()));
+    if(!divCell) return;
+    const div = divCell.textContent.trim();
+    if(!branchData[curBranch]) branchData[curBranch] = {신환:{}, 구환:{}, 잔여:{}};
+    // 시술별 수치 추출
+    const dataCells = cells.slice(cells.indexOf(divCell)+1);
+    procCols.forEach((proc, i)=>{
+      const val = parseInt(dataCells[i]?.textContent.replace(/-/g,'').trim()||'0')||0;
+      if(['신환','구환','잔여'].includes(div)){
+        branchData[curBranch][div][proc] = (branchData[curBranch][div][proc]||0) + val;
+      }
+    });
+  });
+
+  const branches = Object.keys(branchData);
+  if(!branches.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">데이터 없음</div>'; return; }
+
+  // 시술별 전체 합계로 정렬 (상위 10개)
+  const procTotals = {};
+  procCols.forEach(p=>{
+    procTotals[p] = branches.reduce((a,b)=>a+Object.values(branchData[b]).reduce((s,d)=>s+(d[p]||0),0), 0);
+  });
+  const topProcs = procCols.filter(p=>procTotals[p]>0).sort((a,b)=>procTotals[b]-procTotals[a]).slice(0,12);
+  if(!topProcs.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">예약 데이터 없음</div>'; return; }
+
+  const PCOLS=['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1','#14b8a6','#f59e0b'];
+  const W=Math.max(500, branches.length*topProcs.length*22+80);
+  const H=240, PL=44, PB=50, PT=16, PR=16;
+  const iH=H-PT-PB, iW=W-PL-PR;
+  const nBr=branches.length, nP=topProcs.length;
+  const groupW=iW/nBr;
+  const gap=2, barW=Math.min(20, Math.max(6, (groupW*0.85)/nP - gap));
+  const groupX=i=>PL+groupW*i+groupW/2-(barW*nP+gap*(nP-1))/2;
+  const barX=(i,pi)=>groupX(i)+pi*(barW+gap);
+
+  // 각 지점별 시술별 합계
+  const data = branches.map(br=>({
+    name: br,
+    vals: topProcs.map(p=>Object.values(branchData[br]).reduce((s,d)=>s+(d[p]||0),0))
+  }));
+  const maxV = Math.max(1, ...data.flatMap(d=>d.vals));
+  const barY=v=>PT+iH-(v/maxV)*iH;
+
+  let grid='', bars='', vals='', xlbls='', legend='';
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const yy=(PT+iH-f*iH).toFixed(1);
+    const v=Math.round(maxV*f);
+    grid+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="${f===0||f===1?1.5:0.6}" stroke-dasharray="${f===0||f===1?'':'4,3'}"/>`;
+    if(f===0||f===0.5||f===1) grid+=`<text x="${PL-5}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;
+  });
+  data.forEach((d,i)=>{
+    topProcs.forEach((p,pi)=>{
+      const v=d.vals[pi];
+      const x=barX(i,pi).toFixed(1);
+      const y=barY(v).toFixed(1);
+      const h=Math.max(0,(v/maxV)*iH).toFixed(1);
+      const cl=PCOLS[pi%PCOLS.length];
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${cl}" opacity="0.85" rx="2"><title>${d.name} ${p}: ${v}건</title></rect>`;
+      if(v>0) vals+=`<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${cl}">${v}</text>`;
+    });
+    const cx=(groupX(i)+groupW/2).toFixed(1);
+    xlbls+=`<text x="${cx}" y="${H-PB+14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${d.name}</text>`;
+  });
+  // 범례
+  const legCols=Math.min(topProcs.length, 4);
+  topProcs.forEach((p,pi)=>{
+    const lx=PL+(pi%legCols)*((W-PL-PR)/legCols);
+    const ly=H-PB+28+(Math.floor(pi/legCols)*14);
+    legend+=`<rect x="${lx}" y="${ly-7}" width="10" height="10" fill="${PCOLS[pi%PCOLS.length]}" rx="2" opacity="0.85"/>`;
+    legend+=`<text x="${lx+13}" y="${ly+1}" font-size="9" fill="var(--text2)" dominant-baseline="middle">${p}</text>`;
+  });
+
+  const legRows=Math.ceil(topProcs.length/legCols);
+  const totalH=H+legRows*14;
+  chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${totalH}" style="width:100%;min-width:400px;overflow:visible;font-family:'DM Mono',monospace">
+    ${grid}${bars}${vals}${xlbls}${legend}
+  </svg>`;
+}
+
+function copyDpViewImage(){
+  const mode = _dpTabMode;
+  const targetId = mode==='table' ? 'daily-proc-table' : 'daily-proc-chart';
+  const el = document.getElementById(targetId);
+  if(!el || (!el.querySelector('table') && !el.querySelector('svg'))){
+    toast('⚠️ 먼저 데이터를 생성해주세요'); return;
   }
   toast('📸 이미지 생성 중...');
-  // 배경 흰색으로 임시 래퍼
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif';
+  wrapper.style.cssText = 'background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:400px';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px';
+  title.textContent = mode==='table' ? '📋 시술×지점 예약 현황' : '📊 시술×지점 예약 현황';
+  wrapper.appendChild(title);
   const clone = el.cloneNode(true);
-  clone.style.overflow = 'visible';
+  clone.style.overflow='visible';
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
+  html2canvas(wrapper, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false})
+    .then(canvas=>{
+      document.body.removeChild(wrapper);
+      canvas.toBlob(blob=>{
+        if(!blob){toast('⚠️ 실패');return;}
+        try{
+          navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
+            .then(()=>toast('✅ 이미지 복사됨! 카톡에 붙여넣기 하세요'))
+            .catch(()=>{const a=document.createElement('a');a.download=`시술지점현황_${todayStr()}.png`;a.href=canvas.toDataURL();a.click();toast('📥 이미지 다운로드됨');});
+        }catch(e){const a=document.createElement('a');a.download=`시술지점현황_${todayStr()}.png`;a.href=canvas.toDataURL();a.click();toast('📥 이미지 다운로드됨');}
+      },'image/png');
+    }).catch(()=>{document.body.removeChild(wrapper);toast('⚠️ 이미지 생성 실패');});
+}
 
-  html2canvas(wrapper, {
-    scale: 2,
-    backgroundColor: '#ffffff',
-    useCORS: true,
-    logging: false
-  }).then(canvas => {
-    document.body.removeChild(wrapper);
-    canvas.toBlob(blob => {
-      if(!blob){ toast('⚠️ 이미지 생성 실패'); return; }
-      try {
-        navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-          .then(()=> toast('✅ 표 이미지가 클립보드에 복사됐어요!'))
-          .catch(()=> downloadCanvasImage(canvas));
-      } catch(e){
-        downloadCanvasImage(canvas);
-      }
-    }, 'image/png');
-  }).catch(()=>{
-    document.body.removeChild(wrapper);
-    toast('⚠️ 이미지 생성 실패');
-  });
+function copyDpTableImage(){
+  _dpTabMode='table'; copyDpViewImage();
 }
 
 function downloadCanvasImage(canvas){
@@ -12012,6 +12201,9 @@ function renderDailyProcTable(){
 
   html+='</tbody></table></div>';
   el.innerHTML=html;
+
+  // 탭 상태 적용
+  switchDpTab(_dpTabMode);
 
   // ── 지점별 콜수 테이블 ──
   renderBranchCallTable(from, to);
@@ -15248,6 +15440,8 @@ function applyRosterPreset(start, end, btn){
 // ── 앱 초기화 ──
 loadBranchExcelFromStorage();
 loadRosterSettings();
+// initAuth 전에 Firebase URL 먼저 로드 (로그인 화면 자동 직원 불러오기용)
+try{ _syncUrl=localStorage.getItem('mclinic_sync_url')||''; }catch(e){}
 initAuth();
 </script>
 </body>
