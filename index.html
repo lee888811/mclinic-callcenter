@@ -265,6 +265,7 @@ td:first-child{text-align:left;padding-left:13px}
 .need-admin{display:none!important}
 .need-manager{display:none!important}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -1497,6 +1498,7 @@ td:first-child{text-align:left;padding-left:13px}
         <div id="daily-proc-table" style="overflow-x:auto;font-size:11px"></div>
         <div id="branch-call-table" style="overflow-x:auto;font-size:11px;margin-top:16px"></div>
         <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button onclick="copyDpTableImage()" style="padding:6px 14px;background:#2563eb;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;color:#fff">📸 표 이미지 복사</button>
           <button onclick="downloadBranchCallTemplate()" style="padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">📥 CSV 양식 다운로드</button>
           <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2)">
             📂 과거 엑셀 업로드
@@ -11121,6 +11123,51 @@ function dpToggleBr(bid) {
     if (_selectedBids.size === S.branches.length) _selectedBids = null;
   }
   renderDailyProcTable();
+}
+
+function copyDpTableImage(){
+  const el = document.getElementById('daily-proc-table');
+  if(!el || !el.querySelector('table')){
+    toast('⚠️ 먼저 표를 생성해주세요'); return;
+  }
+  toast('📸 이미지 생성 중...');
+  // 배경 흰색으로 임시 래퍼
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif';
+  const clone = el.cloneNode(true);
+  clone.style.overflow = 'visible';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false
+  }).then(canvas => {
+    document.body.removeChild(wrapper);
+    canvas.toBlob(blob => {
+      if(!blob){ toast('⚠️ 이미지 생성 실패'); return; }
+      try {
+        navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+          .then(()=> toast('✅ 표 이미지가 클립보드에 복사됐어요!'))
+          .catch(()=> downloadCanvasImage(canvas));
+      } catch(e){
+        downloadCanvasImage(canvas);
+      }
+    }, 'image/png');
+  }).catch(()=>{
+    document.body.removeChild(wrapper);
+    toast('⚠️ 이미지 생성 실패');
+  });
+}
+
+function downloadCanvasImage(canvas){
+  const a = document.createElement('a');
+  a.download = `미클리닉_시술표_${todayStr()}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('📥 이미지 다운로드됐어요 (클립보드 대신)');
 }
 
 function renderDailyProcTable(){
