@@ -1727,6 +1727,41 @@ td:first-child{text-align:left;padding-left:13px}
   </div>
 </div>
 
+<!-- Modal: 즐겨찾기 별칭 설정 -->
+<div class="modal" id="modal-preset-alias" style="z-index:700">
+  <div class="mbox" style="width:500px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span class="mt" style="margin:0">⭐ 즐겨찾기 저장</span>
+      <button onclick="closeModal('modal-preset-alias')" style="border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">각 시술의 표시 이름을 바꾸거나, 여러 시술을 하나로 묶을 수 있어요.</div>
+
+    <!-- 즐겨찾기 이름 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">즐겨찾기 이름</div>
+      <input type="text" id="preset-alias-label" placeholder="예: 고정 보고, 김형석 고정 등"
+        style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:var(--s2);color:var(--text);box-sizing:border-box">
+    </div>
+
+    <!-- 시술별 별칭 + 그룹 -->
+    <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">시술별 표시 이름 변경 (비워두면 원래 이름 사용)</div>
+    <div id="preset-alias-rows" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+
+    <!-- 그룹 묶기 안내 -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#1d4ed8">
+      💡 <strong>그룹 묶기:</strong> 같은 그룹명을 입력한 시술들은 보고 시 합산되어 그룹명으로 표시돼요.<br>
+      예) 튠페이스·튠아이즈·튠라이너 모두 그룹명 "튠" → 보고에서 "튠 3건"으로 표시
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">그룹 묶기 (같은 이름으로 입력 시 합산)</div>
+    <div id="preset-alias-group-rows" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:12px">
+      <button class="btn btn-g" onclick="closeModal('modal-preset-alias')">취소</button>
+      <button class="btn btn-p" onclick="confirmSaveDpProcPreset()">⭐ 저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: 직원 권한 설정 -->
 <div class="modal" id="modal-staff-perm" style="z-index:700">
   <div class="mbox" style="width:460px;max-height:90vh;overflow-y:auto">
@@ -10455,32 +10490,89 @@ function saveDpProcPresetData(presets){
   try{ localStorage.setItem('dp_proc_presets', JSON.stringify(presets)); }catch(e){}
   markConfigDirty(); scheduleSyncPush();
 }
+
+// 즐겨찾기 저장 버튼 → 별칭 설정 모달 열기
 function saveDpProcPreset(){
   const pids = _selectedPids ? [..._selectedPids] : [];
   if(!pids.length){ toast('⚠️ 시술을 먼저 선택해주세요'); return; }
-  const names = pids.map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
-  const label = prompt(`즐겨찾기 이름을 입력해주세요\n(선택된 시술: ${names})`, names.length>20?names.slice(0,20)+'..':names);
-  if(!label) return;
+
+  // 기본 이름 세팅
+  const defaultLabel = pids.map(pid=>{ const p=S.procedures.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
+  document.getElementById('preset-alias-label').value = defaultLabel.length>30 ? defaultLabel.slice(0,30)+'...' : defaultLabel;
+
+  // 시술별 별칭 행 렌더
+  document.getElementById('preset-alias-rows').innerHTML = pids.map(pid=>{
+    const p=S.procedures.find(x=>x.id===pid);
+    const name=p?p.name:pid;
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
+      <span style="font-size:12px;color:var(--text3)">→</span>
+      <input type="text" id="alias-${pid}" placeholder="${name}" data-pid="${pid}"
+        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
+    </div>`;
+  }).join('');
+
+  // 그룹 묶기 행 렌더
+  document.getElementById('preset-alias-group-rows').innerHTML = pids.map(pid=>{
+    const p=S.procedures.find(x=>x.id===pid);
+    const name=p?p.name:pid;
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);min-width:100px;flex-shrink:0">${name}</span>
+      <span style="font-size:12px;color:var(--text3)">그룹명:</span>
+      <input type="text" id="group-${pid}" placeholder="예: 튠 (비워두면 그룹 없음)" data-pid="${pid}"
+        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text)">
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-preset-alias').classList.add('open');
+}
+
+function confirmSaveDpProcPreset(){
+  const pids = _selectedPids ? [..._selectedPids] : [];
+  const label = document.getElementById('preset-alias-label')?.value.trim();
+  if(!label){ toast('⚠️ 즐겨찾기 이름을 입력해주세요'); return; }
+
+  // 별칭 수집
+  const aliases={};
+  pids.forEach(pid=>{
+    const v=document.getElementById('alias-'+pid)?.value.trim();
+    if(v) aliases[pid]=v;
+  });
+
+  // 그룹 수집
+  const groups={};
+  pids.forEach(pid=>{
+    const v=document.getElementById('group-'+pid)?.value.trim();
+    if(v) groups[pid]=v;
+  });
+
   const presets = getDpProcPresets();
-  presets.push({ id:'preset_'+Date.now(), label, pids });
+  presets.push({ id:'preset_'+Date.now(), label, pids, aliases, groups });
   saveDpProcPresetData(presets);
   renderDpProcPresets();
+  closeModal('modal-preset-alias');
   toast(`⭐ "${label}" 즐겨찾기 저장됨`);
 }
+
 function applyDpProcPreset(presetId){
   const presets = getDpProcPresets();
   const p = presets.find(x=>x.id===presetId);
   if(!p) return;
   _selectedPids = new Set(p.pids);
+  // 별칭/그룹 정보 전역 저장 (테이블 렌더 시 사용)
+  _activePresetAliases = p.aliases||{};
+  _activePresetGroups = p.groups||{};
   renderDailyProcTable();
   toast(`⭐ "${p.label}" 적용됨`);
 }
+
 function deleteDpProcPreset(presetId){
   const presets = getDpProcPresets().filter(x=>x.id!==presetId);
   saveDpProcPresetData(presets);
   renderDpProcPresets();
   toast('🗑 즐겨찾기 삭제됨');
 }
+
 function renderDpProcPresets(){
   const el = document.getElementById('dp-proc-presets');
   if(!el) return;
@@ -10495,6 +10587,11 @@ function renderDpProcPresets(){
       <span onclick="deleteDpProcPreset('${p.id}')" style="cursor:pointer;color:#b45309;margin-left:2px;font-size:10px">✕</span>
     </div>`).join('');
 }
+
+// 활성 프리셋 별칭/그룹 (테이블 헤더 표시용)
+let _activePresetAliases = {};
+let _activePresetGroups = {};
+
 
 let _selectedSubs = null;    // null=전체, Set=선택된 하위 키("pid:subIdx")
 let _focusedPid = null;      // 하위 카테고리 표시 중인 상위 pid
@@ -10853,10 +10950,39 @@ function renderDailyProcTable(){
     cols = procs.map(p=>({id:p.id, name:p.name, icon:p.icon||'', isSub:false}));
   }
 
+  // ── 그룹 병합 처리 ────────────────────────────────
+  // _activePresetGroups: {colId → groupName}
+  // 같은 groupName인 cols를 하나로 합쳐 displayCols 생성
+  const displayCols = [];
+  const colToDisplayIdx = {}; // colId → displayCols index
+  cols.forEach(col=>{
+    const aliasKey = col.isSub ? `${col.parentId}:${col.subIdx}` : col.id;
+    const groupName = _activePresetGroups[aliasKey] || _activePresetGroups[col.id] || '';
+    const displayName = _activePresetAliases[aliasKey] || _activePresetAliases[col.id] || col.name;
+    if(groupName){
+      // 이미 같은 그룹명 존재하면 그 인덱스에 합치기
+      const existIdx = displayCols.findIndex(dc=>dc.groupName===groupName);
+      if(existIdx>=0){
+        displayCols[existIdx].srcIds.push(col.id);
+        colToDisplayIdx[col.id] = existIdx;
+        return;
+      }
+      // 새 그룹 컬럼 생성
+      const idx = displayCols.length;
+      displayCols.push({id:'group_'+groupName, name:groupName, groupName, srcIds:[col.id], isSub:col.isSub, parentId:col.parentId, clrRef:col});
+      colToDisplayIdx[col.id] = idx;
+    } else {
+      const idx = displayCols.length;
+      displayCols.push({id:col.id, name:displayName, groupName:'', srcIds:[col.id], isSub:col.isSub, parentId:col.parentId, clrRef:col});
+      colToDisplayIdx[col.id] = idx;
+    }
+  });
+
   const clrFor = (col) => {
-    const idx = col.isSub
-      ? S.procedures.findIndex(x=>x.id===col.parentId)
-      : S.procedures.findIndex(x=>x.id===col.id);
+    const refCol = col.clrRef || col;
+    const idx = refCol.isSub
+      ? S.procedures.findIndex(x=>x.id===refCol.parentId)
+      : S.procedures.findIndex(x=>x.id===refCol.id);
     return CLR[idx%CLR.length]||'var(--accent)';
   };
 
@@ -10866,7 +10992,7 @@ function renderDailyProcTable(){
         <th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;min-width:80px">날짜</th>
         <th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;min-width:70px">지점</th>
         <th style="padding:10px 10px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;min-width:50px">구분</th>
-        ${cols.map(col=>{
+        ${displayCols.map(col=>{
           const clr=clrFor(col);
           return `<th style="padding:10px 14px;border:1px solid var(--border);text-align:center;font-weight:700;white-space:nowrap;color:${clr};min-width:70px">${col.name}</th>`;
         }).join('')}
@@ -10874,32 +11000,32 @@ function renderDailyProcTable(){
       </tr>
     </thead><tbody>`;
 
-  // 날짜별 집계
+  // 날짜별 집계 (displayCols 기반)
   const grandTotal={shin:{},gu:{}};
-  cols.forEach(c=>{grandTotal.shin[c.id]=0;grandTotal.gu[c.id]=0;});
+  displayCols.forEach(c=>{grandTotal.shin[c.id]=0;grandTotal.gu[c.id]=0;});
   let grandShin=0, grandGu=0;
 
   dates.forEach(ds=>{
     const calls=getPtCalls(ds);
     const dateLabel2 = dateLabel(ds);
     const brData={};
-    branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};cols.forEach(c=>{brData[b.id].shin[c.id]=0;brData[b.id].gu[c.id]=0;});});
+    branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};displayCols.forEach(c=>{brData[b.id].shin[c.id]=0;brData[b.id].gu[c.id]=0;});});
     calls.forEach(c=>{
       if(!c.procs||!c.bid||!brData[c.bid]) return;
       const ptShin = !c.pttype||c.pttype.includes('신환');
       Object.entries(c.procs).forEach(([pid,n])=>{
         if(!n) return;
+        // 원본 cols에서 매칭 후 displayCols 인덱스로 합산
         cols.forEach(col=>{
-          if(col.isSub){
-            // 하위항목: parentId로 매칭
-            if(col.parentId !== pid) return;
-            if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
-            else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
-          } else {
-            if(col.id !== pid) return;
-            if(ptShin) brData[c.bid].shin[col.id]=(brData[c.bid].shin[col.id]||0)+n;
-            else brData[c.bid].gu[col.id]=(brData[c.bid].gu[col.id]||0)+n;
-          }
+          let match=false;
+          if(col.isSub){ if(col.parentId===pid) match=true; }
+          else { if(col.id===pid) match=true; }
+          if(!match) return;
+          const dIdx=colToDisplayIdx[col.id];
+          if(dIdx===undefined) return;
+          const dcId=displayCols[dIdx].id;
+          if(ptShin) brData[c.bid].shin[dcId]=(brData[c.bid].shin[dcId]||0)+n;
+          else brData[c.bid].gu[dcId]=(brData[c.bid].gu[dcId]||0)+n;
         });
       });
     });
@@ -10907,8 +11033,8 @@ function renderDailyProcTable(){
     let dateRowspan = branches.length*2;
     let firstBr=true;
     branches.forEach(b=>{
-      const brShin=cols.map(col=>brData[b.id].shin[col.id]||0);
-      const brGu=cols.map(col=>brData[b.id].gu[col.id]||0);
+      const brShin=displayCols.map(col=>brData[b.id].shin[col.id]||0);
+      const brGu=displayCols.map(col=>brData[b.id].gu[col.id]||0);
       const brShinTotal=brShin.reduce((a,v)=>a+v,0);
       const brGuTotal=brGu.reduce((a,v)=>a+v,0);
       const bc=bclr(b.id);
@@ -10927,7 +11053,7 @@ function renderDailyProcTable(){
         <td style="padding:6px 12px;border:1px solid var(--border);text-align:center;font-weight:700;font-family:'DM Mono',monospace;font-size:13px;background:rgba(37,99,235,.06)">${disp(brGuTotal)}</td>
       </tr>`;
       firstBr=false;
-      cols.forEach((col,i)=>{grandTotal.shin[col.id]+=brShin[i];grandTotal.gu[col.id]+=brGu[i];});
+      displayCols.forEach((col,i)=>{grandTotal.shin[col.id]+=brShin[i];grandTotal.gu[col.id]+=brGu[i];});
       grandShin+=brShinTotal; grandGu+=brGuTotal;
     });
   });
@@ -10936,19 +11062,19 @@ function renderDailyProcTable(){
   html+=`<tr style="background:rgba(37,99,235,.04);font-weight:700;border-top:2px solid var(--border2)">
     <td colspan="2" style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-weight:800;font-size:13px">합계</td>
     <td style="padding:9px 10px;border:1px solid var(--border);text-align:center;font-size:11px;color:var(--green)">신환</td>
-    ${cols.map(col=>`<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--accent)">${disp2(grandTotal.shin[col.id])}</td>`).join('')}
+    ${displayCols.map(col=>`<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--accent)">${disp2(grandTotal.shin[col.id])}</td>`).join('')}
     <td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-weight:800;font-family:'DM Mono',monospace;font-size:14px;background:rgba(37,99,235,.1)">${disp2(grandShin)}</td>
   </tr>
   <tr style="background:rgba(37,99,235,.04);font-weight:700">
     <td colspan="2" style="padding:9px 14px;border:1px solid var(--border);text-align:center"></td>
     <td style="padding:9px 10px;border:1px solid var(--border);text-align:center;font-size:11px;color:var(--purple)">구환</td>
-    ${cols.map(col=>`<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--purple)">${disp2(grandTotal.gu[col.id])}</td>`).join('')}
+    ${displayCols.map(col=>`<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--purple)">${disp2(grandTotal.gu[col.id])}</td>`).join('')}
     <td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-weight:800;font-family:'DM Mono',monospace;font-size:14px;background:rgba(37,99,235,.1)">${disp2(grandGu)}</td>
   </tr>
   <tr style="background:rgba(37,99,235,.08);font-weight:800;border-top:2px solid var(--accent)">
     <td colspan="2" style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-size:13px">총합</td>
     <td style="padding:9px 10px;border:1px solid var(--border)"></td>
-    ${cols.map(col=>{ const t=(grandTotal.shin[col.id]||0)+(grandTotal.gu[col.id]||0); return `<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:800;font-size:14px;color:var(--accent)">${disp2(t)}</td>`; }).join('')}
+    ${displayCols.map(col=>{ const t=(grandTotal.shin[col.id]||0)+(grandTotal.gu[col.id]||0); return `<td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-weight:800;font-size:14px;color:var(--accent)">${disp2(t)}</td>`; }).join('')}
     <td style="padding:9px 14px;border:1px solid var(--border);text-align:center;font-weight:900;font-family:'DM Mono',monospace;font-size:15px;background:rgba(37,99,235,.15);color:var(--accent)">${disp2(grandShin+grandGu)}</td>
   </tr>`;
 
