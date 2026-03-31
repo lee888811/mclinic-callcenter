@@ -4942,6 +4942,18 @@ function confirmCall(){
     if(hint){hint.style.display='inline';setTimeout(()=>hint.style.display='none',3000);}
     return;
   }
+  // 채팅 상담 시 인입 채널 필수
+  if(_callMedium==='chat' && !_chatChannel){
+    toast('⚠️ 인입 채널을 선택해주세요 (카카오채널 / 네이버예약 / 챗봇)');
+    const chatSec=document.getElementById('modal-channel-fields');
+    if(chatSec){
+      chatSec.scrollIntoView({behavior:'smooth',block:'center'});
+      chatSec.style.outline='2px solid #dc2626';
+      chatSec.style.borderRadius='8px';
+      setTimeout(()=>{ chatSec.style.outline=''; chatSec.style.borderRadius=''; },2000);
+    }
+    return;
+  }
   // 미예약 선택 시 사유 필수
   if(_callPttype==='미예약'){
     const reason=document.getElementById('cf-noappt-reason')?.value||'';
