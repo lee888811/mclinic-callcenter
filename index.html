@@ -8681,8 +8681,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">📭 데이터 없음</div>';
     return;
   }
-  const phoneCalls=allCalls.filter(c=>!c.medium||c.medium==='phone');
   const chatCalls=allCalls.filter(c=>c.medium==='chat');
+  const phoneCalls=allCalls.filter(c=>c.medium!=='chat'); // chat 아닌 모두 전화
   const shin=allCalls.filter(c=>c.pttype==='신환').length;
   const gu=allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
   const rem=allCalls.filter(c=>c.pttype==='잔여시술').length;
@@ -8692,6 +8692,9 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const out=phoneCalls.filter(c=>c.type==='out').length;
   const cancel=allCalls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=allCalls.reduce((a,c)=>a+(+c.noappt||0),0);
+  const cancelCntAll=allCalls.filter(c=>c.pttype==='예약취소').length;
+  const noapptCntAll=allCalls.filter(c=>c.pttype==='미예약').length;
+  const generalAll=allCalls.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length;
   const brSum={total:allCalls.length,incall,callback:cb,outcall:out,shin,gu,cancel,noappt,absence,chat:chatCalls.length};
   const branchSubs=S.branches.map(b=>{
     const bc=allCalls.filter(c=>c.bid===b.id);
@@ -8734,7 +8737,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   let txt='🏢 미클리닉 전 지점 합산 일일 보고\n';
   txt+=dateLabelStr+'\n'+'─'.repeat(28)+'\n\n';
   txt+='📊 전체 상담 현황\n';
-  txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${incall+cb+out}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
+  txt+=`총 상담    ${brSum.total}건\n├ 전화 상담  ${phoneCalls.length}건\n└ 채팅 상담  ${chatCalls.length}건\n\n`;
   // 미예약 사유 집계
   const noapptReasons={};
   allCalls.filter(c=>c.pttype==='미예약'&&c.noapptReason).forEach(c=>{
@@ -8742,7 +8745,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   });
   const noapptReasonTxt=Object.entries(noapptReasons).map(([r,n])=>`  · ${r} ${n}건`).join('\n');
 
-  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건\n부재      ${absence}건\n예약 취소  ${cancel}건\n미예약    ${noappt}건${noapptReasonTxt?'\n미예약 사유:\n'+noapptReasonTxt:''}\n`;
+  txt+=`신환(신규)  ${shin}건\n구환       ${gu}건\n잔여시술   ${rem||0}건${generalAll?`\n일반문의   ${generalAll}건`:''}${absence?`\n부재      ${absence}건`:''}${cancelCntAll?`\n예약 취소  ${cancelCntAll}건`:''}${noapptCntAll?`\n미예약    ${noapptCntAll}건${noapptReasonTxt?'\n미예약 사유:\n'+noapptReasonTxt:''}`:''}${(allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll))>0?`\n기타(미분류) ${allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll)}건`:''}\n`;
   txt+='─'.repeat(28)+'\n\n🏥 지점별 현황\n';
   branchSubs.forEach(b=>{ txt+=`[${b.name}점] 총 ${b.total}건 · 신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0} · 부재 ${b.absence||0} · 예약 ${b.booked}\n`; });
   if(topProcs.length){
@@ -8902,15 +8905,18 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   }
 
   // 집계
-  const phoneCalls=calls.filter(c=>!c.medium||c.medium==='phone');
   const chatCalls=calls.filter(c=>c.medium==='chat');
+  const phoneCalls=calls.filter(c=>c.medium!=='chat'); // chat 아닌 모두 전화
   const shin=calls.filter(c=>c.pttype==='신환').length;
   const gu=calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
   const rem=calls.filter(c=>c.pttype==='잔여시술').length;
   const absence=calls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
-  const general=calls.filter(c=>c.pttype==='일반문의').length;
+  const general=calls.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length;
   const noapptCnt=calls.filter(c=>c.pttype==='미예약').length;
   const cancelCnt=calls.filter(c=>c.pttype==='예약취소').length;
+  // 분류되지 않은 건수 (총합 검증용)
+  const classifiedTotal=shin+gu+rem+absence+general+noapptCnt+cancelCnt;
+  const unclassified=calls.length-classifiedTotal;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
   const cancel=calls.reduce((a,c)=>a+(+c.cancel||0),0);
@@ -9022,11 +9028,8 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   ──────────────────────
   신환(신규)   ${shin}건
   구환         ${gu}건
-  잔여시술     ${rem||0}건
-  일반문의     ${general}건
-  부재         ${absence}건
-  예약 취소    ${cancel}건
-  미예약      ${noappt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}${chatChData.length?`
+  잔여시술     ${rem||0}건${general?`\n  일반문의     ${general}건`:''}${absence?`\n  부재         ${absence}건`:''}${cancelCnt?`\n  예약 취소    ${cancelCnt}건`:''}${noapptCnt?`\n  미예약      ${noapptCnt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}`:''}${unclassified>0?`\n  기타(미분류) ${unclassified}건`:''}
+${chatChData.length?`
   ──────────────────────
 
 📡 채널별 인입 현황
