@@ -3432,6 +3432,9 @@ async function syncPull(){
       // 즐겨찾기 프리셋
       if(Array.isArray(data.dpProcPresets) && data.dpProcPresets.length>0){
         try{ localStorage.setItem('dp_proc_presets', JSON.stringify(data.dpProcPresets)); }catch(e){}
+        // 현재 월간보고 탭이 열려있으면 즐겨찾기 즉시 재렌더
+        try{ renderDpProcPresets(); }catch(e){}
+        try{ renderTrendProcPresets(); }catch(e){}
       }
     }
     if(data._deletedIds?.length){
@@ -3750,7 +3753,20 @@ function go(pid,el){
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets(); }
+  else if(pid==='trend'){
+    renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets();
+    // Firebase에서 최신 즐겨찾기 pull
+    if(_syncUrl){
+      const base=_syncUrl.replace(/\/+$/,'');
+      fbFetch(base+'/mclinic.json').then(r=>r.json()).then(data=>{
+        if(Array.isArray(data.dpProcPresets)&&data.dpProcPresets.length>0){
+          try{localStorage.setItem('dp_proc_presets',JSON.stringify(data.dpProcPresets));}catch(e){}
+          try{renderDpProcPresets();}catch(e){}
+          try{renderTrendProcPresets();}catch(e){}
+        }
+      }).catch(()=>{});
+    }
+  }
   else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   else if(pid==='closingrpt'){
     const cr=document.getElementById('cr-date');
@@ -5075,7 +5091,20 @@ function confirmCall(){
     else if(pid==='history') renderHistory();
     else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
-  else if(pid==='trend'){ renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets(); }
+  else if(pid==='trend'){
+    renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets();
+    // Firebase에서 최신 즐겨찾기 pull
+    if(_syncUrl){
+      const base=_syncUrl.replace(/\/+$/,'');
+      fbFetch(base+'/mclinic.json').then(r=>r.json()).then(data=>{
+        if(Array.isArray(data.dpProcPresets)&&data.dpProcPresets.length>0){
+          try{localStorage.setItem('dp_proc_presets',JSON.stringify(data.dpProcPresets));}catch(e){}
+          try{renderDpProcPresets();}catch(e){}
+          try{renderTrendProcPresets();}catch(e){}
+        }
+      }).catch(()=>{});
+    }
+  }
     else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
   }
   // 저장 후 토스트: 신규 콜이면 "다른 지점 예약 추가" 버튼 포함
