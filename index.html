@@ -2924,7 +2924,6 @@ function renderLoginScreen(){
     document.getElementById('login-staff-grid').innerHTML = S.staff.filter(s=>!s.retired).map(s=>`
       <div class="login-staff-btn" id="lsb-${s.id}" onclick="selectLoginStaff('${s.id}')">
         <span class="lsb-name">${s.name}</span>
-        <span class="lsb-role">${s.role}</span>
       </div>`).join('');
   }
   document.getElementById('login-pw').value='';
@@ -4074,7 +4073,7 @@ function renderStaffInputPage(sid){
     <div class="ph">
       <div>
         <div class="pt" style="color:${sc}">✏️ ${s.name}</div>
-        <div class="ps">${s.role} · 개인 콜 입력</div>
+        <div class="ps">개인 콜 입력</div>
       </div>
       <div class="pbtns">
         ${(_currentUser?.sid===sid || hasPermission('admin')) ? `<button class="btn btn-p" onclick="_curDate=todayStr();openCallModal('${sid}')" style="font-size:18px;padding:12px 28px;font-weight:800;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,.3)">＋ 콜 기록</button>` : `<div style="font-size:12px;color:var(--text3);padding:8px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">👁 열람 전용 — 콜 입력 불가</div>`}
@@ -9205,11 +9204,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   if(noapptCntAll) txt+=`  미예약      ${noapptCntAll}건${noapptReasonTxt?'\n  미예약 사유:\n'+noapptReasonTxt:''}\n`;
   const unclAll=allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll);
   if(unclAll>0) txt+=`  기타(미분류) ${unclAll}건\n`;
-  if(bookedAll){
-    txt+=`  ${'─'.repeat(22)}\n`;
-    txt+=`  📅 예약 현황\n`;
-    txt+=`  예약        ${bookedAll}건 (당일 ${bookedAll-futureBookedAll}건 · 추후 ${futureBookedAll}건)\n`;
-  }
+
 
   txt+='\n'+'─'.repeat(28)+'\n\n🏥 지점별 현황\n';
   branchSubs.forEach(b=>{
@@ -9413,7 +9408,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     }
     return c.channel||'ch0';
   };
-  const chatChData=S.channels.map(ch=>{
+  // 채널별 집계 + 채널 없는 채팅 별도 집계
+  const channelRows=S.channels.map(ch=>{
     const matched=calls.filter(c=>getCallChannel(c)===ch.id);
     const total=matched.length;
     const shin_ch=matched.filter(c=>c.pttype==='신환').length;
@@ -9425,6 +9421,21 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
     const absence_ch=matched.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
     return total>0?{icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch,rem:rem_ch,gen:gen_ch,cancel:cancel_ch,noappt:noappt_ch,absence:absence_ch}:null;
   }).filter(Boolean);
+  // 채널 없는 채팅 집계
+  const noChanChat=calls.filter(c=>c.medium==='chat'&&!getCallChannel(c));
+  if(noChanChat.length>0){
+    channelRows.push({
+      icon:'💬',name:'채팅(채널미상)',total:noChanChat.length,
+      shin:noChanChat.filter(c=>c.pttype==='신환').length,
+      gu:noChanChat.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length,
+      rem:noChanChat.filter(c=>c.pttype==='잔여시술').length,
+      gen:noChanChat.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length,
+      cancel:noChanChat.filter(c=>c.pttype==='예약취소').length,
+      noappt:noChanChat.filter(c=>c.pttype==='미예약').length,
+      absence:0
+    });
+  }
+  const chatChData=channelRows;
 
   // 시술별 집계 (하위 카테고리 포함)
   const pCntAll={},pCntShin={},pCntGu={},pCntRem={};
@@ -9512,9 +9523,7 @@ ${phoneDetail ? phoneDetail.split('\n').map(l=>'  │  '+l.replace(/^\s+/,'').re
   신환(신규)   ${shin}건
   구환         ${gu}건
   잔여시술     ${rem||0}건${general?`\n  일반문의     ${general}건`:''}${absence?`\n  부재         ${absence}건`:''}${cancelCnt?`\n  예약 취소    ${cancelCnt}건`:''}${noapptCnt?`\n  미예약      ${noapptCnt}건${noapptReasonLines?'\n  미예약 사유:\n'+noapptReasonLines:''}`:''}${unclassified>0?`\n  기타(미분류) ${unclassified}건`:''}
-  ──────────────────────
-  📅 예약 현황
-  예약        ${booked}건 (당일 ${booked-futureBooked}건 · 추후 ${futureBooked}건)
+
 ${chatChData.length?`
   ──────────────────────
 
