@@ -1327,7 +1327,15 @@ td:first-child{text-align:left;padding-left:13px}
             </div>
           </div>
           <div class="pm-acc-body" id="acc-body-br" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;gap:4px">
+                <button id="br-tab-chart" onclick="switchBrTab('chart')" style="padding:4px 14px;border-radius:8px;border:2px solid #2563eb;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📊 그래프</button>
+                <button id="br-tab-table" onclick="switchBrTab('table')" style="padding:4px 14px;border-radius:8px;border:2px solid var(--border);background:var(--s1);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer">📋 표</button>
+              </div>
+              <button onclick="copyTrendBrImage()" style="padding:4px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📸 이미지 복사</button>
+            </div>
             <div id="trend-br-chart" style="overflow-x:auto;position:relative"></div>
+            <div id="trend-br-table" style="overflow-x:auto;margin-top:4px;display:none"></div>
           </div>
         </div>
 
@@ -5298,7 +5306,7 @@ function renderBrSum(){
             :'<div style="color:var(--text3);font-size:12px;padding:8px 0">입력 없음</div>'}
         </div>
         <div>
-          ${topP.length?`<div class="slbl" style="margin-bottom:8px">예약 시술 TOP</div>
+          ${topP.length?`<div class="slbl" style="margin-bottom:8px">예약 시술 현황</div>
             <div class="proc-rank-list">${topP.map(([name,n])=>{
               const maxN=topP[0][1]||1;
               return `<div class="proc-rank-row">
@@ -9120,8 +9128,8 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   const absence=allCalls.filter(c=>c.pttype==='비수신부재'||c.pttype==='미예약부재').length;
   const incall=phoneCalls.filter(c=>c.type==='in').length;
   const cb=phoneCalls.filter(c=>c.type==='cb').length;
-  const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
-  const futureBooked=calls.filter(c=>c.bookingType==='추후'&&(+c.today||0)>0).length;
+  const booked=allCalls.reduce((a,c)=>a+(+c.today||0),0);
+  const futureBooked=allCalls.filter(c=>c.bookingType==='추후'&&(+c.today||0)>0).length;
   const out=phoneCalls.filter(c=>c.type==='out').length;
   const cancel=allCalls.reduce((a,c)=>a+(+c.cancel||0),0);
   const noappt=allCalls.reduce((a,c)=>a+(+c.noappt||0),0);
@@ -9219,7 +9227,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     txt+='\n';
   });
   if(topProcs.length){
-    txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 TOP\n';
+    txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 현황\n';
     topProcs.forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name}  ${p.n}건  (신환 ${p.shin} · 구환 ${p.gu} · 잔여 ${p.rem||0})\n`; });
     txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
   }
@@ -9278,7 +9286,7 @@ function drawReportCanvasAll(dateStr, sum, branchSubs, topProcs){
   branchSubs.forEach(b=>rows.push({t:'brr',b}));
   if(topProcs.length){
     rows.push({t:'div'});
-    rows.push({t:'sec',text:'💉 예약 시술 TOP'});
+    rows.push({t:'sec',text:'💉 예약 시술 현황'});
     topProcs.forEach((p,i)=>rows.push({t:'pr',p,rank:i+1}));
   }
   rows.push({t:'div'});
@@ -9362,8 +9370,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   }
   const cl=bclr(bid);
 
-  const allCalls=(allCallsOverride||getAnalysisCalls(ds)); // out/miss/ad 자동 제외
-  const calls=allCalls.filter(c=>c.bid===bid);
+  const branchAllCalls=(allCallsOverride||getAnalysisCalls(ds)); // out/miss/ad 자동 제외
+  const calls=branchAllCalls.filter(c=>c.bid===bid);
 
   if(!calls.length){
     container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3);background:var(--s1);border:1px solid var(--border);border-radius:12px">
@@ -9503,7 +9511,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
 
   // VOC 수집 (해당 지점, 해당 날짜 범위)
   const allDates = allCallsOverride
-    ? [...new Set(allCalls.map(c=>c.date).filter(Boolean))]
+    ? [...new Set(calls.map(c=>c.date).filter(Boolean))]
     : [ds];
   const brVocs = getAllVocs().filter(v=>v.bid===bid && allDates.includes(v.date));
   const posVocs = brVocs.filter(v=>v.type==='긍정');
@@ -9537,7 +9545,7 @@ ${chatChData.length?`
 📡 채널별 인입 현황
 ${chatChData.map(ch=>{const parts=[];if(ch.shin)parts.push(`신환 ${ch.shin}`);if(ch.gu)parts.push(`구환 ${ch.gu}`);if(ch.rem)parts.push(`잔여 ${ch.rem}`);if(ch.gen)parts.push(`일반 ${ch.gen}`);if(ch.cancel)parts.push(`취소 ${ch.cancel}`);if(ch.noappt)parts.push(`미예약 ${ch.noappt}`);if(ch.absence)parts.push(`부재 ${ch.absence}`);return `  ▪ ${ch.icon} ${ch.name}  ${ch.total}건${parts.length?`  (${parts.join(' · ')})`:''}`;}).join('\n')}`:''}
 ${topProcs.length?`
-💉 예약 시술 TOP ${topProcs.length}
+💉 예약 시술 현황 ${topProcs.length}
 ${procLines}
 └ ${procSummaryLine}`:''}${vocSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -9598,7 +9606,7 @@ function drawReportCanvas(dateStr, sum, chData, topProcs){
   }
   if(topProcs.length){
     rows.push({type:'divider'});
-    rows.push({type:'section', text:'💉 예약 시술 TOP'});
+    rows.push({type:'section', text:'💉 예약 시술 현황'});
     topProcs.forEach((p,i)=>rows.push({type:'procrow', p, rank:i+1}));
   }
   rows.push({type:'divider'});
@@ -9791,10 +9799,10 @@ function copyReport(){
     });
 }
 function exportClosingCSV(ds){
-  const calls=getDayCalls(ds);
+  const allCalls=getDayCalls(ds);
   const chHeaders=S.channels.map(ch=>ch.name);
   const rows=[['날짜','시간','직원','지점','유형','차수','환자구분','당일예약','취소','미예약',...chHeaders,'시술','예약성공','메모']];
-  calls.forEach(c=>{
+  allCalls.forEach(c=>{
     const s=S.staff.find(x=>x.id===c.sid),b=S.branches.find(x=>x.id===c.bid);
     const procs=c.procs?Object.entries(c.procs).filter(([,n])=>n>0).map(([pid,n])=>{const p=S.procedures.find(x=>x.id===pid);return p?`${p.name}×${n}`:''}).filter(Boolean).join('|'):'';
     const chVals=S.channels.map(ch=>c.channels?.[ch.id]||0);
@@ -9899,10 +9907,10 @@ function exportCeoCSV(){
 }
 function exportBrSumCSV(){
   const {from,to}=getPeriodDates(_brPeriod,'br-date-from','br-date-to');
-  const calls=getCallsForRange(from,to);
+  const allCalls=getCallsForRange(from,to);
   const rows=[['지점','인콜','발신 콜(아웃콜)','신환','구환','취소','미예약','전체']];
   S.branches.forEach(b=>{
-    const bc=calls.filter(c=>c.bid===b.id);
+    const bc=allCalls.filter(c=>c.bid===b.id);
     rows.push([b.name,bc.filter(c=>c.type==='in').length,bc.filter(c=>c.type==='out').length,
       bc.filter(c=>c.pttype==='신환').length,bc.filter(c=>c.pttype==='구환').length,
       bc.reduce((a,c)=>a+(+c.cancel||0),0),bc.reduce((a,c)=>a+(+c.noappt||0),0),bc.length]);
@@ -10407,8 +10415,8 @@ function showConfirmToast(msg, onConfirm, confirmText='확인', confirmColor='#d
 }
 function exportCSV(){
   const rows=[['날짜','시간','직원','지점','유형','차수','환자구분','당일','취소','카톡','네이버','챗봇','미예약','예약성공','시술','메모']];
-  Object.entries(S.calls).sort().forEach(([,calls])=>{
-    calls.forEach(c=>{
+  Object.entries(S.allCalls).sort().forEach(([,allCalls])=>{
+    allCalls.forEach(c=>{
       const s=S.staff.find(x=>x.id===c.sid),b=S.branches.find(x=>x.id===c.bid);
       const procs=c.procs?Object.entries(c.procs).filter(([,n])=>n>0).map(([pid,n])=>{const p=S.procedures.find(x=>x.id===pid);return p?`${p.name}×${n}`:''}).filter(Boolean).join('|'):'';
       rows.push([c.date,c.time,s?.name||'',b?.name||'',c.type,c.type==='out'?c.degree:'',c.pttype,c.today||0,c.cancel||0,c.kakao||0,c.naver||0,c.chatbot||0,c.noappt||0,c.booked?1:0,`"${procs}"`,`"${c.memo||''}"`]);
@@ -10455,7 +10463,7 @@ function _getXlRange(){
   if(_xlPeriod==='week'){const f=new Date(today);f.setDate(f.getDate()-6);return {from:localDateStr(f),to:td};}
   if(_xlPeriod==='month'){const f=new Date(today);f.setDate(f.getDate()-29);return {from:localDateStr(f),to:td};}
   if(_xlPeriod==='all'){
-    const allDates=Object.keys(S.calls).filter(d=>(S.calls[d]||[]).length).sort();
+    const allDates=Object.keys(S.allCalls).filter(d=>(S.allCalls[d]||[]).length).sort();
     return {from:allDates[0]||td, to:allDates[allDates.length-1]||td};
   }
   return {from:document.getElementById('xl-from')?.value||td, to:document.getElementById('xl-to')?.value||td};
@@ -10473,8 +10481,8 @@ function doExportExcel(){
 
 function _buildExcel(){
   const {from, to}=_getXlRange();
-  const calls=getCallsForRange(from, to);
-  const activeDates=getDateRange(from, to).filter(d=>(S.calls[d]||[]).length>0);
+  const allCalls=getCallsForRange(from, to);
+  const activeDates=getDateRange(from, to).filter(d=>(S.allCalls[d]||[]).length>0);
   const wb=XLSX.utils.book_new();
   const plabel=from===to?from:`${from} ~ ${to}`;
 
@@ -10507,7 +10515,7 @@ function _buildExcel(){
     const hdr=['날짜','시간','직원','지점','매체','유형','차수','환자구분','예약성공','예약취소','미예약','예약시술','메모'];
     const rows=[[`미클리닉 콜센터 · 전체 콜 로그 · ${plabel}`],EMPTY,hdr];
     // 날짜순 정렬
-    const sorted=[...calls].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+    const sorted=[...allCalls].sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
     sorted.forEach(c=>{
       const st=S.staff.find(x=>x.id===c.sid);
       const br=S.branches.find(x=>x.id===c.bid);
@@ -10539,7 +10547,7 @@ function _buildExcel(){
   if(document.getElementById('xl-chk-proc')?.checked){
     // 시술별 총 건수 집계
     const procTotals={};
-    calls.forEach(c=>{
+    allCalls.forEach(c=>{
       if(!c.procs) return;
       Object.entries(c.procs).forEach(([pid,n])=>{
         if(Number(n)>0) procTotals[pid]=(procTotals[pid]||0)+Number(n);
@@ -10554,7 +10562,7 @@ function _buildExcel(){
       const proc=S.procedures.find(p=>p.id===pid);
       if(!proc) return;
       const brCounts=S.branches.map(b=>
-        calls.filter(c=>c.bid===b.id).reduce((a,c)=>a+Number(c.procs?.[pid]||0),0)
+        allCalls.filter(c=>c.bid===b.id).reduce((a,c)=>a+Number(c.procs?.[pid]||0),0)
       );
       const total=brCounts.reduce((a,v)=>a+v,0);
       rows.push([proc.name,...brCounts,total]);
@@ -10565,7 +10573,7 @@ function _buildExcel(){
     rows.push(EMPTY);
     // 지점별 예약 포함 콜 건수 합계행
     const brColTotals=S.branches.map(b=>
-      calls.filter(c=>c.bid===b.id&&c.procs&&Object.values(c.procs).some(n=>Number(n)>0)).length
+      allCalls.filter(c=>c.bid===b.id&&c.procs&&Object.values(c.procs).some(n=>Number(n)>0)).length
     );
     rows.push(['예약포함 콜 합계',...brColTotals,brColTotals.reduce((a,v)=>a+v,0)]);
 
@@ -10582,9 +10590,9 @@ function _buildExcel(){
 
     // 전화: 수신/콜백/발신
     [['📞 수신(인콜)','in'],['📞 콜백','cb'],['📞 발신(아웃콜)','out']].forEach(([label,type])=>{
-      const brVals=S.branches.map(b=>calls.filter(c=>c.bid===b.id&&c.medium!=='chat'&&c.type===type).length);
+      const brVals=S.branches.map(b=>allCalls.filter(c=>c.bid===b.id&&c.medium!=='chat'&&c.type===type).length);
       const total=brVals.reduce((a,v)=>a+v,0);
-      const typeCalls=calls.filter(c=>c.medium!=='chat'&&c.type===type);
+      const typeCalls=allCalls.filter(c=>c.medium!=='chat'&&c.type===type);
       const shin=typeCalls.filter(c=>c.pttype==='신환').length;
       const gu=typeCalls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
       rows.push([label,...brVals,total,shin,gu]);
@@ -10595,11 +10603,11 @@ function _buildExcel(){
     // 채팅 채널별
     S.channels.forEach(ch=>{
       const brVals=S.branches.map(b=>
-        calls.filter(c=>c.bid===b.id&&c.medium==='chat'&&Number(c.channels?.[ch.id]||0)>0)
+        allCalls.filter(c=>c.bid===b.id&&c.medium==='chat'&&Number(c.channels?.[ch.id]||0)>0)
           .reduce((a,c)=>a+Number(c.channels?.[ch.id]||0),0)
       );
       const total=brVals.reduce((a,v)=>a+v,0);
-      const chCalls=calls.filter(c=>c.medium==='chat'&&Number(c.channels?.[ch.id]||0)>0);
+      const chCalls=allCalls.filter(c=>c.medium==='chat'&&Number(c.channels?.[ch.id]||0)>0);
       const shin=chCalls.filter(c=>c.pttype==='신환').length;
       const gu=chCalls.filter(c=>c.pttype==='구환'||c.pttype==='구환(신규상담)').length;
       rows.push([`${ch.icon||''}${ch.name}`,...brVals,total,shin,gu]);
@@ -10616,7 +10624,7 @@ function _buildExcel(){
     const rows=[[`미클리닉 콜센터 · 일일 보고 · ${plabel}`],EMPTY,hdr];
     let totals=new Array(hdr.length-1).fill(0);
     S.branches.forEach(b=>{
-      const bc=calls.filter(c=>c.bid===b.id);
+      const bc=allCalls.filter(c=>c.bid===b.id);
       const phone=bc.filter(c=>c.medium!=='chat').length;
       const chat=bc.filter(c=>c.medium==='chat').length;
       const incall=bc.filter(c=>c.medium!=='chat'&&c.type==='in').length;
@@ -10849,7 +10857,7 @@ function setChartPeriod(chart, months, el){
   document.querySelectorAll(`[id^="tc-${chart}-"]`).forEach(b=>b.classList.remove('act'));
   if(el) el.classList.add('act');
   const md = getNMonthsData(months);
-  if(chart==='br')   renderTrendBrChart(md);
+  if(chart==='br')   renderTrendBrChart(md, _pmAcc.br.bid==='all'?null:_pmAcc.br.bid);
   if(chart==='pt')   renderTrendPtChart(md);
   if(chart==='dow')  renderTrendDowWithPeriod(months);
   if(chart==='hour') renderTrendHourWithPeriod(months);
@@ -10878,10 +10886,10 @@ function renderTrendDowWithPeriod(months){
   const n = months || _chartPeriod?.dow || 3;
   const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
   const from = localDateStr(fromD), to = todayStr();
-  const calls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  const allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
   const DOW=['일','월','화','수','목','금','토'];
   const cnt=[0,0,0,0,0,0,0], days=[0,0,0,0,0,0,0];
-  calls.forEach(c=>{ const d=new Date((c.date||'')+'T00:00:00'); if(!isNaN(d)) cnt[d.getDay()]++; });
+  allCalls.forEach(c=>{ const d=new Date((c.date||'')+'T00:00:00'); if(!isNaN(d)) cnt[d.getDay()]++; });
   getDateRange(from,to).forEach(ds=>{ days[new Date(ds+'T00:00:00').getDay()]++; });
   const avg=cnt.map((v,i)=>days[i]>0?Math.round(v/days[i]*10)/10:0);
   const max=Math.max(...avg,0.1);
@@ -10905,9 +10913,9 @@ function renderTrendHourWithPeriod(months){
   const n = months || _chartPeriod?.hour || 3;
   const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
   const from = localDateStr(fromD), to = todayStr();
-  const calls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  const allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
   const cnt=Array(24).fill(0);
-  calls.forEach(c=>{ const h=parseInt((c.time||'').split(':')[0]); if(h>=0&&h<24) cnt[h]++; });
+  allCalls.forEach(c=>{ const h=parseInt((c.time||'').split(':')[0]); if(h>=0&&h<24) cnt[h]++; });
   const hours=Array.from({length:15},(_,i)=>i+8); // 8~22시
   const maxV=Math.max(...hours.map(i=>cnt[i]),1);
   const BAR_H=70;
@@ -10967,11 +10975,11 @@ function getTrendMonthDefs(){
 }
 
 function getMonthCalls(mk){
-  const calls = [];
-  Object.keys(S.calls).forEach(ds=>{
-    if(ds.startsWith(mk)) calls.push(...(S.calls[ds]||[]));
+  const allCalls = [];
+  Object.keys(S.allCalls).forEach(ds=>{
+    if(ds.startsWith(mk)) allCalls.push(...(S.allCalls[ds]||[]));
   });
-  return calls;
+  return allCalls;
 }
 function getMonthAnalysisCalls(mk){
   return getMonthCalls(mk).filter(c=>c.type!=='out');
@@ -11043,9 +11051,9 @@ function pmGetMonthDefs(chart){
   return getNMonthsData(acc.months||3);
 }
 
-function pmFilterCalls(calls, chart){
+function pmFilterCalls(allCalls, chart){
   const bid=_pmAcc[chart]?.bid;
-  return (bid && bid!=='all') ? calls.filter(c=>c.bid===bid) : calls;
+  return (bid && bid!=='all') ? allCalls.filter(c=>c.bid===bid) : allCalls;
 }
 
 function pmRenderChart(chart){
@@ -11066,7 +11074,7 @@ function pmRenderChart(chart){
 }
 
 function renderTrend(){
-  renderTrendBrChart(getNMonthsData(_chartPeriod.br||3));
+  renderTrendBrChart(getNMonthsData(_chartPeriod.br||3), _pmAcc.br.bid==='all'?null:_pmAcc.br.bid);
   renderTrendPtChart(getNMonthsData(_chartPeriod.pt||3));
   renderTrendBrFilter();
   renderTrendBrPillsForProc();
@@ -11665,15 +11673,15 @@ function renderDailyProcTable(){
   // 기간 라벨 업데이트
   const lbl=document.getElementById('dp-period-label');
   if(lbl) lbl.textContent=periodLabel(from,to);
-  const dates=getDateRange(from,to).filter(d=>(S.calls[d]||[]).some(c=>c.type!=='out'));
+  const dates=getDateRange(from,to).filter(d=>(S.allCalls[d]||[]).some(c=>c.type!=='out'));
   const el=document.getElementById('daily-proc-table');
   if(!el) return;
 
   // 실제 사용된 시술 pid (발신 제외, 환자구분 필터 적용)
   const getPtCalls = (ds) => {
-    let calls = getAnalysisCalls(ds);
-    if(_pmPttype!=='all') calls=calls.filter(c=>c.pttype===_pmPttype);
-    return calls;
+    let allCalls = getAnalysisCalls(ds);
+    if(_pmPttype!=='all') allCalls=allCalls.filter(c=>c.pttype===_pmPttype);
+    return allCalls;
   };
   const usedPids=new Set();
   dates.forEach(ds=>getPtCalls(ds).forEach(c=>{
@@ -11808,11 +11816,11 @@ function renderDailyProcTable(){
   let grandShin=0, grandGu=0;
 
   dates.forEach(ds=>{
-    const calls=getPtCalls(ds);
+    const allCalls=getPtCalls(ds);
     const dateLabel2 = dateLabel(ds);
     const brData={};
     branches.forEach(b=>{brData[b.id]={shin:{},gu:{}};displayCols.forEach(c=>{brData[b.id].shin[c.id]=0;brData[b.id].gu[c.id]=0;});});
-    calls.forEach(c=>{
+    allCalls.forEach(c=>{
       if(!c.procs||!c.bid||!brData[c.bid]) return;
       const ptShin = !c.pttype||c.pttype.includes('신환');
       Object.entries(c.procs).forEach(([pid,n])=>{
@@ -11895,7 +11903,7 @@ function renderBranchCallTable(from, to){
   const branches = S.branches.filter(b=>!selectedBrs||selectedBrs.size===0||selectedBrs.has(b.id));
 
   // Firebase 데이터 날짜 목록
-  const fbDates = getDateRange(from,to).filter(ds=>(S.calls[ds]||[]).some(c=>c.type!=='out'));
+  const fbDates = getDateRange(from,to).filter(ds=>(S.allCalls[ds]||[]).some(c=>c.type!=='out'));
 
   // 엑셀 데이터 날짜 목록 (기간 내)
   const excelDates = _branchExcelData
@@ -12321,29 +12329,29 @@ function renderTrendProcChartByPeriod(){
 
   const PCOLS=['#2563eb','#059669','#d97706','#dc2626','#7c3aed'];
   const data=groups.map(g=>{
-    let calls=[];
+    let allCalls=[];
     if(g.key.length===2){
       // 시간 키
       const ds=todayStr();
-      calls=getAnalysisCalls(ds).filter(c=>(c.time||'').startsWith(g.key));
+      allCalls=getAnalysisCalls(ds).filter(c=>(c.time||'').startsWith(g.key));
     } else if(g.key.length===7){
-      Object.keys(S.calls).forEach(ds=>{if(ds.startsWith(g.key))calls.push(...getAnalysisCalls(ds));});
+      Object.keys(S.allCalls).forEach(ds=>{if(ds.startsWith(g.key))allCalls.push(...getAnalysisCalls(ds));});
     } else {
-      calls=getAnalysisCalls(g.key);
+      allCalls=getAnalysisCalls(g.key);
     }
     // 지점 필터
-    if(_chartProcBid!=='all') calls=calls.filter(c=>c.bid===_chartProcBid);
+    if(_chartProcBid!=='all') allCalls=allCalls.filter(c=>c.bid===_chartProcBid);
     // 실제 집계 키: 하위 선택 있으면 하위 키별, 없으면 상위 pid
     const activeKeys = _trendSubKeys ? [..._trendSubKeys] : _trendProcs;
     const byProc=activeKeys.map(key=>{
       if(key.includes(':')){
-        return calls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
+        return allCalls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
       } else {
         // 상위: 직접 저장된 것 + 하위 합산
         const proc=S.procedures.find(x=>x.id===key);
-        let total=calls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
+        let total=allCalls.reduce((a,c)=>a+(c.procs?.[key]||0),0);
         if(proc?.subs) proc.subs.forEach((_,i)=>{
-          total+=calls.reduce((a,c)=>a+(c.procs?.[`${key}:${i}`]||0),0);
+          total+=allCalls.reduce((a,c)=>a+(c.procs?.[`${key}:${i}`]||0),0);
         });
         return total;
       }
@@ -12426,21 +12434,44 @@ function copyTrendProcImage(){
 
 // ── 1. 지점별 누적 막대 차트 ──
 let _trendBrSelected = null; // null = 전체, 또는 branch id set
+let _brTabMode = 'chart'; // 'chart' | 'table'
 
-function renderTrendBrChart(monthDefs){
+function switchBrTab(mode){
+  _brTabMode = mode;
+  const chartEl = document.getElementById('trend-br-chart');
+  const tableEl = document.getElementById('trend-br-table');
+  const btnChart = document.getElementById('br-tab-chart');
+  const btnTable = document.getElementById('br-tab-table');
+  if(!chartEl || !tableEl) return;
+  if(mode === 'chart'){
+    chartEl.style.display = '';
+    tableEl.style.display = 'none';
+    if(btnChart){ btnChart.style.background='#2563eb'; btnChart.style.color='#fff'; btnChart.style.borderColor='#2563eb'; }
+    if(btnTable){ btnTable.style.background='var(--s1)'; btnTable.style.color='var(--text2)'; btnTable.style.borderColor='var(--border)'; }
+  } else {
+    chartEl.style.display = 'none';
+    tableEl.style.display = '';
+    if(btnTable){ btnTable.style.background='#2563eb'; btnTable.style.color='#fff'; btnTable.style.borderColor='#2563eb'; }
+    if(btnChart){ btnChart.style.background='var(--s1)'; btnChart.style.color='var(--text2)'; btnChart.style.borderColor='var(--border)'; }
+  }
+}
+
+function renderTrendBrChart(monthDefs, filterBid){
   const brColors = S.branches.map(b=>bclr(b.id));
   if(!_trendBrSelected) _trendBrSelected = new Set(S.branches.map(b=>b.id));
 
-
-
-  const activeBrs = S.branches.filter(b=>_trendBrSelected.has(b.id));
+  // pmSetBranch로 선택된 지점 필터 적용 (인자 우선, 없으면 _pmAcc)
+  const selectedBid = filterBid !== undefined ? filterBid : (_pmAcc?.br?.bid || 'all');
+  const activeBrs = (!selectedBid || selectedBid==='all')
+    ? S.branches.filter(b=>!b.inactive)
+    : S.branches.filter(b=>b.id===selectedBid && !b.inactive);
   const activeBrColors = activeBrs.map(b=>bclr(b.id));
   const nBr = activeBrs.length || 1;
   const nMo = monthDefs.length || 1;
 
   const data = monthDefs.map(m=>{
-    const calls = getMonthAnalysisCalls(m.key);
-    const byBr = activeBrs.map(b=>calls.filter(c=>c.bid===b.id).length);
+    const allCalls = getMonthAnalysisCalls(m.key);
+    const byBr = activeBrs.map(b=>allCalls.filter(c=>c.bid===b.id).length);
     const total = byBr.reduce((a,v)=>a+v,0);
     return {label:m.label, byBr, total, key:m.key};
   });
@@ -12503,6 +12534,60 @@ function renderTrendBrChart(monthDefs){
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:340px;overflow:visible;font-family:'DM Mono',monospace">
       ${grid}${bars}${lines}${vals}${xlbls}
     </svg>`;
+
+  // ── 테이블 렌더 ──
+  const tableEl=document.getElementById('trend-br-table');
+  if(tableEl){
+    const thStyle='padding:6px 10px;border:1px solid var(--border);background:var(--s2);font-size:11px;font-weight:700;color:var(--text2);text-align:center;white-space:nowrap';
+    const tdStyle='padding:5px 10px;border:1px solid var(--border);font-size:12px;font-weight:700;text-align:center;font-family:"DM Mono",monospace';
+    const header=`<tr><th style="${thStyle}">월</th>${activeBrs.map(b=>`<th style="${thStyle};color:${bclr(b.id)}">${b.name}</th>`).join('')}<th style="${thStyle}">합계</th></tr>`;
+    const rows=data.map(d=>{
+      const total=d.byBr.reduce((a,v)=>a+v,0);
+      const cells=d.byBr.map((v,bi)=>`<td style="${tdStyle};color:${activeBrColors[bi]}">${v||'-'}</td>`).join('');
+      return `<tr><td style="${thStyle}">${d.label}</td>${cells}<td style="${tdStyle};color:var(--accent);background:rgba(37,99,235,.05)">${total}</td></tr>`;
+    });
+    // 합계 행
+    const colTotals=activeBrs.map((_,bi)=>data.reduce((a,d)=>a+d.byBr[bi],0));
+    const grandTotal=colTotals.reduce((a,v)=>a+v,0);
+    const totalRow=`<tr><td style="${thStyle};background:#e2e8f0">합계</td>${colTotals.map((v,bi)=>`<td style="${tdStyle};color:${activeBrColors[bi]};background:#f8fafc;font-weight:800">${v}</td>`).join('')}<td style="${tdStyle};color:var(--accent);background:rgba(37,99,235,.1);font-weight:800">${grandTotal}</td></tr>`;
+    tableEl.innerHTML=`<table style="border-collapse:collapse;width:100%;min-width:300px">${header}${rows.join('')}${totalRow}</table>`;
+  }
+
+  // 탭 모드 적용
+  switchBrTab(_brTabMode);
+}
+
+function copyTrendBrImage(){
+  const chartEl=document.getElementById('trend-br-chart');
+  const tableEl=document.getElementById('trend-br-table');
+  if(!chartEl?.querySelector('svg')){ toast('⚠️ 먼저 차트를 펼쳐주세요'); return; }
+  toast('📸 이미지 생성 중...');
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:400px';
+  // 제목
+  const title=document.createElement('div');
+  title.style.cssText='font-size:14px;font-weight:800;color:#0f172a;margin-bottom:10px';
+  title.textContent='🏥 지점별 월간 콜 추이';
+  wrapper.appendChild(title);
+  wrapper.appendChild(chartEl.cloneNode(true));
+  if(tableEl?.querySelector('table')){
+    const sep=document.createElement('div'); sep.style.height='10px';
+    wrapper.appendChild(sep);
+    wrapper.appendChild(tableEl.cloneNode(true));
+  }
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false})
+    .then(canvas=>{
+      document.body.removeChild(wrapper);
+      canvas.toBlob(blob=>{
+        if(!blob){toast('⚠️ 실패');return;}
+        try{
+          navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
+            .then(()=>toast('✅ 이미지 복사됨! 카톡에 붙여넣기 하세요'))
+            .catch(()=>{const a=document.createElement('a');a.download=`지점별콜추이_${todayStr()}.png`;a.href=canvas.toDataURL('image/png');a.click();toast('📥 이미지 다운로드됨');});
+        }catch(e){const a=document.createElement('a');a.download=`지점별콜추이_${todayStr()}.png`;a.href=canvas.toDataURL('image/png');a.click();toast('📥 이미지 다운로드됨');}
+      },'image/png');
+    }).catch(()=>{document.body.removeChild(wrapper);toast('⚠️ 이미지 생성 실패');});
 }
 
 function toggleTrendBr(bid){
@@ -12518,10 +12603,10 @@ function toggleTrendBr(bid){
 // ── 2. 신환/구환 라인 차트 ──
 function renderTrendPtChart(monthDefs){
   const data = monthDefs.map(m=>{
-    const calls = getMonthAnalysisCalls(m.key);
-    const shin = calls.filter(c=>c.pttype==='신환').length;
-    const gu = calls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
-    return {label:m.label, shin, gu, total:calls.length};
+    const allCalls = getMonthAnalysisCalls(m.key);
+    const shin = allCalls.filter(c=>c.pttype==='신환').length;
+    const gu = allCalls.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    return {label:m.label, shin, gu, total:allCalls.length};
   });
 
   const maxV = Math.max(1,...data.map(d=>Math.max(d.shin,d.gu)));
@@ -12570,10 +12655,10 @@ function renderTrendPtChart(monthDefs){
 function renderTrendDow(){
   const dow7=['월','화','수','목','금','토','일'];
   const counts=Array(7).fill(0), days=Array(7).fill(0);
-  Object.keys(S.calls).forEach(ds=>{
+  Object.keys(S.allCalls).forEach(ds=>{
     const d=new Date(ds+'T00:00:00');
     const dow=(d.getDay()+6)%7; // 0=월
-    const n=(S.calls[ds]||[]).length;
+    const n=(S.allCalls[ds]||[]).length;
     if(n>0){counts[dow]+=n;days[dow]++;}
   });
   const avgs=counts.map((c,i)=>days[i]?+(c/days[i]).toFixed(1):0);
@@ -12597,7 +12682,7 @@ function renderTrendDow(){
 // ── 4. 시간대별 콜 분포 ──
 function renderTrendHour(){
   const counts=Array(24).fill(0);
-  Object.values(S.calls).forEach(dayArr=>(dayArr||[]).forEach(c=>{
+  Object.values(S.allCalls).forEach(dayArr=>(dayArr||[]).forEach(c=>{
     if(c.time){const h=parseInt(c.time.split(':')[0]);if(!isNaN(h))counts[h]++;}
   }));
   const maxC=Math.max(1,...counts);
@@ -12623,7 +12708,7 @@ function renderTrendProcFilter(monthDefs){
   if(!_trendProcs.length && S.procedures.length){
     // 기본: 상위 3개 시술 선택
     const allPCnt={};
-    Object.values(S.calls).forEach(arr=>(arr||[]).forEach(c=>{
+    Object.values(S.allCalls).forEach(arr=>(arr||[]).forEach(c=>{
       if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{allPCnt[pid]=(allPCnt[pid]||0)+n;});
     }));
     _trendProcs = Object.entries(allPCnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([pid])=>pid);
@@ -12701,20 +12786,20 @@ function renderTrendProcChart(monthDefs){
   }
   const PCOLS=['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#f59e0b','#ec4899','#6b7280','#84cc16'];
   // 하위 카테고리 포함 집계 헬퍼
-  function getProcCount(calls, pid){
+  function getProcCount(allCalls, pid){
     if(pid.includes(':sub:')){
       const [parentId,,subIdx]=pid.split(':sub:');
       const p=S.procedures.find(x=>x.id===parentId);
       const subName=p?.subs?.[+subIdx]?.name||'';
       if(!subName) return 0;
-      return calls.reduce((a,c)=>{
+      return allCalls.reduce((a,c)=>{
         if(!c.procs) return a;
         // 서브 카테고리는 시술명 매칭
         const match=Object.entries(c.procs).find(([k])=>k===parentId+':'+subIdx);
         return a+(match?match[1]:0);
       },0);
     }
-    return calls.reduce((a,c)=>a+(c.procs?.[pid]||0),0);
+    return allCalls.reduce((a,c)=>a+(c.procs?.[pid]||0),0);
   }
   function getProcLabel(pid){
     if(pid.includes(':sub:')){
@@ -12725,8 +12810,8 @@ function renderTrendProcChart(monthDefs){
     return S.procedures.find(x=>x.id===pid)?.name||pid;
   }
   const data = monthDefs.map(m=>{
-    const calls=getMonthAnalysisCalls(m.key);
-    const byProc=_trendProcs.map(pid=>getProcCount(calls,pid));
+    const allCalls=getMonthAnalysisCalls(m.key);
+    const byProc=_trendProcs.map(pid=>getProcCount(allCalls,pid));
     return {label:m.label, byProc};
   });
   const maxV=Math.max(1,...data.flatMap(d=>d.byProc));
@@ -12792,15 +12877,15 @@ function renderPtTypeBranchChart(){
   const from = new Date(to); from.setMonth(from.getMonth() - _ptTypePeriod);
 
   // 날짜 범위 내 콜 수집 (발신 제외)
-  let calls = [];
-  Object.entries(S.calls||{}).forEach(([ds,arr])=>{
+  let allCalls = [];
+  Object.entries(S.allCalls||{}).forEach(([ds,arr])=>{
     const d = new Date(ds+'T00:00:00');
-    if(d>=from && d<=new Date()) calls.push(...(arr||[]).filter(c=>c.type!=='out'));
+    if(d>=from && d<=new Date()) allCalls.push(...(arr||[]).filter(c=>c.type!=='out'));
   });
 
   // 지점별 집계
   const data = S.branches.map(b=>{
-    const bc = calls.filter(c=>c.bid===b.id);
+    const bc = allCalls.filter(c=>c.bid===b.id);
     const shin = bc.filter(c=>c.pttype==='신환').length;
     const gu   = bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
     const rem  = bc.filter(c=>c.pttype==='잔여시술').length;
@@ -12885,7 +12970,7 @@ function renderTrendProcBrChart(){
   if(!_trendBid){document.getElementById('trend-proc-br-chart').innerHTML='';return;}
   const branch=S.branches.find(b=>b.id===_trendBid);
   const allCalls=[];
-  Object.values(S.calls).forEach(arr=>(arr||[]).forEach(c=>{if(c.bid===_trendBid)allCalls.push(c);}));
+  Object.values(S.allCalls).forEach(arr=>(arr||[]).forEach(c=>{if(c.bid===_trendBid)allCalls.push(c);}));
 
   // 시술별 집계 (신환/구환/잔여 구분)
   const pData={};
@@ -14271,7 +14356,7 @@ function renderMarketingTable(){
 
 // ── 상담기록 수정 ──
 function openEditCallModal(callId, ds){
-  const dayData=S.calls[ds||_curDate]||[];
+  const dayData=S.allCalls[ds||_curDate]||[];
   const c=dayData.find(x=>x.id===callId);
   if(!c){ toast('기록을 찾을 수 없습니다'); return; }
   // openCallModal 호출 후 데이터 채우기
@@ -14388,7 +14473,7 @@ function renderVocList(){
 
 function deleteVoc(callId, ds){
   showConfirmToast('이 VOC를 삭제할까요?', ()=>{
-    const dayData=S.calls[ds]||[];
+    const dayData=S.allCalls[ds]||[];
     const call=dayData.find(c=>c.id===callId);
     if(!call){ toast('⚠️ VOC를 찾을 수 없습니다'); return; }
     delete call.voc;
@@ -14427,7 +14512,7 @@ function exportVocExcel(){
 }
 
 function updateVocStatus(callId, ds, newStatus){
-  const dayData=S.calls[ds]||[];
+  const dayData=S.allCalls[ds]||[];
   const call=dayData.find(c=>c.id===callId);
   if(!call||!call.voc){ toast('⚠️ VOC를 찾을 수 없습니다'); return; }
   call.voc.status=newStatus;
@@ -14869,10 +14954,10 @@ async function saveCallToFirebase(ds){
   if(!_syncUrl) return;
   const base=_syncUrl.replace(/\/+$/,'');
   try{
-    await fbFetch(base+`/mclinic/calls/${ds}.json`,{
+    await fbFetch(base+`/mclinic/allCalls/${ds}.json`,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(S.calls[ds]||[])
+      body:JSON.stringify(S.allCalls[ds]||[])
     });
   }catch(e){ console.warn('Firebase save failed',e); }
 }
@@ -14883,7 +14968,7 @@ async function syncToFirebase(){
   try{
     const payload={
       branches:S.branches, staff:S.staff, procedures:S.procedures,
-      channels:S.channels, roles:S.roles, calls:S.calls,
+      channels:S.channels, roles:S.roles, allCalls:S.allCalls,
       notes:S.notes||[], faqs:S.faqs||[],
       incentive:S.incentive, perfGoals:S.perfGoals||{}, adBudgets:S.adBudgets||{}
     };
@@ -14934,8 +15019,8 @@ function toggleVocProc(pid){
 
 function getAllVocs(){
   const vocs=[];
-  Object.entries(S.calls||{}).forEach(([ds,calls])=>{
-    (calls||[]).forEach(c=>{
+  Object.entries(S.allCalls||{}).forEach(([ds,allCalls])=>{
+    (allCalls||[]).forEach(c=>{
       if(c.voc&&c.voc.type){
         vocs.push({...c.voc, date:ds, bid:c.bid, sid:c.sid, callId:c.id});
       }
@@ -14983,12 +15068,12 @@ function renderCallCard(c, ds){
 // ── 직원 KPI 카드 ──
 function renderStaffKpiCard(sid, ds){
   const el=document.getElementById(`si-kpi-card-${sid}`); if(!el) return;
-  const calls=getAnalysisCalls(ds).filter(c=>c.sid===sid);
-  const shin=calls.filter(c=>c.pttype==='신환').length;
-  const gu=calls.filter(c=>c.pttype==='구환(신규상담)').length;
-  const rem=calls.filter(c=>c.pttype==='잔여시술').length;
-  const gen=calls.filter(c=>c.pttype==='일반').length;
-  const booked=calls.reduce((a,c)=>a+(+c.today||0),0);
+  const allCalls=getAnalysisCalls(ds).filter(c=>c.sid===sid);
+  const shin=allCalls.filter(c=>c.pttype==='신환').length;
+  const gu=allCalls.filter(c=>c.pttype==='구환(신규상담)').length;
+  const rem=allCalls.filter(c=>c.pttype==='잔여시술').length;
+  const gen=allCalls.filter(c=>c.pttype==='일반').length;
+  const booked=allCalls.reduce((a,c)=>a+(+c.today||0),0);
   el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap">
     <div style="background:#dcfce7;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:18px;color:#15803d">신환</div><div style="font-size:16px;font-weight:900">${shin}</div></div>
     <div style="background:#ede9fe;border-radius:8px;padding:4px 10px;text-align:center"><div style="font-size:18px;color:#7c3aed">구환</div><div style="font-size:16px;font-weight:900">${gu}</div></div>
