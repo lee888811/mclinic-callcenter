@@ -1317,12 +1317,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-br"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-br-1" onclick="pmSetPeriod('br',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-br-3" onclick="pmSetPeriod('br',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-br-6" onclick="pmSetPeriod('br',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-br-12" onclick="pmSetPeriod('br',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-br" onchange="pmSetCustom('br')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-br" onchange="pmSetCustom('br')">
+                <button class="pm-pp" id="pm-pp-br-custom" onclick="pmToggleCustomRange('br',this)">기간 선택</button>
+                <span id="pm-custom-range-br" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-br" onchange="pmSetCustom('br')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-br" onchange="pmSetCustom('br')">
+                </span>
               </div>
             </div>
           </div>
@@ -1347,12 +1351,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-pt"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-pt-1" onclick="pmSetPeriod('pt',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-pt-3" onclick="pmSetPeriod('pt',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-pt-6" onclick="pmSetPeriod('pt',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-pt-12" onclick="pmSetPeriod('pt',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-pt" onchange="pmSetCustom('pt')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-pt" onchange="pmSetCustom('pt')">
+                <button class="pm-pp" id="pm-pp-pt-custom" onclick="pmToggleCustomRange('pt',this)">기간 선택</button>
+                <span id="pm-custom-range-pt" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-pt" onchange="pmSetCustom('pt')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-pt" onchange="pmSetCustom('pt')">
+                </span>
               </div>
             </div>
           </div>
@@ -1373,12 +1381,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-dow"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-dow-1" onclick="pmSetPeriod('dow',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-dow-3" onclick="pmSetPeriod('dow',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-dow-6" onclick="pmSetPeriod('dow',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-dow-12" onclick="pmSetPeriod('dow',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-dow" onchange="pmSetCustom('dow')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-dow" onchange="pmSetCustom('dow')">
+                <button class="pm-pp" id="pm-pp-dow-custom" onclick="pmToggleCustomRange('dow',this)">기간 선택</button>
+                <span id="pm-custom-range-dow" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-dow" onchange="pmSetCustom('dow')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-dow" onchange="pmSetCustom('dow')">
+                </span>
               </div>
             </div>
           </div>
@@ -1395,12 +1407,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-hour"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-hour-1" onclick="pmSetPeriod('hour',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-hour-3" onclick="pmSetPeriod('hour',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-hour-6" onclick="pmSetPeriod('hour',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-hour-12" onclick="pmSetPeriod('hour',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-hour" onchange="pmSetCustom('hour')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-hour" onchange="pmSetCustom('hour')">
+                <button class="pm-pp" id="pm-pp-hour-custom" onclick="pmToggleCustomRange('hour',this)">기간 선택</button>
+                <span id="pm-custom-range-hour" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-hour" onchange="pmSetCustom('hour')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-hour" onchange="pmSetCustom('hour')">
+                </span>
               </div>
             </div>
           </div>
@@ -1417,13 +1433,17 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-proc"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-proc-1mo" onclick="pmSetProcPeriod('1mo',this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-proc-today" onclick="pmSetProcPeriod('today',this)">당일</button>
                 <button class="pm-pp" id="pm-pp-proc-week" onclick="pmSetProcPeriod('week',this)">7일</button>
                 <button class="pm-pp" id="pm-pp-proc-month" onclick="pmSetProcPeriod('month',this)">1달</button>
                 <button class="pm-pp" id="pm-pp-proc-6mo" onclick="pmSetProcPeriod('6mo',this)">6개월</button>
-                <input type="date" class="pm-date-input" id="tpp-from" onchange="renderTrendProcChartByPeriod()">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="tpp-to" onchange="renderTrendProcChartByPeriod()">
+                <button class="pm-pp" id="pm-pp-proc-custom" onclick="pmToggleCustomRange('proc',this)">기간 선택</button>
+                <span id="pm-custom-range-proc" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="tpp-from" onchange="renderTrendProcChartByPeriod()">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="tpp-to" onchange="renderTrendProcChartByPeriod()">
+                </span>
               </div>
             </div>
           </div>
@@ -1455,12 +1475,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-focus"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-focus-1" onclick="pmSetPeriod('focus',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-focus-3" onclick="pmSetPeriod('focus',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-focus-6" onclick="pmSetPeriod('focus',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-focus-12" onclick="pmSetPeriod('focus',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-focus" onchange="pmSetCustom('focus')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-focus" onchange="pmSetCustom('focus')">
+                <button class="pm-pp" id="pm-pp-focus-custom" onclick="pmToggleCustomRange('focus',this)">기간 선택</button>
+                <span id="pm-custom-range-focus" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-focus" onchange="pmSetCustom('focus')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-focus" onchange="pmSetCustom('focus')">
+                </span>
               </div>
             </div>
           </div>
@@ -1478,12 +1502,16 @@ td:first-child{text-align:left;padding-left:13px}
             <div class="pm-acc-controls" onclick="event.stopPropagation()">
               <div class="pm-br-pills" id="pm-br-pills-ptbr"></div>
               <div class="pm-period-pills">
+                <button class="pm-pp" id="pm-pp-ptbr-1" onclick="pmSetPeriod('ptbr',1,this)">1개월</button>
                 <button class="pm-pp act" id="pm-pp-ptbr-3" onclick="pmSetPeriod('ptbr',3,this)">3개월</button>
                 <button class="pm-pp" id="pm-pp-ptbr-6" onclick="pmSetPeriod('ptbr',6,this)">6개월</button>
                 <button class="pm-pp" id="pm-pp-ptbr-12" onclick="pmSetPeriod('ptbr',12,this)">12개월</button>
-                <input type="date" class="pm-date-input" id="pm-from-ptbr" onchange="pmSetCustom('ptbr')">
-                <span class="pm-tilde">~</span>
-                <input type="date" class="pm-date-input" id="pm-to-ptbr" onchange="pmSetCustom('ptbr')">
+                <button class="pm-pp" id="pm-pp-ptbr-custom" onclick="pmToggleCustomRange('ptbr',this)">기간 선택</button>
+                <span id="pm-custom-range-ptbr" style="display:none;align-items:center;gap:4px">
+                  <input type="date" class="pm-date-input" id="pm-from-ptbr" onchange="pmSetCustom('ptbr')">
+                  <span class="pm-tilde">~</span>
+                  <input type="date" class="pm-date-input" id="pm-to-ptbr" onchange="pmSetCustom('ptbr')">
+                </span>
               </div>
             </div>
           </div>
@@ -9182,6 +9210,39 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   });
   const noapptReasonTxt=Object.entries(noapptReasons).map(([r,n])=>`    · ${r} ${n}건`).join('\n');
   const bookedAll=allCalls.reduce((a,c)=>a+(+c.today||0),0);
+
+  // 채널별 집계 (전지점 합산)
+  const getCallChannelAll=(c)=>{
+    if(c.medium==='chat'){
+      const chs=Object.keys(c.channels||{});
+      return chs.length>0?chs[0]:(c.channel||'');
+    }
+    return c.channel||'ch0';
+  };
+  const channelRowsAll=S.channels.map(ch=>{
+    const matched=allCalls.filter(c=>getCallChannelAll(c)===ch.id);
+    const total=matched.length;
+    if(!total) return null;
+    const shin_ch=matched.filter(c=>c.pttype==='신환').length;
+    const gu_ch=matched.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    const rem_ch=matched.filter(c=>c.pttype==='잔여시술').length;
+    const gen_ch=matched.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length;
+    const cancel_ch=matched.filter(c=>c.pttype==='예약취소').length;
+    const noappt_ch=matched.filter(c=>c.pttype==='미예약').length;
+    return {icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch,rem:rem_ch,gen:gen_ch,cancel:cancel_ch,noappt:noappt_ch};
+  }).filter(Boolean);
+  const noChanChatAll=allCalls.filter(c=>c.medium==='chat'&&!getCallChannelAll(c));
+  if(noChanChatAll.length>0){
+    channelRowsAll.push({
+      icon:'💬',name:'채팅(채널미상)',total:noChanChatAll.length,
+      shin:noChanChatAll.filter(c=>c.pttype==='신환').length,
+      gu:noChanChatAll.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length,
+      rem:noChanChatAll.filter(c=>c.pttype==='잔여시술').length,
+      gen:noChanChatAll.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length,
+      cancel:noChanChatAll.filter(c=>c.pttype==='예약취소').length,
+      noappt:noChanChatAll.filter(c=>c.pttype==='미예약').length
+    });
+  }
   const futureBookedAll=allCalls.filter(c=>c.bookingType==='추후'&&(+c.today||0)>0).length;
   // 전화 세부
   const incallA=phoneCalls.filter(c=>c.type==='in').length;
@@ -9218,6 +9279,19 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   txt+=`  ${'─'.repeat(22)}\n`;
   txt+=`  📅 신규 예약  ${bookedAll}건  (당일 ${bookedAll-futureBookedAll}건 · 추후 ${futureBookedAll}건)\n`;
 
+  if(channelRowsAll.length){
+    txt+='\n'+'─'.repeat(28)+'\n\n📡 채널별 인입 현황\n';
+    channelRowsAll.forEach(ch=>{
+      const parts=[];
+      if(ch.shin)   parts.push(`신환 ${ch.shin}`);
+      if(ch.gu)     parts.push(`구환 ${ch.gu}`);
+      if(ch.rem)    parts.push(`잔여 ${ch.rem}`);
+      if(ch.gen)    parts.push(`일반 ${ch.gen}`);
+      if(ch.cancel) parts.push(`취소 ${ch.cancel}`);
+      if(ch.noappt) parts.push(`미예약 ${ch.noappt}`);
+      txt+=`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건${parts.length?`  (${parts.join(' · ')})`:''}  \n`;
+    });
+  }
 
   txt+='\n'+'─'.repeat(28)+'\n\n🏥 지점별 현황\n';
   branchSubs.forEach(b=>{
@@ -10881,12 +10955,13 @@ function renderTrendBrPillsForProc(){
   if(allBtn) allBtn.classList.toggle('act', _chartProcBid==='all');
 }
 
-function renderTrendDowWithPeriod(months){
+function renderTrendDowWithPeriod(months, fromOverride, toOverride, bid){
   const el = document.getElementById('trend-dow-chart'); if(!el) return;
-  const n = months || _chartPeriod?.dow || 3;
-  const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
-  const from = localDateStr(fromD), to = todayStr();
-  const allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  let from, to;
+  if(fromOverride && toOverride){ from=fromOverride; to=toOverride; }
+  else { const n=months||_chartPeriod?.dow||3; const fromD=new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1); from=localDateStr(fromD); to=todayStr(); }
+  let allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  if(bid && bid!=='all') allCalls = allCalls.filter(c=>c.bid===bid);
   const DOW=['일','월','화','수','목','금','토'];
   const cnt=[0,0,0,0,0,0,0], days=[0,0,0,0,0,0,0];
   allCalls.forEach(c=>{ const d=new Date((c.date||'')+'T00:00:00'); if(!isNaN(d)) cnt[d.getDay()]++; });
@@ -10908,12 +10983,13 @@ function renderTrendDowWithPeriod(months){
   </div>`;
 }
 
-function renderTrendHourWithPeriod(months){
+function renderTrendHourWithPeriod(months, fromOverride, toOverride, bid){
   const el = document.getElementById('trend-hour-chart'); if(!el) return;
-  const n = months || _chartPeriod?.hour || 3;
-  const fromD = new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1);
-  const from = localDateStr(fromD), to = todayStr();
-  const allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  let from, to;
+  if(fromOverride && toOverride){ from=fromOverride; to=toOverride; }
+  else { const n=months||_chartPeriod?.hour||3; const fromD=new Date(); fromD.setMonth(fromD.getMonth()-(n-1)); fromD.setDate(1); from=localDateStr(fromD); to=todayStr(); }
+  let allCalls = getDateRange(from,to).flatMap(ds=>getAnalysisCalls(ds));
+  if(bid && bid!=='all') allCalls = allCalls.filter(c=>c.bid===bid);
   const cnt=Array(24).fill(0);
   allCalls.forEach(c=>{ const h=parseInt((c.time||'').split(':')[0]); if(h>=0&&h<24) cnt[h]++; });
   const hours=Array.from({length:15},(_,i)=>i+8); // 8~22시
@@ -10976,8 +11052,8 @@ function getTrendMonthDefs(){
 
 function getMonthCalls(mk){
   const allCalls = [];
-  Object.keys(S.allCalls).forEach(ds=>{
-    if(ds.startsWith(mk)) allCalls.push(...(S.allCalls[ds]||[]));
+  Object.keys(S.calls||{}).forEach(ds=>{
+    if(ds.startsWith(mk)) allCalls.push(...(S.calls[ds]||[]));
   });
   return allCalls;
 }
@@ -11026,7 +11102,24 @@ function pmSetPeriod(chart, months, el){
   if(f) f.value=''; if(t) t.value='';
   document.querySelectorAll('[id^="pm-pp-'+chart+'-"]').forEach(b=>b.classList.remove('act'));
   if(el) el.classList.add('act');
+  // 기간선택 패널 숨기기
+  const customRange = document.getElementById('pm-custom-range-'+chart);
+  if(customRange) customRange.style.display='none';
   pmRenderChart(chart);
+}
+
+function pmToggleCustomRange(chart, el){
+  const customRange = document.getElementById('pm-custom-range-'+chart);
+  if(!customRange) return;
+  const isOpen = customRange.style.display !== 'none';
+  if(isOpen){
+    customRange.style.display = 'none';
+    el?.classList.remove('act');
+  } else {
+    customRange.style.display = 'flex';
+    document.querySelectorAll('[id^="pm-pp-'+chart+'-"]').forEach(b=>b.classList.remove('act'));
+    el?.classList.add('act');
+  }
 }
 
 function pmSetCustom(chart){
@@ -11035,6 +11128,8 @@ function pmSetCustom(chart){
   if(!f||!t||f>t) return;
   _pmAcc[chart].from=f; _pmAcc[chart].to=t; _pmAcc[chart].months=0;
   document.querySelectorAll('[id^="pm-pp-'+chart+'-"]').forEach(b=>b.classList.remove('act'));
+  const customBtn=document.getElementById('pm-pp-'+chart+'-custom');
+  if(customBtn) customBtn.classList.add('act');
   pmRenderChart(chart);
 }
 
@@ -11066,8 +11161,8 @@ function pmRenderChart(chart){
     renderTrendBrChart(md, _pmAcc.br.bid==='all'?null:_pmAcc.br.bid);
   }
   if(chart==='pt')    renderTrendPtChart(pmGetMonthDefs('pt'));
-  if(chart==='dow')   renderTrendDowWithPeriod(_pmAcc.dow.months||3);
-  if(chart==='hour')  renderTrendHourWithPeriod(_pmAcc.hour.months||3);
+  if(chart==='dow')   renderTrendDowWithPeriod(_pmAcc.dow.months||3, _pmAcc.dow.from, _pmAcc.dow.to, _pmAcc.dow.bid);
+  if(chart==='hour')  renderTrendHourWithPeriod(_pmAcc.hour.months||3, _pmAcc.hour.from, _pmAcc.hour.to, _pmAcc.hour.bid);
   if(chart==='proc')  renderTrendProcChartByPeriod();
   if(chart==='focus'){ renderTrendBrFilter(); renderTrendProcBrChart(); }
   if(chart==='ptbr')  renderPtTypeBranchChart();
