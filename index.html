@@ -8930,17 +8930,23 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
   });
   const noapptReasonLines=Object.entries(noapptReasonMap).map(([r,n])=>`    · ${r} ${n}건`).join('\n');
 
-  // 채팅 채널별 집계
-  // 전체 채널별 집계 (전화+채팅 모두)
+  // 채널별 집계 (전화+채팅 통합)
+  // 채팅 콜: c.channels 객체 또는 c.channel 필드
+  // 전화 콜: c.channel 필드
+  const getCallChannel=(c)=>{
+    if(c.medium==='chat'){
+      // channels 객체에서 첫번째 채널 ID
+      const chs=Object.keys(c.channels||{});
+      return chs.length>0?chs[0]:(c.channel||'');
+    }
+    return c.channel||'ch0';
+  };
   const chatChData=S.channels.map(ch=>{
-    // 채팅에서 해당 채널 수
-    const chatN=chatCalls.reduce((a,c)=>a+(c.channels?.[ch.id]||0),0);
-    // 전화에서 해당 채널 수
-    const phoneN=phoneCalls.filter(c=>(c.channel||'ch0')===ch.id).length;
-    const total=chatN+phoneN;
-    const shin_ch=calls.filter(c=>c.pttype==='신환'&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
-    const gu_ch=calls.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
-    const rem_ch=calls.filter(c=>c.pttype==='잔여시술'&&((c.channels?.[ch.id]||0)>0||(c.channel||'ch0')===ch.id)).length;
+    const matched=calls.filter(c=>getCallChannel(c)===ch.id);
+    const total=matched.length;
+    const shin_ch=matched.filter(c=>c.pttype==='신환').length;
+    const gu_ch=matched.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    const rem_ch=matched.filter(c=>c.pttype==='잔여시술').length;
     return total>0?{icon:ch.icon,name:ch.name,total,shin:shin_ch,gu:gu_ch,rem:rem_ch}:null;
   }).filter(Boolean);
 
