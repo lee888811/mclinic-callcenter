@@ -367,7 +367,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 인입</div>
     <div class="si" data-page="noappt" onclick="go('noappt',this)"><span class="sico">⏳</span>미예약 현황</div>
     <div class="si" data-page="voc" onclick="go('voc',this)"><span class="sico">💬</span>VOC</div>
-    <div class="si" data-page="retention" onclick="go('retention',this)"><span class="sico">🔁</span>신환 재방문율</div>
+    <div class="si" data-page="retention" onclick="go('retention',this)"><span class="sico">🔁</span>신환→구환 전환율</div>
     <div class="si" data-page="funnel" onclick="go('funnel',this)"><span class="sico">🔽</span>예약 전환율</div>
     <div class="si" data-page="roi" onclick="go('roi',this)"><span class="sico">💰</span>채널별 광고 ROI</div>
     <div class="sdiv"></div>
@@ -591,8 +591,8 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="page" id="page-retention">
       <div class="ph">
         <div>
-          <div class="pt">🔁 신환 재방문율</div>
-          <div class="ps">신환 고객이 다음 달 구환으로 돌아오는 코호트 분석</div>
+          <div class="pt">🔁 신환→구환 전환율</div>
+          <div class="ps">월별 신환 콜 대비 다음달 구환 콜 비율 분석 (콜 기준 집계)</div>
         </div>
       </div>
 
@@ -615,12 +615,13 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="ret-kpi" style="margin-bottom:20px"></div>
 
       <!-- 코호트 히트맵 테이블 -->
-      <div class="slbl" style="margin-bottom:10px">📊 월별 신환 코호트 — 재방문율 히트맵</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">각 행 = 신환 유입월 / 열 = 이후 경과 개월 수 / 숫자 = 재방문율(%)</div>
+      <div class="slbl" style="margin-bottom:6px">📊 월별 신환 콜 → 다음달 구환 콜 비율</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">각 행 = 신환 유입월 / 열 = 이후 경과 개월 수 / 숫자 = (해당월 구환 콜 ÷ 신환 콜 × 100%)</div>
+      <div style="font-size:11px;color:#f59e0b;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;margin-bottom:12px">⚠️ 콜 건수 기반 집계입니다. 동일 고객 식별이 불가하여 실제 재방문 여부가 아닌 신환/구환 콜 비율을 보여줍니다.</div>
       <div id="ret-cohort-table" style="overflow-x:auto"></div>
 
       <!-- 월별 재방문율 추이 차트 -->
-      <div class="slbl" style="margin-top:24px;margin-bottom:10px">📈 월별 재방문율 추이 (1개월 후)</div>
+      <div class="slbl" style="margin-top:24px;margin-bottom:10px">📈 월별 구환 비율 추이 (+1개월)</div>
       <div id="ret-trend-chart"></div>
 
       <!-- 지점별 비교 -->
@@ -6956,32 +6957,17 @@ function renderRetention() {
     const shinCalls = getMonthCalls(mk, filterBid).filter(c => c.pttype === '신환');
     cohortData[mk] = { shin: shinCalls.length, returns: {} };
 
-    // 각 신환의 전화번호 기반으로 이후 구환 추적
-    // 전화번호가 없으면 이름+지점 조합으로 추적
-    const shinIds = new Set();
-    const shinPhones = new Set();
-    shinCalls.forEach(c => {
-      if(c.ptphone) shinPhones.add(c.ptphone.replace(/[^0-9]/g,''));
-      if(c.ptname && c.bid) shinIds.add(`${c.ptname.trim()}|${c.bid}`);
-    });
-
+    // 전화번호/이름 매칭 불가 → 월별 구환 콜 수 기준으로 전환율 계산
+    // "이번달 신환 N명 → 다음달 구환 M콜" 비율
     for(let lag = 1; lag <= maxLag; lag++) {
       const targetDate = new Date(mk + '-01');
       targetDate.setMonth(targetDate.getMonth() + lag);
       const targetMk = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}`;
 
-      const targetCalls = getMonthCalls(targetMk, filterBid)
-        .filter(c => c.pttype === '구환(신규상담)' || c.pttype === '구환' || c.pttype === '잔여시술');
+      const guCalls = getMonthCalls(targetMk, filterBid)
+        .filter(c => c.pttype === '구환(신규상담)' || c.pttype === '구환');
 
-      let returnCount = 0;
-      targetCalls.forEach(c => {
-        const phone = c.ptphone?.replace(/[^0-9]/g,'');
-        const nameId = c.ptname && c.bid ? `${c.ptname.trim()}|${c.bid}` : null;
-        if((phone && shinPhones.has(phone)) || (nameId && shinIds.has(nameId))) {
-          returnCount++;
-        }
-      });
-      cohortData[mk].returns[lag] = returnCount;
+      cohortData[mk].returns[lag] = guCalls.length;
     }
   });
 
@@ -7016,9 +7002,9 @@ function renderRetention() {
     <div style="display:flex;flex-wrap:wrap;gap:12px">
       ${[
         ['전체 신환 수', totalShin + '명', '#3b82f6', '분석 기간 내 전체'],
-        ['평균 1개월 재방문율', avgRet1 + '%', avgRet1>=20?'#059669':avgRet1>=10?'#f59e0b':'#ef4444', '신환→1개월 내 구환'],
-        ['최근 3개월 재방문율', avgRet3 + '%', avgRet3>=20?'#059669':avgRet3>=10?'#f59e0b':'#ef4444', '최근 3개월 평균'],
-        ['최고 재방문율 월', bestMk ? bestMk + ' (' + bestRate.toFixed(1) + '%)' : '-', '#8b5cf6', '1개월 후 기준'],
+        ['평균 +1개월 구환 비율', avgRet1 + '%', avgRet1>=20?'#059669':avgRet1>=10?'#f59e0b':'#ef4444', '신환 콜 대비 +1개월 구환 콜'],
+        ['최근 3개월 구환 비율', avgRet3 + '%', avgRet3>=20?'#059669':avgRet3>=10?'#f59e0b':'#ef4444', '최근 3개월 평균 비율'],
+        ['최고 구환 비율 월', bestMk ? bestMk + ' (' + bestRate.toFixed(1) + '%)' : '-', '#8b5cf6', '구환 비율 최고 월'],
       ].map(([label, val, clr, sub]) => `
         <div style="flex:1;min-width:140px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
           <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${label}</div>
@@ -8047,12 +8033,24 @@ function renderRoi() {
               </div>
               ${s.adCost>0?`
                 <div style="border-top:1px solid var(--border);padding-top:10px">
-                  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px">
                     <span style="font-size:22px;color:var(--text3)">광고비 합계</span>
                     <span style="font-size:24px;font-weight:700;color:#f59e0b">${fmt(s.adCost)}</span>
                   </div>
-                  ${logSummary}
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                  <!-- 입력 내역 리스트 -->
+                  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">
+                    ${s.logs.sort((a,b)=>a.date.localeCompare(b.date)).map(log=>{
+                      const br=S.branches.find(b=>b.id===log.bid);
+                      return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s2);border-radius:6px;font-size:11px">
+                        <span style="color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap">${log.date.slice(5)}</span>
+                        <span style="color:#059669;font-weight:600;white-space:nowrap">${br?br.name:'공통'}</span>
+                        ${log.memo?`<span style="color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${log.memo}</span>`:'<span style="flex:1"></span>'}
+                        <span style="font-weight:800;color:#f59e0b;white-space:nowrap;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
+                        <button onclick="deleteRoiLog('${log.id}')" style="padding:1px 5px;border-radius:4px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:9px;cursor:pointer;flex-shrink:0">✕</button>
+                      </div>`;
+                    }).join('')}
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
                     <span style="font-size:22px;color:var(--text3)">신환 CPL</span>
                     <span style="font-size:16px;font-weight:900;color:${!s.cpl?'var(--text3)':s.cpl<30000?'#059669':s.cpl<80000?'#f59e0b':'#ef4444'}">${s.cpl?fmt(s.cpl):'—'}</span>
                   </div>
@@ -8063,12 +8061,16 @@ function renderRoi() {
               <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;text-align:center">
                 <button onclick="openRoiAdCostModalForCh('${s.ch.id}')" style="width:100%;padding:5px 10px;border-radius:6px;border:1px solid var(--accent);background:rgba(37,99,235,.06);color:var(--accent);font-size:22px;font-weight:700;cursor:pointer">💸 광고비 입력하기</button>
               </div>
-              <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
-                <div style="flex:1;height:4px;background:var(--s3);border-radius:2px">
-                  <div style="height:100%;width:${Math.min(100,+s.convR)}%;background:#8b5cf6;border-radius:2px"></div>
+              ${s.total>0?`
+              <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+                <div style="font-size:10px;color:var(--text3);margin-bottom:4px">📊 콜→예약 전환율 (광고비 무관)</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="flex:1;height:4px;background:var(--s3);border-radius:2px">
+                    <div style="height:100%;width:${Math.min(100,+s.convR)}%;background:#8b5cf6;border-radius:2px"></div>
+                  </div>
+                  <span style="font-size:20px;color:#8b5cf6;font-weight:700">${s.convR}%</span>
                 </div>
-                <span style="font-size:20px;color:#8b5cf6;font-weight:700">${s.convR}% 전환</span>
-              </div>
+              </div>`:''}
             </div>
           </div>`;
       }).join('')}
