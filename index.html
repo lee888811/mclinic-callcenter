@@ -2697,8 +2697,32 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="faq-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
-      <div id="snp-teamnotice-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:0;display:none;flex-direction:column"></div>
-      <div id="snp-teammemo-list"   style="flex:1;background:#f8fafc;padding:0;display:none;flex-direction:column;overflow:hidden"></div>
+
+      <!-- 전체공지 패널: 헤더 고정 + 내용만 스크롤 -->
+      <div id="snp-teamnotice-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;min-height:0">
+        <div id="snp-teamnotice-header" style="background:#1e40af;flex-shrink:0">
+          <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
+            <input id="snp-notice-search-input" placeholder="🔍 공지 검색..." oninput="snpTeamNoticeSearch(this.value)"
+              style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
+            <button onclick="openSharedMemoForm()" style="padding:3px 9px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+          </div>
+          <div id="snp-notice-br-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
+        </div>
+        <div id="snp-teamnotice-items" style="flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:0"></div>
+      </div>
+
+      <!-- 공유메모 패널: 헤더 고정 + 내용만 스크롤 -->
+      <div id="snp-teammemo-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;min-height:0">
+        <div id="snp-teammemo-header" style="background:#1e40af;flex-shrink:0">
+          <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
+            <input id="snp-memo-search-input" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
+              style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
+            <button onclick="snpOpenSiMemoForm()" style="padding:3px 9px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+          </div>
+          <div id="snp-memo-staff-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
+        </div>
+        <div id="snp-teammemo-items" style="flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:0"></div>
+      </div>
     </div>
 
     <!-- 직원근무현황 미니 패널 -->
@@ -15282,7 +15306,7 @@ function snpSwitchTab(tab){
     activateTab(adlogTab);
     snpRenderAdlog();
   } else if(tab==='teamnotice'){
-    if(teamnoticeList)teamnoticeList.style.display='flex';
+    if(teamnoticeList){teamnoticeList.style.display='flex';teamnoticeList.style.flexDirection='column';}
     activateTab(teamnoticeTab);
     snpRenderTeamNotice();
   } else if(tab==='teammemo'){
@@ -15295,39 +15319,55 @@ function snpSwitchTab(tab){
 // ── 전체 공지 패널 ──
 function snpRenderTeamNotice(){
   const el=document.getElementById('snp-teamnotice-list'); if(!el) return;
+  if(!el.dataset.q) el.dataset.q='';
+  if(!el.dataset.bid) el.dataset.bid='';
+  const q=el.dataset.q.toLowerCase();
+  const selBid=el.dataset.bid;
+
+  // 지점 필터 버튼 렌더
+  const brFilterEl=document.getElementById('snp-notice-br-filter');
+  if(brFilterEl){
+    brFilterEl.innerHTML=`<button onclick="snpNoticeFilterBid('')" style="padding:2px 7px;border-radius:9px;border:none;background:${selBid===''?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};color:${selBid===''?'#1e40af':'rgba(255,255,255,.8)'};font-size:10px;font-weight:${selBid===''?700:500};cursor:pointer">전체</button>`+
+      activeBranches().map(b=>`<button onclick="snpNoticeFilterBid('${b.id}')" style="padding:2px 7px;border-radius:9px;border:none;background:${selBid===b.id?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};color:${selBid===b.id?'#1e40af':'rgba(255,255,255,.8)'};font-size:10px;font-weight:${selBid===b.id?700:500};cursor:pointer">${b.name}</button>`).join('');
+  }
+
+  // 검색값 유지
+  const searchInput=document.getElementById('snp-notice-search-input');
+  if(searchInput&&searchInput.value!==el.dataset.q) searchInput.value=el.dataset.q;
+
+  // 내용 렌더
+  const itemsEl=document.getElementById('snp-teamnotice-items'); if(!itemsEl) return;
   let memos=getSharedMemos();
-  const q=(el.dataset.q||'').toLowerCase();
   if(q) memos=memos.filter(m=>`${m.content||''} ${m.author||''}`.toLowerCase().includes(q));
+  if(selBid) memos=memos.filter(m=>(m.bid||'')===selBid);
   const active=memos.filter(m=>m.status!=='done').sort((a,b)=>b.createdAt-a.createdAt);
   const done=memos.filter(m=>m.status==='done').sort((a,b)=>b.updatedAt-a.updatedAt);
   const sorted=[...active,...done];
   const fmt=n=>{const d=new Date(n);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
-  el.innerHTML=`
-    <div style="padding:8px;background:#1e40af;border-bottom:1px solid rgba(255,255,255,.2);display:flex;gap:6px">
-      <input value="${el.dataset.q||''}" placeholder="🔍 공지 검색..." oninput="snpTeamNoticeSearch(this.value)"
-        style="flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none" class="snp-search-input">
-      <button onclick="openSharedMemoForm()" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
-    </div>
-    <div style="padding:6px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:calc(100% - 44px)">
-      ${!sorted.length?'<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">공지 없음</div>':
-        sorted.map(m=>{
-          const br=S.branches.find(b=>b.id===m.bid);
-          const isDone=m.status==='done';
-          return `<div style="background:${isDone?'#f1f5f9':'#fff'};border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
-              ${br?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
-              <span style="font-size:10px;color:${isDone?'#059669':'#d97706'};font-weight:700">${isDone?'✅ 완료':'⏳ 진행중'}</span>
-              <span style="font-size:10px;color:#94a3b8">${fmt(m.createdAt)}${m.author?' · '+m.author:''}</span>
-              <div style="margin-left:auto;display:flex;gap:4px">
-                <button onclick="toggleSharedMemoStatus('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
-                <button onclick="snpEditSharedMemo('${m.id}')" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">✏️</button>
-                <button onclick="deleteSharedMemo('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">🗑</button>
-              </div>
-            </div>
-            <div style="font-size:12px;color:${isDone?'#94a3b8':'#334155'};line-height:1.55;white-space:pre-wrap;${isDone?'text-decoration:line-through':''}">${escHtml(m.content||'')}</div>
-          </div>`;
-        }).join('')}
-    </div>`;
+  itemsEl.innerHTML=!sorted.length?'<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">공지 없음</div>':
+    sorted.map(m=>{
+      const br=S.branches.find(b=>b.id===m.bid);
+      const isDone=m.status==='done';
+      return `<div style="background:${isDone?'#f1f5f9':'#fff'};border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+          ${br?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+          <span style="font-size:10px;color:${isDone?'#059669':'#d97706'};font-weight:700">${isDone?'✅ 완료':'⏳ 진행중'}</span>
+          <span style="font-size:10px;color:#94a3b8">${fmt(m.createdAt)}${m.author?' · '+m.author:''}</span>
+          <div style="margin-left:auto;display:flex;gap:4px">
+            <button onclick="toggleSharedMemoStatus('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
+            <button onclick="snpEditSharedMemo('${m.id}')" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">✏️</button>
+            <button onclick="deleteSharedMemo('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">🗑</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:${isDone?'#94a3b8':'#334155'};line-height:1.55;white-space:pre-wrap;${isDone?'text-decoration:line-through':''}">${escHtml(m.content||'')}</div>
+      </div>`;
+    }).join('');
+}
+
+function snpNoticeFilterBid(bid){
+  const el=document.getElementById('snp-teamnotice-list'); if(!el) return;
+  el.dataset.bid=bid;
+  snpRenderTeamNotice();
 }
 
 function snpTeamNoticeSearch(q){
@@ -15345,36 +15385,23 @@ function snpEditSharedMemo(id){
 // ── 공유 메모장 패널 ──
 async function snpRenderTeamMemo(){
   const el=document.getElementById('snp-teammemo-list'); if(!el) return;
-  if(!el.dataset.initialized){
-    el.dataset.initialized='1';
-    el.dataset.q='';
-    el.dataset.selSid='';
-  }
-  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
-  const selSid=el.dataset.selSid||'';
-  const staffBtns=activeStaff.map(s=>{
-    const act=selSid===s.id;
-    return `<button onclick="snpTeamMemoFilterStaff('${s.id}')"
-      style="padding:3px 8px;border-radius:10px;border:none;background:${act?'rgba(255,255,255,.9)':'rgba(255,255,255,.2)'};color:${act?'#1e40af':'#fff'};font-size:10px;font-weight:${act?700:500};cursor:pointer;white-space:nowrap">${s.name}</button>`;
-  }).join('');
+  if(!el.dataset.q) el.dataset.q='';
+  if(!el.dataset.selSid) el.dataset.selSid='';
 
-  el.innerHTML=`
-    <div style="background:#1e40af;flex-shrink:0">
-      <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
-        <input value="${el.dataset.q||''}" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
-          style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
-        <button onclick="snpOpenSiMemoForm()" style="padding:3px 9px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
-      </div>
-      <div style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)">
-        <button onclick="snpTeamMemoFilterStaff('')"
-          style="padding:3px 8px;border-radius:10px;border:none;background:${selSid===''?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};color:${selSid===''?'#1e40af':'rgba(255,255,255,.8)'};font-size:10px;font-weight:${selSid===''?700:500};cursor:pointer">전체</button>
-        ${staffBtns}
-      </div>
-    </div>
-    <div id="snp-teammemo-items" style="padding:6px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;height:calc(100% - 76px);min-height:200px">
-      <div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">⏳ 불러오는 중...</div>
-    </div>`;
-  if(_syncUrl){
+  // 직원 필터 버튼만 교체 (items는 고정 DOM)
+  const staffFilterEl=document.getElementById('snp-memo-staff-filter');
+  if(staffFilterEl){
+    const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+    const selSid=el.dataset.selSid||'';
+    staffFilterEl.innerHTML=`<button onclick="snpTeamMemoFilterStaff('')" style="padding:3px 8px;border-radius:10px;border:none;background:${selSid===''?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};color:${selSid===''?'#1e40af':'rgba(255,255,255,.8)'};font-size:10px;font-weight:${selSid===''?700:500};cursor:pointer">전체</button>`+
+      activeStaff.map(s=>`<button onclick="snpTeamMemoFilterStaff('${s.id}')" style="padding:3px 8px;border-radius:10px;border:none;background:${selSid===s.id?'rgba(255,255,255,.9)':'rgba(255,255,255,.2)'};color:${selSid===s.id?'#1e40af':'#fff'};font-size:10px;font-weight:${selSid===s.id?700:500};cursor:pointer;white-space:nowrap">${s.name}</button>`).join('');
+  }
+
+  // Firebase 로드 (첫 진입 시만)
+  if(!el.dataset.loaded&&_syncUrl){
+    el.dataset.loaded='1';
+    const items=document.getElementById('snp-teammemo-items');
+    if(items) items.innerHTML='<div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">⏳ 불러오는 중...</div>';
     try{
       const res=await fetch(`${_syncUrl.replace(/\/+$/,'')}/personalMemos.json`);
       const data=await res.json();
@@ -15455,8 +15482,9 @@ async function snpSaveSiMemo(editSid,editMemoId){
   if(!sid){toast('⚠️ 직원을 선택해주세요');return;}
   const content=document.getElementById('snp-simemo-content')?.value.trim()||'';
   if(!content){toast('⚠️ 내용을 입력해주세요');return;}
-  const title=document.getElementById('snp-simemo-title')?.value.trim()||'';
   const bid=document.getElementById('snp-simemo-bid')?.value||'';
+  if(!bid){toast('⚠️ 지점을 선택해주세요');document.getElementById('snp-simemo-bid')?.focus();return;}
+  const title=document.getElementById('snp-simemo-title')?.value.trim()||'';
   const date=document.getElementById('snp-simemo-date')?.value||'';
   const status=document.getElementById('snp-simemo-status')?.value||'active';
   const id=editMemoId||uid();
