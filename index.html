@@ -5325,6 +5325,23 @@ function confirmCall(){
       return;
     }
   }
+  // 신환/구환 → 예약이 있을 경우 시술 선택 필수
+  const isShinGu = (_callPttype==='신환' || _callPttype==='구환(신규상담)' || _callPttype==='구환');
+  const hasBooking = _callBookingType==='당일' || _callBookingType==='추후';
+  if(isShinGu && hasBooking){
+    const hasProc = Object.values(_procSel).some(n=>n>0);
+    if(!hasProc){
+      toast('⚠️ 신환/구환 예약 시 시술을 선택해주세요');
+      document.getElementById('proc-section-wrap')?.scrollIntoView({behavior:'smooth',block:'center'});
+      const procWrap=document.getElementById('proc-section-wrap');
+      if(procWrap){
+        procWrap.style.outline='2px solid #dc2626';
+        procWrap.style.borderRadius='8px';
+        setTimeout(()=>{ procWrap.style.outline=''; procWrap.style.borderRadius=''; },2500);
+      }
+      return;
+    }
+  }
   // VOC 섹션이 열려있고 내용 입력했는데 타입 미선택 시 차단
   const vocSec=document.getElementById('voc-section');
   if(vocSec && vocSec.style.display!=='none'){
@@ -5508,8 +5525,11 @@ function renderBrSum(){
     const cancel=bc.reduce((a,c)=>a+(+c.cancel||0),0),noappt=bc.reduce((a,c)=>a+(+c.noappt||0),0);
     // 시술 집계 (하위 카테고리 포함)
     const pSum={};const pNameCache={};
+    let procInputCount=0; // 시술 입력한 콜 수
     bc.forEach(c=>{
       if(!c.procs) return;
+      const hasProc=Object.values(c.procs).some(n=>n>0);
+      if(hasProc) procInputCount++;
       Object.entries(c.procs).forEach(([key,n])=>{
         if(!n) return;
         if(!pNameCache[key]) pNameCache[key]=getProcName(key);
@@ -5557,7 +5577,8 @@ function renderBrSum(){
             :'<div style="color:var(--text3);font-size:12px;padding:8px 0">입력 없음</div>'}
         </div>
         <div>
-          ${topP.length?`<div class="slbl" style="margin-bottom:8px">예약 시술 현황</div>
+          ${topP.length?`<div class="slbl" style="margin-bottom:4px">예약 시술 현황</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:6px">시술 입력된 콜 ${procInputCount}건 / 전체 ${bc.length}건${procInputCount<bc.length?` (미입력 ${bc.length-procInputCount}건)`:''}</div>
             <div class="proc-rank-list">${topP.map(([name,n])=>{
               const maxN=topP[0][1]||1;
               return `<div class="proc-rank-row">
