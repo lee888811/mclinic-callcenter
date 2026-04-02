@@ -7906,22 +7906,24 @@ function renderRoiLogForm() {
           <span id="roi-amount-preview" style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:2px;display:block"></span>
         </div>
         <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">지점</label>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">지점 <span style="color:#ef4444">*</span></label>
           <select id="roi-new-bid" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
+            <option value="">-- 지점 선택 --</option>
             <option value="all">전지점 공통</option>
             ${activeBranches().map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">채널</label>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">채널 <span style="color:#ef4444">*</span></label>
           <select id="roi-new-chid" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
+            <option value="">-- 채널 선택 --</option>
             ${S.channels.map(ch=>`<option value="${ch.id}">${getChDisplayName(ch)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">담당자</label>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">담당자 <span style="color:#ef4444">*</span></label>
           <select id="roi-new-staff" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
-            <option value="">미지정</option>
+            <option value="">-- 담당자 선택 --</option>
             ${(S.staff||[]).filter(s=>!s.retired).map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}
           </select>
         </div>
@@ -7988,7 +7990,10 @@ function addRoiLog() {
   const msgContent = document.getElementById('roi-new-msgcontent')?.value.trim()||'';
   const sendCount = +document.getElementById('roi-send-count')?.value||0;
   const sendTime = document.getElementById('roi-new-sendtime')?.value||'';
-  if(!date||!chId||amount<=0){ toast('⚠️ 날짜·채널·금액을 입력해주세요'); return; }
+  if(!date||amount<=0){ toast('⚠️ 날짜와 금액을 입력해주세요'); return; }
+  if(!bid){ toast('⚠️ 지점을 선택해주세요'); document.getElementById('roi-new-bid')?.focus(); return; }
+  if(!chId){ toast('⚠️ 채널을 선택해주세요'); document.getElementById('roi-new-chid')?.focus(); return; }
+  if(!staff){ toast('⚠️ 담당자를 선택해주세요'); document.getElementById('roi-new-staff')?.focus(); return; }
   if(!S.roiLogs) S.roiLogs=[];
   S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime});
   S.roiLogs.sort((a,b)=>b.date.localeCompare(a.date));
@@ -8052,7 +8057,10 @@ function addRoiLogAndSave(){
   const msgContent = document.getElementById('roi-new-msgcontent')?.value.trim()||'';
   const sendCount = +document.getElementById('roi-send-count')?.value||0;
   const sendTime = document.getElementById('roi-new-sendtime')?.value||'';
-  if(!date||!chId||amount<=0){ toast('⚠️ 날짜·채널·금액을 입력해주세요'); return; }
+  if(!date||amount<=0){ toast('⚠️ 날짜와 금액을 입력해주세요'); return; }
+  if(!bid){ toast('⚠️ 지점을 선택해주세요'); document.getElementById('roi-new-bid')?.focus(); return; }
+  if(!chId){ toast('⚠️ 채널을 선택해주세요'); document.getElementById('roi-new-chid')?.focus(); return; }
+  if(!staff){ toast('⚠️ 담당자를 선택해주세요'); document.getElementById('roi-new-staff')?.focus(); return; }
   if(!S.roiLogs) S.roiLogs=[];
 
   // 수정 모드 체크
