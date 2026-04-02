@@ -9885,28 +9885,30 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   if(abs2A)   phoneDetailsA.push({l:'미예약부재 ',n:abs2A});
   const phoneLineA=phoneDetailsA.map((d,i)=>`  │  ${i===phoneDetailsA.length-1?'└':'├'} ${d.l}  ${d.n}건`).join('\n');
 
+  // ── 텍스트 보고 생성 ──
+  const D='─'.repeat(26);
   let txt='🏢 미클리닉 전 지점 합산 일일 보고\n';
-  txt+=dateLabelStr+'\n'+'━'.repeat(24)+'\n';
-  txt+='\n📊 전체 상담 현황\n';
-  txt+=`  총 상담      ${brSum.total}건\n`;
-  txt+=`  ├ 전화 상담  ${phoneCalls.length}건\n`;
-  if(phoneLineA) txt+=phoneLineA+'\n';
-  txt+=`  └ 채팅 상담  ${chatCalls.length}건\n`;
-  txt+='  '+'─'.repeat(22)+'\n';
-  txt+=`  📋 환자 구분 (합계 = 총 상담)\n`;
-  txt+=`  신환(신규)   ${shin}건${shin>0?`  (당일 ${shinTodayAll} · 추후 ${shinFutureAll})`:''}\n`;
-  txt+=`  구환         ${gu}건${gu>0?`  (당일 ${guTodayAll} · 추후 ${guFutureAll})`:''}\n`;
-  txt+=`  잔여시술     ${rem||0}건\n`;
-  if(generalAll)   txt+=`  일반문의     ${generalAll}건\n`;
-  if(absence)      txt+=`  부재         ${absence}건\n`;
-  if(cancelCntAll) txt+=`  예약 취소    ${cancelCntAll}건\n`;
-  if(noapptCntAll) txt+=`  미예약      ${noapptCntAll}건${noapptReasonTxt?'\n  미예약 사유:\n'+noapptReasonTxt:''}\n`;
-  const unclAll=allCalls.length-(shin+gu+(rem||0)+generalAll+absence+cancelCntAll+noapptCntAll);
-  if(unclAll>0) txt+=`  기타(미분류) ${unclAll}건\n`;
-  txt+=`  ${'─'.repeat(22)}\n`;
+  txt+=dateLabelStr+'\n'+'━'.repeat(26)+'\n';
 
+  // 1. 전체 상담 현황
+  txt+='\n📊 전체 상담 현황\n';
+  txt+=`  총 ${brSum.total}건  (전화 ${phoneCalls.length} · 채팅 ${chatCalls.length})\n`;
+  if(phoneLineA) txt+=phoneLineA+'\n';
+  txt+=D+'\n';
+
+  // 2. 환자 구분
+  txt+='\n👥 환자 구분\n';
+  txt+=`  신환   ${shin}건${shin>0?`  (당일 ${shinTodayAll} · 추후 ${shinFutureAll})`:''}\n`;
+  txt+=`  구환   ${gu}건${gu>0?`  (당일 ${guTodayAll} · 추후 ${guFutureAll})`:''}\n`;
+  txt+=`  잔여   ${rem||0}건\n`;
+  if(generalAll)   txt+=`  일반문의  ${generalAll}건\n`;
+  if(cancelCntAll) txt+=`  예약취소  ${cancelCntAll}건\n`;
+  if(noapptCntAll) txt+=`  미예약   ${noapptCntAll}건${noapptReasonTxt?'\n'+noapptReasonTxt:''}\n`;
+  txt+=D+'\n';
+
+  // 3. 채널별 인입
   if(channelRowsAll.length){
-    txt+='\n'+'─'.repeat(28)+'\n\n📡 채널별 인입 현황\n';
+    txt+='\n📡 채널별 인입\n';
     channelRowsAll.forEach(ch=>{
       const parts=[];
       if(ch.shin)   parts.push(`신환 ${ch.shin}`);
@@ -9915,63 +9917,53 @@ function renderClosingReportAll(allCalls, dateLabelStr){
       if(ch.gen)    parts.push(`일반 ${ch.gen}`);
       if(ch.cancel) parts.push(`취소 ${ch.cancel}`);
       if(ch.noappt) parts.push(`미예약 ${ch.noappt}`);
-      txt+=`  ▪ ${ch.icon} ${ch.name}  ${ch.total}건${parts.length?`  (${parts.join(' · ')})`:''}  \n`;
+      txt+=`  ${ch.icon} ${ch.name}  ${ch.total}건${parts.length?`  (${parts.join(' · ')})`:''}\n`;
     });
+    txt+=D+'\n';
   }
 
-  txt+='\n'+'─'.repeat(28)+'\n\n🏥 지점별 현황\n';
-  branchSubs.forEach(b=>{
-    txt+=`  [${b.name}점] 총 ${b.total}건 · 예약 ${b.booked}건\n`;
-    txt+=`    신환 ${b.shin} · 구환 ${b.gu} · 잔여 ${b.rem||0}`;
-    if(b.absence) txt+=` · 부재 ${b.absence}`;
-    txt+='\n';
-  });
-  if(topProcs.length){
-    txt+='\n'+'─'.repeat(28)+'\n\n💉 예약 시술 현황\n';
-    topProcs.forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name}  ${p.n}건  (신환 ${p.shin} · 구환 ${p.gu} · 잔여 ${p.rem||0})\n`; });
-    txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
-  }
-
-  // 지점별 상세 추가
-  const branchDetails = activeBranches().map(b=>{
+  // 4. 지점별 현황 (한 번만)
+  txt+='\n🏥 지점별 현황\n';
+  activeBranches().forEach(b=>{
     const bc=allCalls.filter(c=>c.bid===b.id);
-    if(!bc.length) return null;
+    if(!bc.length) return;
     const bShin=bc.filter(c=>c.pttype==='신환').length;
     const bGu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
     const bRem=bc.filter(c=>c.pttype==='잔여시술').length;
     const bGen=bc.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length;
     const bCancel=bc.filter(c=>c.pttype==='예약취소').length;
     const bNoappt=bc.filter(c=>c.pttype==='미예약').length;
-    const bPhone=bc.filter(c=>c.medium!=='chat');
-    const bChat=bc.filter(c=>c.medium==='chat');
-    const bIncall=bPhone.filter(c=>c.type==='in').length;
-    const bCb=bPhone.filter(c=>c.type==='cb').length;
+    const bPhone=bc.filter(c=>c.medium!=='chat').length;
+    const bChat=bc.filter(c=>c.medium==='chat').length;
     const bShinToday=bc.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType!=='추후').length;
     const bShinFuture=bc.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType==='추후').length;
     const bGuToday=bc.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType!=='추후').length;
     const bGuFuture=bc.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType==='추후').length;
-    // 예약 시술 TOP5
     const bProcMap={};
     bc.forEach(c=>{ Object.entries(c.procs||{}).forEach(([pid,n])=>{ if(n>0) bProcMap[pid]=(bProcMap[pid]||0)+n; }); });
-    const bTopProcs=Object.entries(bProcMap).sort((a,b2)=>b2[1]-a[1]).slice(0,5).map(([pid,n])=>{
-      const p=S.procedures.find(x=>x.id===pid); return p?`${p.name} ${n}건`:'';
+    const bProcs=Object.entries(bProcMap).sort((a,bb)=>bb[1]-a[1]).slice(0,5).map(([pid,n])=>{
+      const p=S.procedures.find(x=>x.id===pid); return p?`${p.name} ${n}`:'';
     }).filter(Boolean);
-    let s=`\n【${b.name}점】 총 ${bc.length}건 (전화 ${bPhone.length} · 채팅 ${bChat.length})\n`;
-    s+=`  신환 ${bShin}건${bShin>0?` (당일 ${bShinToday}·추후 ${bShinFuture})`:''}  구환 ${bGu}건${bGu>0?` (당일 ${bGuToday}·추후 ${bGuFuture})`:''}\n`;
-    s+=`  잔여 ${bRem}건  일반 ${bGen}건`;
-    if(bCancel) s+=`  취소 ${bCancel}건`;
-    if(bNoappt) s+=`  미예약 ${bNoappt}건`;
-    s+='\n';
-    if(bTopProcs.length) s+=`  시술: ${bTopProcs.join(' · ')}\n`;
-    return s;
-  }).filter(Boolean);
+    txt+=`\n  【${b.name}】 ${bc.length}건 (전화 ${bPhone} · 채팅 ${bChat})\n`;
+    txt+=`    신환 ${bShin}${bShin>0?` (당일${bShinToday}/추후${bShinFuture})`:''}  구환 ${bGu}${bGu>0?` (당일${bGuToday}/추후${bGuFuture})`:''}  잔여 ${bRem}\n`;
+    const etcParts=[];
+    if(bGen) etcParts.push(`일반 ${bGen}`);
+    if(bCancel) etcParts.push(`취소 ${bCancel}`);
+    if(bNoappt) etcParts.push(`미예약 ${bNoappt}`);
+    if(etcParts.length) txt+=`    ${etcParts.join('  ')}\n`;
+    if(bProcs.length) txt+=`    시술: ${bProcs.join(' · ')}\n`;
+  });
+  txt+=D+'\n';
 
-  if(branchDetails.length){
-    txt+='\n'+'━'.repeat(24)+'\n📌 지점별 상세\n';
-    txt+=branchDetails.join('');
+  // 5. 예약 시술 (간결: 시술명+건수만, TOP10)
+  if(topProcs.length){
+    txt+='\n💉 예약 시술\n';
+    topProcs.slice(0,10).forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name} ${p.n}건\n`; });
+    txt+='└ '+topProcs.slice(0,10).map(p=>`${p.name}${p.n}`).join('  ')+'\n';
+    txt+=D+'\n';
   }
 
-  txt+='\n'+'━'.repeat(24)+'\n이상 보고드립니다. 🙏';
+  txt+='\n이상 보고드립니다. 🙏';
 
   container.innerHTML=`
     <div style="margin-bottom:16px">
@@ -12608,7 +12600,13 @@ function renderDailyProcTable(){
   };
   const usedPids=new Set();
   dates.forEach(ds=>getPtCalls(ds).forEach(c=>{
-    if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{if(n>0)usedPids.add(pid);});
+    if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{
+      if(n>0){
+        usedPids.add(pid); // "parentId:subIdx" 또는 "parentId" 그대로 저장
+        // 상위 pid도 추가 (procs 필터용)
+        if(pid.includes(':')) usedPids.add(pid.split(':')[0]);
+      }
+    });
   }));
 
   // S.procedures 최신 반영 (시술 관리 동기화)
@@ -12757,11 +12755,24 @@ function renderDailyProcTable(){
       const ptShin = !c.pttype||c.pttype.includes('신환');
       Object.entries(c.procs).forEach(([pid,n])=>{
         if(!n) return;
-        // 원본 cols에서 매칭 후 displayCols 인덱스로 합산
+        // pid는 "parentId:subIdx" 또는 "parentId" 형태
+        const isSub = pid.includes(':');
+        const [parentId, subIdxStr] = isSub ? pid.split(':') : [pid, null];
+        const subIdx = subIdxStr !== null ? parseInt(subIdxStr) : null;
+
         cols.forEach(col=>{
           let match=false;
-          if(col.isSub){ if(col.parentId===pid) match=true; }
-          else { if(col.id===pid) match=true; }
+          if(col.isSub){
+            // 하위 시술: parentId와 subIdx 모두 정확히 매칭
+            if(isSub && col.parentId===parentId && col.subIdx===subIdx) match=true;
+            // 구버전 호환: 상위 pid만 저장된 경우 (subIdx 없음)
+            else if(!isSub && col.parentId===pid) match=true;
+          } else {
+            // 상위 시술: pid가 정확히 일치
+            if(!isSub && col.id===pid) match=true;
+            // 하위 pid가 저장됐는데 상위 컬럼인 경우 (fallback)
+            else if(isSub && col.id===parentId) match=true;
+          }
           if(!match) return;
           const dIdx=colToDisplayIdx[col.id];
           if(dIdx===undefined) return;
