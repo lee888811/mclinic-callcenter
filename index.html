@@ -367,6 +367,7 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="procmatrix" onclick="go('procmatrix',this)"><span class="sico">📊</span>시술×지점 분석</div>
     <div class="si" data-page="channel" onclick="go('channel',this)"><span class="sico">📡</span>채널 인입</div>
     <div class="si" data-page="noappt" onclick="go('noappt',this)"><span class="sico">⏳</span>미예약 현황</div>
+    <div class="si" data-page="booking-cal" onclick="go('booking-cal',this)"><span class="sico">📆</span>예약 현황 달력</div>
     <div class="si" data-page="voc" onclick="go('voc',this)"><span class="sico">💬</span>VOC</div>
     <div class="si" data-page="retention" onclick="go('retention',this)"><span class="sico">🔁</span>신환→구환 전환율</div>
     <div class="si" data-page="funnel" onclick="go('funnel',this)"><span class="sico">🔽</span>예약 전환율</div>
@@ -809,6 +810,51 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="noappt-content"></div>
     </div>
 
+    <!-- 예약 현황 달력 -->
+    <div class="page" id="page-booking-cal">
+      <div class="ph">
+        <div><div class="pt">📆 예약 현황 달력</div><div class="ps">시술별 날짜×시간대 예약 현황</div></div>
+        <div class="pbtns">
+          <button class="btn btn-g btn-sm" onclick="copyBookingCalImage()">📸 이미지 복사</button>
+        </div>
+      </div>
+      <!-- 필터 -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
+        <!-- 기간 -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:700;color:#0f172a;min-width:30px">기간</span>
+          <button class="period-btn act" id="bcal-btn-week" onclick="setBookingCalPeriod('week',this)">1주</button>
+          <button class="period-btn" id="bcal-btn-month" onclick="setBookingCalPeriod('month',this)">1개월</button>
+          <button class="period-btn" id="bcal-btn-custom" onclick="setBookingCalPeriod('custom',this)">직접선택</button>
+          <div id="bcal-custom-range" style="display:none;align-items:center;gap:5px">
+            <input type="date" id="bcal-from" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px" onchange="renderBookingCal()">
+            <span style="font-size:11px;color:var(--text3)">~</span>
+            <input type="date" id="bcal-to" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 7px;border-radius:6px" onchange="renderBookingCal()">
+          </div>
+        </div>
+        <!-- 지점 (다중선택 pill) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#0f172a;min-width:30px">지점</span>
+          <div id="bcal-branch-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+        </div>
+        <!-- 시술 (카테고리 → 하위시술 + 검색) -->
+        <div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#0f172a;min-width:30px;padding-top:3px">시술</span>
+          <div style="flex:1;min-width:0">
+            <!-- 검색 -->
+            <input id="bcal-proc-search" type="text" placeholder="🔍 시술명 검색..." oninput="renderBcalProcPills()"
+              style="width:100%;max-width:220px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px;margin-bottom:6px;box-sizing:border-box">
+            <!-- 상위 카테고리 row -->
+            <div id="bcal-cat-pills" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px"></div>
+            <!-- 하위 시술 row -->
+            <div id="bcal-proc-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+      </div>
+      <!-- 달력 본체 -->
+      <div id="booking-cal-wrap" style="overflow-x:auto"></div>
+    </div>
+
     <div class="page" id="page-voc">
       <div class="ph">
         <div><div class="pt">💬 VOC 보고서</div><div class="ps">긍정 VOC · 컴플레인 현황 · 처리 상태 관리</div></div>
@@ -816,23 +862,23 @@ td:first-child{text-align:left;padding-left:13px}
 
       <!-- 필터 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:10px">
-        <select id="voc-filter-branch" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <select id="voc-filter-branch" onchange="renderVocList()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 지점</option>
         </select>
-        <select id="voc-filter-type" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <select id="voc-filter-type" onchange="renderVocList()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 유형</option>
           <option value="긍정">😊 긍정 VOC</option>
           <option value="컴플레인">😤 컴플레인</option>
         </select>
-        <select id="voc-filter-status" onchange="renderVocPage()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <select id="voc-filter-status" onchange="renderVocList()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
           <option value="">전체 상태</option>
           <option value="접수">접수</option>
           <option value="처리중">처리중</option>
           <option value="완료">완료</option>
         </select>
-        <input type="date" id="voc-filter-from" onchange="renderVocPage()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <input type="date" id="voc-filter-from" onchange="renderVocList()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
         <span style="color:var(--text3);font-size:14px">~</span>
-        <input type="date" id="voc-filter-to" onchange="renderVocPage()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
+        <input type="date" id="voc-filter-to" onchange="renderVocList()" style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:14px">
         <button onclick="vocSetRange(7)" class="btn btn-g">7일</button>
         <button onclick="vocSetRange(30)" class="btn btn-g">30일</button>
         <button onclick="vocSetRange(90)" class="btn btn-g">90일</button>
@@ -2488,7 +2534,9 @@ td:first-child{text-align:left;padding-left:13px}
     <div id="modal-sub-fields">
       <!-- 예약 유형 (당일/추후 2개만) -->
       <div id="booking-type-section" style="margin-top:10px;padding:10px 12px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:8px">
-        <label style="font-size:12px;font-weight:700;color:#2563eb;display:block;margin-bottom:8px">📅 예약 유형</label>
+        <label style="font-size:12px;font-weight:700;color:#2563eb;display:block;margin-bottom:8px">📅 예약 유형
+          <span id="booking-date-required-badge" style="display:none;margin-left:6px;font-size:10px;font-weight:700;background:#7c3aed;color:#fff;padding:1px 7px;border-radius:8px">울쎄라·써마지·세르프 예약일 필수</span>
+        </label>
         <div style="display:flex;gap:8px">
           <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid #7c3aed;background:rgba(124,58,237,.08);cursor:pointer;font-size:13px;font-weight:700;color:#7c3aed">
             <input type="radio" name="booking_type" value="추후" checked style="accent-color:#7c3aed"> 📅 추후 예약
@@ -2496,6 +2544,17 @@ td:first-child{text-align:left;padding-left:13px}
           <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
             <input type="radio" name="booking_type" value="당일" style="accent-color:var(--accent)"> ⚡ 당일 예약
           </label>
+        </div>
+        <!-- 추후예약: 날짜+시간 입력 -->
+        <div id="booking-date-wrap" style="display:flex;gap:8px;margin-top:8px">
+          <div style="flex:1" id="booking-date-label">
+            <label style="font-size:10px;color:#7c3aed;font-weight:700;display:block;margin-bottom:3px">예약 날짜</label>
+            <input type="date" id="cf-booking-date" class="minp" style="margin-top:0;font-size:12px;padding:5px 8px">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:10px;color:#7c3aed;font-weight:700;display:block;margin-bottom:3px">예약 시간</label>
+            <input type="time" id="cf-booking-time" class="minp" style="margin-top:0;font-size:12px;padding:5px 8px">
+          </div>
         </div>
       </div>
       <!-- hidden inputs for backward compat -->
@@ -2749,6 +2808,21 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-sync')">닫기</button>
       <button class="btn btn-p" onclick="saveSyncSettings()">✅ 저장 &amp; 활성화</button>
+    </div>
+
+    <!-- 달력 동기화 시술 설정 -->
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px">📆 예약 현황 달력 동기화 시술</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6;background:var(--s2);padding:8px 10px;border-radius:8px">
+        콜 기록에서 아래 시술 선택 시 <b>예약 날짜·시간 입력</b>이 자동으로 표시되고<br>
+        <b>예약 현황 달력</b>에 동기화됩니다.<br>
+        시술명을 쉼표(,)로 구분해서 입력하세요. 부분 일치로 검색합니다.<br>
+        <span style="color:#7c3aed;font-weight:700">예: 울쎄라, 써마지, 세르프, 인모드, 리프팅</span>
+      </div>
+      <textarea id="booking-cal-procs-input" rows="3" class="minp" style="font-size:12px;resize:vertical;line-height:1.6"
+        placeholder="예: 울쎄라, 써마지, 세르프"></textarea>
+      <button onclick="saveBookingCalProcs()" style="margin-top:6px;padding:5px 16px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 저장</button>
+      <span id="booking-cal-procs-saved" style="display:none;margin-left:8px;font-size:11px;color:#059669;font-weight:700">✅ 저장됨</span>
     </div>
   </div>
 </div>
@@ -3509,6 +3583,7 @@ function openSyncSettings(){
       </div>`;
     }).join('');
   }
+  loadBookingCalProcsToInput();
   document.getElementById('modal-sync').classList.add('open');
 }
 
@@ -4006,6 +4081,7 @@ function go(pid,el){
   else if(pid==='channels-mgmt') renderChannelMgmt();
   else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
+  else if(pid==='booking-cal') initBookingCalPage();
   else if(pid==='shared-memo') renderSharedMemoPage();
   else if(pid==='team-memo') renderTeamMemoPage();
   else if(pid==='trend'){
@@ -4787,6 +4863,9 @@ function openCallModal(sid){
   const crw=document.getElementById('cancel-reason-wrap');if(crw)crw.style.display='none';
   document.querySelectorAll('.cancel-reason-btn').forEach(b=>{b.style.background='var(--s2)';b.style.color='var(--text2)';b.style.borderColor='var(--border)';});
   document.getElementById('cf-memo').value='';
+  const bdEl=document.getElementById('cf-booking-date'); if(bdEl) bdEl.value='';
+  const btEl=document.getElementById('cf-booking-time'); if(btEl) btEl.value='';
+  checkBookingDateRequired();
   // 아웃콜 필드 초기화
   _outPurpose='예약안내'; _outResult='통화성공';
   const opn=document.getElementById('out-ptname'); if(opn) opn.value='';
@@ -5132,9 +5211,26 @@ function selectBookingType(type){
     futureLbl.style.background=act?'rgba(124,58,237,.08)':'var(--s2)';
     futureLbl.style.color=act?'#7c3aed':'var(--text2)';
   }
-  // 추후예약 날짜 입력란 표시/숨김
   const dateWrap=document.getElementById('booking-date-wrap');
-  if(dateWrap) dateWrap.style.display=type==='추후'?'block':'none';
+  const dateLabel=document.getElementById('booking-date-label');
+  const dateInp=document.getElementById('cf-booking-date');
+  if(type==='당일'){
+    // 당일: 날짜 자동=오늘, 숨김. 시간만 입력
+    if(dateInp) dateInp.value=todayStr();
+    if(dateLabel) dateLabel.style.display='none';
+    if(dateInp) dateInp.style.display='none';
+    if(dateWrap) dateWrap.style.display='flex';
+  } else if(type==='추후'){
+    // 추후: 날짜+시간 모두 표시
+    if(dateLabel) dateLabel.style.display='block';
+    if(dateInp) dateInp.style.display='block';
+    if(dateWrap) dateWrap.style.display='flex';
+  } else {
+    // 미예약/취소 등
+    if(!isBookingRequired()) {
+      if(dateWrap) dateWrap.style.display='none';
+    }
+  }
 }
 
 function filterProcGrid(q){
@@ -5260,13 +5356,13 @@ function renderModalProcGrid(){
 function toggleProc(pid){
   const proc=S.procedures.find(x=>x.id===pid);
   if(proc?.subs?.length>0){
-    // 하위 있으면 선택 안 하고 하위 패널만 토글
     _procSubOpen[pid]=!_procSubOpen[pid];
   } else {
     const cur=_procSel[pid]||0;
     _procSel[pid]=cur>=1?0:1;
   }
   renderModalProcGrid();
+  checkBookingDateRequired();
 }
 
 function toggleProcSub(pid){
@@ -5279,6 +5375,56 @@ function toggleSubProc(pid, idx){
   const cur=_procSel[key]||0;
   _procSel[key]=cur>=1?0:1;
   renderModalProcGrid();
+  checkBookingDateRequired();
+}
+
+// 울쎄라·써마지·세르프 선택 시 예약날짜/시간 필수 표시
+// 달력 동기화 시술 목록 (관리자 설정에서 변경 가능)
+let BOOKING_REQUIRED_PROCS = (()=>{
+  try{
+    const saved=localStorage.getItem('mclinic_booking_cal_procs');
+    if(saved) return JSON.parse(saved);
+  }catch(e){}
+  return ['울쎄라','써마지','세르프'];
+})();
+
+function saveBookingCalProcs(){
+  const val=document.getElementById('booking-cal-procs-input')?.value||'';
+  BOOKING_REQUIRED_PROCS=val.split(',').map(s=>s.trim()).filter(Boolean);
+  try{localStorage.setItem('mclinic_booking_cal_procs',JSON.stringify(BOOKING_REQUIRED_PROCS));}catch(e){}
+  const saved=document.getElementById('booking-cal-procs-saved');
+  if(saved){saved.style.display='inline';setTimeout(()=>saved.style.display='none',2000);}
+  toast(`📆 달력 동기화 시술 ${BOOKING_REQUIRED_PROCS.length}개 저장됨`);
+}
+
+function loadBookingCalProcsToInput(){
+  const el=document.getElementById('booking-cal-procs-input');
+  if(el) el.value=BOOKING_REQUIRED_PROCS.join(', ');
+}
+function isBookingRequired(){
+  return Object.entries(_procSel).some(([key,n])=>{
+    if(!n||n<=0) return false;
+    const name=getProcName(key)||'';
+    return BOOKING_REQUIRED_PROCS.some(req=>name.includes(req));
+  });
+}
+function checkBookingDateRequired(){
+  const required=isBookingRequired();
+  const dateWrap=document.getElementById('booking-date-wrap');
+  const bookingSec=document.getElementById('booking-type-section');
+  const reqBadge=document.getElementById('booking-date-required-badge');
+  if(required){
+    // 예약날짜 입력란 강제 표시
+    if(dateWrap) dateWrap.style.display='flex';
+    if(bookingSec) bookingSec.style.borderColor='#7c3aed';
+    if(reqBadge) reqBadge.style.display='inline-flex';
+  } else {
+    // 추후예약일 때만 표시
+    const isFuture=_callBookingType==='추후';
+    if(dateWrap) dateWrap.style.display=isFuture?'flex':'none';
+    if(bookingSec) bookingSec.style.borderColor='rgba(37,99,235,.15)';
+    if(reqBadge) reqBadge.style.display='none';
+  }
 }
 function confirmCall(){
   const isSimpleType=(_callType==='miss'||_callType==='ad'||_callType==='absence1'||_callType==='absence2');
@@ -5315,6 +5461,17 @@ function confirmCall(){
   // 신환/구환 → 예약이 있을 경우 시술 선택 필수
   const isShinGu = (_callPttype==='신환' || _callPttype==='구환(신규상담)' || _callPttype==='구환');
   const hasBooking = _callBookingType==='당일' || _callBookingType==='추후';
+  // 울쎄라·써마지·세르프 선택 시 예약날짜 필수
+  if(isBookingRequired()){
+    const bd=document.getElementById('cf-booking-date')?.value||'';
+    if(!bd){
+      toast('⚠️ 울쎄라·써마지·세르프는 예약 날짜를 입력해주세요');
+      document.getElementById('booking-date-wrap')?.scrollIntoView({behavior:'smooth',block:'center'});
+      const dw=document.getElementById('booking-date-wrap');
+      if(dw){dw.style.outline='2px solid #7c3aed';dw.style.borderRadius='8px';setTimeout(()=>{dw.style.outline='';dw.style.borderRadius='';},2500);}
+      return;
+    }
+  }
   if(isShinGu && hasBooking){
     const hasProc = Object.values(_procSel).some(n=>n>0);
     if(!hasProc){
@@ -5382,7 +5539,8 @@ function confirmCall(){
     type:_callType, degree:_callDegree,
     pttype:primaryPttype, pttypes:pttypesArr.length>1?pttypesArr:undefined,
     bookingType:_callBookingType,
-    bookingDate:_callBookingType==='추후'?(document.getElementById('cf-booking-date')?.value||''):'',
+    bookingDate:(_callBookingType==='추후'||_callBookingType==='당일'||isBookingRequired())?(document.getElementById('cf-booking-date')?.value||''):'',
+    bookingTime:(_callBookingType==='추후'||_callBookingType==='당일'||isBookingRequired())?(document.getElementById('cf-booking-time')?.value||''):'',
     today: (_callPttype==='신환'||_callPttype==='구환(신규상담)'||_callPttype==='구환') ? 1 : 0,
     cancel: _callPttype==='예약취소' ? 1 : 0,
     cancelReason: _callPttype==='예약취소' ? (document.getElementById('cf-cancel-reason')?.value||'') : '',
@@ -15719,8 +15877,293 @@ function snpAdlogRenderItems(selMonth, selBid){
 }
 
 // ── VOC 페이지 ──
+// ── 예약 현황 달력 ──
+let _bcalPeriod='week';
+let _bcalSelectedBids=new Set(); // 빈 Set = 전체
+let _bcalSelectedPids=new Set(); // 빈 Set = 전체
+
+function initBookingCalPage(){
+  // 지점 pill
+  const brWrap=document.getElementById('bcal-branch-pills');
+  if(brWrap&&brWrap.children.length===0){
+    renderBcalBranchPills();
+  }
+  // 카테고리 pill
+  renderBcalCatPills();
+  // 시술 pill
+  renderBcalProcPills();
+  renderBookingCal();
+}
+
+function renderBcalBranchPills(){
+  const wrap=document.getElementById('bcal-branch-pills'); if(!wrap) return;
+  const branches=activeBranches();
+  wrap.innerHTML=`<button onclick="toggleBcalBranch('',this)"
+    style="padding:3px 10px;border-radius:10px;border:1.5px solid ${_bcalSelectedBids.size===0?'var(--accent)':'var(--border)'};background:${_bcalSelectedBids.size===0?'var(--accent)':'var(--s2)'};color:${_bcalSelectedBids.size===0?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
+    branches.map(b=>{
+      const act=_bcalSelectedBids.has(b.id);
+      const bc=bclr(b.id);
+      return `<button onclick="toggleBcalBranch('${b.id}',this)"
+        style="padding:3px 10px;border-radius:10px;border:1.5px solid ${act?bc:'var(--border)'};background:${act?bc:'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">${b.name}</button>`;
+    }).join('');
+}
+
+let _bcalSelectedCat=''; // 선택된 카테고리 (빈 문자열 = 전체)
+
+function toggleBcalBranch(bid){
+  if(!bid){ _bcalSelectedBids.clear(); }
+  else {
+    if(_bcalSelectedBids.has(bid)) _bcalSelectedBids.delete(bid);
+    else _bcalSelectedBids.add(bid);
+  }
+  renderBcalBranchPills();
+  renderBookingCal();
+}
+
+function renderBcalCatPills(){
+  const wrap=document.getElementById('bcal-cat-pills'); if(!wrap) return;
+  const cats=[...new Set((S.procedures||[]).map(p=>p.cat).filter(Boolean))];
+  wrap.innerHTML=`<button onclick="bcalSelectCat('',this)"
+    style="padding:3px 10px;border-radius:10px;border:1.5px solid ${_bcalSelectedCat===''?'#475569':'var(--border)'};background:${_bcalSelectedCat===''?'#475569':'var(--s2)'};color:${_bcalSelectedCat===''?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
+    cats.map(cat=>{
+      const act=_bcalSelectedCat===cat;
+      return `<button onclick="bcalSelectCat('${cat}',this)"
+        style="padding:3px 10px;border-radius:10px;border:1.5px solid ${act?'#334155':'var(--border)'};background:${act?'#334155':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${cat}</button>`;
+    }).join('');
+}
+
+function bcalSelectCat(cat){
+  _bcalSelectedCat=cat;
+  renderBcalCatPills();
+  renderBcalProcPills();
+}
+
+function renderBcalProcPills(){
+  const wrap=document.getElementById('bcal-proc-pills'); if(!wrap) return;
+  const q=(document.getElementById('bcal-proc-search')?.value||'').toLowerCase().trim();
+  let procs=S.procedures||[];
+  // 카테고리 필터
+  if(_bcalSelectedCat) procs=procs.filter(p=>p.cat===_bcalSelectedCat);
+  // 검색 필터
+  if(q) procs=procs.filter(p=>{
+    if((p.name||'').toLowerCase().includes(q)) return true;
+    if((p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q))) return true;
+    return false;
+  });
+
+  if(!procs.length){wrap.innerHTML='<span style="font-size:11px;color:var(--text3)">검색 결과 없음</span>';return;}
+
+  let html='';
+  procs.forEach(p=>{
+    // 상위 시술 pill (subs 없으면 직접 선택)
+    const hasS=p.subs&&p.subs.length>0;
+    if(!hasS){
+      const act=_bcalSelectedPids.has(p.id);
+      html+=`<button onclick="toggleBcalProc('${p.id}')"
+        style="padding:3px 10px;border-radius:10px;border:1.5px solid ${act?'var(--accent)':'var(--border)'};background:${act?'var(--accent)':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${p.icon||''}${p.name}</button>`;
+    } else {
+      // 상위 레이블 (선택 불가, 구분용)
+      const filteredSubs=q
+        ? p.subs.map((s,i)=>({s,i})).filter(({s})=>(s.name||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q))
+        : p.subs.map((s,i)=>({s,i}));
+      if(!filteredSubs.length) return;
+      html+=`<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:3px">
+        <span style="font-size:10px;font-weight:700;color:var(--text3);padding:2px 7px;background:var(--s2);border-radius:6px;border:1px solid var(--border)">${p.icon||''}${p.name}</span>`;
+      filteredSubs.forEach(({s,i})=>{
+        const key=`${p.id}:${i}`;
+        const act=_bcalSelectedPids.has(key);
+        html+=`<button onclick="toggleBcalProc('${key}')"
+          style="padding:2px 9px;border-radius:10px;border:1.5px solid ${act?'var(--accent)':'var(--border)'};background:${act?'var(--accent)':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${s.icon||''}${s.name}</button>`;
+      });
+      html+=`</div>`;
+    }
+  });
+  wrap.innerHTML=html||'<span style="font-size:11px;color:var(--text3)">시술 없음</span>';
+}
+
+function toggleBcalProc(pid){
+  if(!pid){ _bcalSelectedPids.clear(); }
+  else {
+    if(_bcalSelectedPids.has(pid)) _bcalSelectedPids.delete(pid);
+    else _bcalSelectedPids.add(pid);
+  }
+  renderBcalProcPills();
+  renderBookingCal();
+}
+
+function setBookingCalPeriod(period, btn){
+  _bcalPeriod=period;
+  document.querySelectorAll('[id^="bcal-btn-"]').forEach(b=>{
+    b.className=b===btn?'period-btn act':'period-btn';
+  });
+  const cRange=document.getElementById('bcal-custom-range');
+  if(cRange) cRange.style.display=period==='custom'?'flex':'none';
+  if(period!=='custom') renderBookingCal();
+}
+
+function getBookingCalDates(){
+  const today=todayStr();
+  if(_bcalPeriod==='week'){
+    const end=new Date(today+'T00:00:00');
+    end.setDate(end.getDate()+6);
+    return {from:today, to:localDateStr(end)};
+  } else if(_bcalPeriod==='month'){
+    const end=new Date(today+'T00:00:00');
+    end.setDate(end.getDate()+29);
+    return {from:today, to:localDateStr(end)};
+  } else {
+    return {from:document.getElementById('bcal-from')?.value||today, to:document.getElementById('bcal-to')?.value||today};
+  }
+}
+
+function renderBookingCal(){
+  const wrap=document.getElementById('booking-cal-wrap'); if(!wrap) return;
+  const {from,to}=getBookingCalDates();
+  const filterBids=_bcalSelectedBids;
+  const filterPids=_bcalSelectedPids;
+
+  const dates=getDateRange(from,to);
+  if(!dates.length){wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">날짜를 선택해주세요</div>';return;}
+
+  const DAY_KO=['일','월','화','수','목','금','토'];
+  function fmtDate(ds){
+    const d=new Date(ds+'T00:00:00');
+    return {label:`${d.getMonth()+1}/${d.getDate()}`,day:DAY_KO[d.getDay()],isSun:d.getDay()===0,isSat:d.getDay()===6};
+  }
+
+  // 예약 데이터 수집
+  const bookings=[];
+  function pidMatches(procKey){
+    if(filterPids.size===0) return true;
+    if(filterPids.has(procKey)) return true;
+    const parentId=procKey.split(':')[0];
+    return filterPids.has(parentId);
+  }
+  Object.entries(S.calls).forEach(([ds,calls])=>{
+    (calls||[]).forEach(c=>{
+      if(!c.bookingDate) return;
+      if(c.bookingDate<from||c.bookingDate>to) return;
+      if(filterBids.size>0&&!filterBids.has(c.bid)) return;
+      const procs=Object.entries(c.procs||{}).filter(([,n])=>n>0);
+      if(filterPids.size>0&&!procs.some(([pid])=>pidMatches(pid))) return;
+      const br=S.branches.find(b=>b.id===c.bid);
+      const usedProcs=filterPids.size>0?procs.filter(([pid])=>pidMatches(pid)):procs;
+      usedProcs.forEach(([pid])=>{
+        bookings.push({
+          date:c.bookingDate, time:c.bookingTime||'',
+          pid, procName:getProcName(pid),
+          bid:c.bid, brName:br?.name||'',
+          pttype:c.pttype, callId:c.id, callDate:ds
+        });
+      });
+    });
+  });
+
+  // 날짜별 그룹
+  const byDate={};
+  dates.forEach(ds=>{byDate[ds]=[];});
+  bookings.forEach(b=>{if(byDate[b.date]!==undefined) byDate[b.date].push(b);});
+
+  const totalCnt=bookings.length;
+  const thB='padding:6px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;text-align:center;white-space:nowrap;background:var(--s2)';
+  const tdB='padding:5px 7px;border:1px solid var(--border);font-size:11px;vertical-align:top;width:14.28%';
+
+  // 7일씩 주별로 쪼개기
+  const weeks=[];
+  for(let i=0;i<dates.length;i+=7) weeks.push(dates.slice(i,i+7));
+
+  function makeCard(b){
+    const bc=b.bid?bclr(b.bid):'#64748b';
+    const timeStr=b.time?`<span style="font-size:10px;color:#7c3aed;font-weight:700;font-family:'DM Mono',monospace">${b.time} </span>`:'';
+    return `<div style="background:#fff;border:1px solid ${bc}33;border-left:3px solid ${bc};border-radius:6px;padding:4px 6px;margin-bottom:3px">
+      <div>${timeStr}${b.brName?`<span style="font-size:9px;font-weight:700;color:${bc}">${b.brName}</span>`:''}</div>
+      <div style="font-size:10px;color:var(--text);font-weight:600">${b.procName}</div>
+      <div style="font-size:9px;color:var(--text3)">${b.pttype||''}</div>
+    </div>`;
+  }
+
+  const tablesHtml=weeks.map((week,wi)=>{
+    const wFrom=week[0], wTo=week[week.length-1];
+    const wCnt=week.reduce((a,ds)=>a+(byDate[ds]?.length||0),0);
+
+    // 7칸 맞추기 (마지막 주가 7일 미만일 경우 빈 칸)
+    while(week.length<7) week.push(null);
+
+    const headers=week.map(ds=>{
+      if(!ds) return `<th style="${thB}"></th>`;
+      const {label,day,isSun,isSat}=fmtDate(ds);
+      const clr=isSun?'#ef4444':isSat?'#2563eb':'var(--text)';
+      const bg=isSun?'background:#fff5f5':isSat?'background:#eff6ff':'';
+      const cnt=byDate[ds]?.length||0;
+      return `<th style="${thB};${bg};color:${clr}">
+        <div>${label}</div>
+        <div style="font-size:10px;font-weight:500;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
+        ${cnt>0?`<div style="margin-top:2px;font-size:10px;font-weight:800;color:#2563eb;background:#dbeafe;padding:1px 5px;border-radius:8px;display:inline-block">${cnt}</div>`:''}
+      </th>`;
+    }).join('');
+
+    const cells=week.map(ds=>{
+      if(!ds) return `<td style="${tdB};background:var(--s1)"></td>`;
+      const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+      const {isSun,isSat}=fmtDate(ds);
+      const bg=isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
+      if(!items.length) return `<td style="${tdB};${bg}text-align:center;color:var(--text3)">-</td>`;
+      return `<td style="${tdB};${bg}">${items.map(makeCard).join('')}</td>`;
+    }).join('');
+
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;padding:4px 8px;background:var(--s2);border-radius:6px;display:inline-block">
+        📅 ${wFrom} ~ ${wTo} &nbsp;·&nbsp; ${wCnt}건
+      </div>
+      <table style="border-collapse:collapse;width:100%;table-layout:fixed">
+        <thead><tr>${headers}</tr></thead>
+        <tbody><tr>${cells}</tr></tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML=`
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+      📅 ${from} ~ ${to} &nbsp;|&nbsp; 예약 총 <strong style="color:var(--accent)">${totalCnt}건</strong>
+    </div>
+    <div id="booking-cal-table-wrap">${tablesHtml}</div>`;
+}
+
+function copyBookingCalImage(){
+  const tableWrap=document.getElementById('booking-cal-table-wrap');
+  if(!tableWrap||typeof html2canvas==='undefined'){toast('⚠️ 이미지 복사 불가');return;}
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:16px;display:inline-block;font-family:Noto Sans KR,sans-serif';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:14px;font-weight:800;color:#0f172a;margin-bottom:10px';
+  const {from,to}=getBookingCalDates();
+  title.textContent=`📆 예약 현황 달력 (${from} ~ ${to})`;
+  wrapper.appendChild(title);
+  wrapper.appendChild(tableWrap.cloneNode(true));
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false}).then(canvas=>{
+    document.body.removeChild(wrapper);
+    canvas.toBlob(blob=>{
+      if(!blob){toast('❌ 이미지 생성 실패');return;}
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>toast('📋 이미지 복사됨!')).catch(()=>{
+        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='예약현황달력.png';a.click();
+        toast('💾 이미지 저장됨');
+      });
+    });
+  });
+}
+
 function initVocPage(){
   const el=document.getElementById('voc-list'); if(!el) return;
+  // 지점 드롭다운 채우기
+  const brSel=document.getElementById('voc-filter-branch');
+  if(brSel && brSel.options.length<=1){
+    activeBranches().forEach(b=>{
+      const o=document.createElement('option');
+      o.value=b.id; o.textContent=b.name;
+      brSel.appendChild(o);
+    });
+  }
   renderVocList();
 }
 
@@ -15839,7 +16282,21 @@ function renderVocList(){
   const days=_vocRange||30;
   const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
   const cutoffStr=localDateStr(cutoff);
-  const vocs=getAllVocs().filter(v=>v.date>=cutoffStr);
+
+  // 필터 값 읽기
+  const filterBranch=document.getElementById('voc-filter-branch')?.value||'';
+  const filterType=document.getElementById('voc-filter-type')?.value||'';
+  const filterStatus=document.getElementById('voc-filter-status')?.value||'';
+  const dateFrom=document.getElementById('voc-date-from')?.value||'';
+  const dateTo=document.getElementById('voc-date-to')?.value||'';
+
+  let vocs=getAllVocs().filter(v=>v.date>=cutoffStr);
+  if(filterBranch) vocs=vocs.filter(v=>v.bid===filterBranch);
+  if(filterType) vocs=vocs.filter(v=>(v.type||'').includes(filterType));
+  if(filterStatus) vocs=vocs.filter(v=>v.status===filterStatus);
+  if(dateFrom) vocs=vocs.filter(v=>v.date>=dateFrom);
+  if(dateTo) vocs=vocs.filter(v=>v.date<=dateTo);
+
   if(!vocs.length){ el.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:15px">VOC 데이터가 없습니다.</div>'; return; }
 
   const statusColors={'접수':'#dbeafe,#1d4ed8','처리중':'#fef9c3,#854d0e','완료':'#dcfce7,#15803d'};
@@ -15868,10 +16325,12 @@ function renderVocList(){
               style="padding:5px 14px;border-radius:8px;border:1.5px solid ${isAct?clr:'var(--border)'};background:${isAct?bg:'transparent'};color:${isAct?clr:'var(--text3)'};font-size:13px;font-weight:${isAct?700:500};cursor:pointer">${st}</button>`;
           }).join('')}
         </div>
-        <button onclick="deleteVoc('${v.callId}','${v.date}')"
-          style="padding:5px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fff1f2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer">🗑 삭제</button>
-        <button onclick="openVocEditModal('${v.callId}','${v.date}')"
-          style="padding:5px 12px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:700;cursor:pointer">✏️ 수정</button>
+        <div style="display:flex;gap:6px">
+          <button onclick="openVocEditModal('${v.callId}','${v.date}')"
+            style="padding:5px 12px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:700;cursor:pointer">✏️ 수정</button>
+          <button onclick="deleteVoc('${v.callId}','${v.date}')"
+            style="padding:5px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fff1f2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer">🗑 삭제</button>
+        </div>
       </div>
     </div>`;
   }).join('');
