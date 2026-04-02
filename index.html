@@ -16049,8 +16049,8 @@ function renderBookingCal(){
   bookings.forEach(b=>{if(byDate[b.date]!==undefined) byDate[b.date].push(b);});
 
   const totalCnt=bookings.length;
-  const thB='padding:12px 10px;border:1px solid var(--border);font-size:14px;font-weight:700;text-align:center;white-space:nowrap;background:var(--s2)';
-  const tdB='padding:8px 10px;border:1px solid var(--border);font-size:13px;vertical-align:top;width:14.28%;min-width:120px';
+  const thB='padding:20px 14px;border:2px solid var(--border);font-size:22px;font-weight:700;text-align:center;white-space:nowrap;background:var(--s2)';
+  const tdB='padding:12px 14px;border:2px solid var(--border);font-size:20px;vertical-align:top;width:14.28%;min-width:180px';
 
   // 7일씩 주별로 쪼개기
   // 월요일 기준으로 주 분할
@@ -16075,7 +16075,7 @@ function renderBookingCal(){
 
   function makeCell(ds, bgStyle){
     const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
-    if(!items.length) return `<td style="${tdB};${bgStyle}text-align:center;color:var(--text3);font-size:14px">-</td>`;
+    if(!items.length) return `<td style="${tdB};${bgStyle}text-align:center;color:var(--text3);font-size:22px">-</td>`;
 
     // 지점 순서로 그룹핑 (activeBranches 순서 기준)
     const brOrder=activeBranches().map(b=>b.id);
@@ -16093,15 +16093,23 @@ function renderBookingCal(){
       const bc=bid!=='_none'?bclr(bid):'#64748b';
       const brName=brItems[0]?.brName||'';
       const rows=brItems.map(b=>{
-        const timeStr=b.time?`<span style="font-size:13px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
-        return `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid ${bc}22;line-height:1.5">
-          ${timeStr}<span style="font-weight:700;color:var(--text)">${b.procName}</span>
-          <span style="color:var(--text3);font-size:11px"> ${b.pttype||''}</span>
-          ${b.memo?`<div style="font-size:11px;color:#b45309;margin-top:2px">📝 ${escHtml(b.memo)}</div>`:''}
+        const timeStr=b.time?`<span style="font-size:22px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
+        return `<div style="font-size:20px;padding:6px 0;border-bottom:1px solid ${bc}22;line-height:1.5">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <div style="flex:1">
+              ${timeStr}<span style="font-weight:700;color:var(--text)">${b.procName}</span>
+              <span style="color:var(--text3);font-size:17px"> ${b.pttype||''}</span>
+              ${b.memo?`<div style="font-size:17px;color:#b45309;margin-top:3px">📝 ${escHtml(b.memo)}</div>`:''}
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0">
+              <button onclick="bcalEditCall('${b.callId}','${b.callDate}')" style="padding:4px 10px;border-radius:6px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:14px;cursor:pointer;white-space:nowrap">✏️</button>
+              <button onclick="bcalDeleteCall('${b.callId}','${b.callDate}')" style="padding:4px 10px;border-radius:6px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:14px;cursor:pointer;white-space:nowrap">🗑</button>
+            </div>
+          </div>
         </div>`;
       }).join('');
-      return `<div style="background:#fff;border:1px solid ${bc}33;border-left:4px solid ${bc};border-radius:8px;padding:8px 10px;margin-bottom:6px">
-        <div style="font-size:13px;font-weight:800;color:${bc};margin-bottom:4px">${brName}</div>
+      return `<div style="background:#fff;border:1px solid ${bc}33;border-left:6px solid ${bc};border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:20px;font-weight:800;color:${bc};margin-bottom:6px">${brName}</div>
         ${rows}
       </div>`;
     }).join('');
@@ -16121,13 +16129,13 @@ function renderBookingCal(){
       const {label,day,isSun,isSat,isToday}=fmtDate(ds);
       const clr=isSun?'#ef4444':isSat?'#2563eb':'var(--text)';
       const bg=isToday?'background:#fef9c3':isSun?'background:#fff5f5':isSat?'background:#eff6ff':'';
-      const todayMark=isToday?'<div style="font-size:9px;color:#d97706;font-weight:800">오늘</div>':'';
+      const todayMark=isToday?'<div style="font-size:14px;color:#d97706;font-weight:800">오늘</div>':'';
       const cnt=byDate[ds]?.length||0;
       return `<th style="${thB};${bg};color:${clr}">
         ${todayMark}
-        <div style="font-size:15px;font-weight:${isToday?900:700}">${label}</div>
-        <div style="font-size:13px;font-weight:600;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
-        ${cnt>0?`<div style="margin-top:3px;font-size:12px;font-weight:800;color:#2563eb;background:#dbeafe;padding:2px 8px;border-radius:10px;display:inline-block">${cnt}</div>`:''}
+        <div style="font-size:24px;font-weight:${isToday?900:700}">${label}</div>
+        <div style="font-size:20px;font-weight:600;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
+        ${cnt>0?`<div style="margin-top:4px;font-size:18px;font-weight:800;color:#2563eb;background:#dbeafe;padding:3px 10px;border-radius:12px;display:inline-block">${cnt}</div>`:''}
       </th>`;
     }).join('');
 
@@ -16139,7 +16147,7 @@ function renderBookingCal(){
     }).join('');
 
     return `<div style="margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px;padding:5px 10px;background:var(--s2);border-radius:6px;display:inline-block">
+      <div style="font-size:18px;font-weight:700;color:var(--text2);margin-bottom:8px;padding:6px 14px;background:var(--s2);border-radius:8px;display:inline-block">
         📅 ${wFrom} ~ ${wTo} &nbsp;·&nbsp; ${wCnt}건
       </div>
       <table style="border-collapse:collapse;width:100%;table-layout:fixed">
@@ -16150,7 +16158,7 @@ function renderBookingCal(){
   }).join('');
 
   wrap.innerHTML=`
-    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+    <div style="font-size:16px;color:var(--text3);margin-bottom:12px">
       📅 ${from} ~ ${to} &nbsp;|&nbsp; 예약 총 <strong style="color:var(--accent)">${totalCnt}건</strong>
     </div>
     <div id="booking-cal-table-wrap">${tablesHtml}</div>`;
@@ -16227,6 +16235,31 @@ function renderMarketingTable(){
 }
 
 // ── 상담기록 수정 ──
+function bcalEditCall(callId, ds){
+  const c=(S.calls[ds]||[]).find(x=>x.id===callId);
+  if(!c){ toast('⚠️ 기록을 찾을 수 없습니다'); return; }
+  openEditCallModal(callId, ds);
+}
+
+function bcalDeleteCall(callId, ds){
+  if(!confirm('이 예약 기록을 삭제하시겠습니까?')) return;
+  if(!S.calls[ds]) return;
+  S.calls[ds]=S.calls[ds].filter(c=>c.id!==callId);
+  if(!S._deletedIds) S._deletedIds=[];
+  if(!S._deletedIds.includes(callId)) S._deletedIds.push(callId);
+  if(S._deletedIds.length>500) S._deletedIds=S._deletedIds.slice(-500);
+  markCallDirty(ds);
+  autoSave();
+  syncPush(false);
+  renderBookingCal();
+  renderSidebar();
+  // 직원 페이지가 열려있으면 갱신
+  const actPage=document.querySelector('.page.act');
+  const pid=actPage?.id.replace('page-','');
+  if(pid==='history') renderHistory();
+  toast('🗑 삭제됨');
+}
+
 function openEditCallModal(callId, ds){
   const dayData=S.calls[ds||_curDate]||[];
   const c=dayData.find(x=>x.id===callId);
@@ -16246,6 +16279,12 @@ function openEditCallModal(callId, ds){
     const cancelEl=document.getElementById('cf-cancel'); if(cancelEl) cancelEl.value=c.cancel||0;
     const noapptEl=document.getElementById('cf-noappt'); if(noapptEl) noapptEl.value=c.noappt||0;
     const memoEl=document.getElementById('cf-memo'); if(memoEl) memoEl.value=c.memo||'';
+    // 예약 날짜/시간 복원
+    if(c.bookingDate||c.bookingTime){
+      const bdEl=document.getElementById('cf-booking-date'); if(bdEl) bdEl.value=c.bookingDate||'';
+      const btEl=document.getElementById('cf-booking-time'); if(btEl) btEl.value=c.bookingTime||'';
+      const dw=document.getElementById('booking-date-wrap'); if(dw) dw.style.display='flex';
+    }
     if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{ if(n>0) _procSel[pid]=n; });
     renderModalProcGrid();
     toggleSubFields();
