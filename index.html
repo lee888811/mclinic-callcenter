@@ -372,8 +372,6 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="si" data-page="funnel" onclick="go('funnel',this)"><span class="sico">🔽</span>예약 전환율</div>
     <div class="si" data-page="roi" onclick="go('roi',this)"><span class="sico">💰</span>채널별 광고 ROI</div>
     <div class="sdiv"></div>
-    <div class="sg">수가표·정보</div>
-    <div class="si" data-page="notes" onclick="go('notes',this)"><span class="sico">📒</span>수가표·병원정보</div>
     <div class="si" data-page="schedule" onclick="openScheduleModal()"><span class="sico">🏥</span>지점근무현황</div>
     <div class="si" data-page="marketing" onclick="go('marketing',this)"><span class="sico">📣</span>마케팅</div>
     <div class="sdiv"></div>
@@ -916,7 +914,6 @@ td:first-child{text-align:left;padding-left:13px}
       <div class="card" style="margin-bottom:16px">
         <div class="ch2" style="margin-bottom:12px">
           <span class="slbl">🎁 진행 중인 이벤트·프로모션</span>
-          <button onclick="go('notes',document.querySelector('[data-page=notes]'));setTimeout(()=>{document.getElementById('nf-cat').value='카톡이벤트';renderNotes();},100)" class="btn btn-g btn-sm">수가표에서 보기</button>
         </div>
         <div id="mkt-events-list"></div>
       </div>
@@ -1088,115 +1085,6 @@ td:first-child{text-align:left;padding-left:13px}
           <button class="btn btn-p" onclick="saveSharedMemo()">💾 저장</button>
         </div>
       </div>
-    </div>
-
-    <div class="page" id="page-notes">
-      <div class="ph">
-        <div>
-          <div class="pt">📒 수가표·병원정보</div>
-          <div class="ps" id="notes-ai-status">콜 중 즉시 검색 · AI 정리 · 수정</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-sm" id="notes-ai-btn"
-            style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;font-weight:700;font-size:12px"
-            onclick="startAiReformat()">✨ AI 전체 정리</button>
-          <button class="btn btn-p btn-sm" onclick="openNoteModal(null)">✚ 새 항목</button>
-          <button class="btn btn-g btn-sm" onclick="notesExport()">📥 백업</button>
-          <input type="file" id="notes-import-file" accept=".json" style="display:none" onchange="notesImport(this)">
-          <button class="btn btn-g btn-sm" onclick="document.getElementById('notes-import-file').click()">📤 복원</button>
-        </div>
-      </div>
-
-      <!-- AI 진행 상황 바 -->
-      <div id="notes-ai-progress" style="display:none;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:15px;font-weight:800;color:#0f172a">✨ Claude AI 정리 중...</span>
-          <span id="notes-ai-prog-text" style="font-size:11px;color:var(--text3)">0 / 52</span>
-        </div>
-        <div style="background:var(--border);border-radius:4px;height:7px;overflow:hidden">
-          <div id="notes-ai-prog-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#2563eb);border-radius:4px;transition:width .3s"></div>
-        </div>
-        <div id="notes-ai-prog-log" style="margin-top:8px;font-size:11px;color:var(--text3);max-height:60px;overflow-y:auto"></div>
-      </div>
-
-      <!-- 검색·필터 바 -->
-      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="nq" type="text" placeholder="🔍  시술명·가격·공지·지점 즉시 검색…  (스페이스로 AND 검색)"
-            style="flex:1;min-width:220px;padding:9px 14px;border-radius:9px;border:2px solid var(--border);font-size:13px;background:var(--s2);color:var(--text);outline:none;transition:border .15s"
-            oninput="renderNotes()"
-            onfocus="this.style.borderColor='var(--accent)'"
-            onblur="this.style.borderColor='var(--border)'">
-          <select id="nf-branch" onchange="renderNotes()"
-            style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);font-size:12px;background:var(--s2);color:var(--text)">
-            <option value="">전체 지점</option>
-            <option value="강남">강남</option>
-            <option value="잠실새내">잠실새내</option>
-            <option value="부평">부평</option>
-            <option value="구월">구월</option>
-            <option value="전지점">전지점</option>
-            <option value="공통">공통</option>
-          </select>
-          <select id="nf-cat" onchange="renderNotes()"
-            style="padding:8px 11px;border-radius:8px;border:1px solid var(--border);font-size:12px;background:var(--s2);color:var(--text)">
-            <option value="">전체 분류</option>
-            <option value="수가표">수가표</option>
-            <option value="병원정보">병원정보</option>
-            <option value="카톡이벤트">카톡이벤트</option>
-            <option value="공지사항">공지사항</option>
-            <option value="첫방문이벤트">첫방문이벤트</option>
-            <option value="이벤트">이벤트</option>
-            <option value="시술설명">시술설명</option>
-            <option value="주의사항·Q&A">주의사항·Q&A</option>
-            <option value="미성년자안내">미성년자안내</option>
-            <option value="적립금">적립금</option>
-            <option value="내부공지">내부공지</option>
-            <option value="원장지정안내">원장지정안내</option>
-            <option value="약품·장비명">약품·장비명</option>
-            <option value="문자이벤트">문자이벤트</option>
-            <option value="수면마취공지">수면마취공지</option>
-            <option value="운영종료안내">운영종료안내</option>
-            <option value="기타">기타</option>
-          </select>
-          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
-            <input type="checkbox" id="nf-ai-only" onchange="renderNotes()" style="cursor:pointer">
-            ✨ AI 정리됨만
-          </label>
-          <button class="btn btn-g btn-sm"
-            onclick="document.getElementById('nq').value='';document.getElementById('nf-branch').value='';document.getElementById('nf-cat').value='';document.getElementById('nf-ai-only').checked=false;renderNotes()">
-            ✕ 초기화
-          </button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <span id="notes-count-text"></span>
-          <span id="notes-ai-count" style="color:#7c3aed;font-weight:600"></span>
-          <span id="notes-cat-pills" style="display:flex;gap:4px;flex-wrap:wrap"></span>
-        </div>
-      </div>
-
-      <!-- 카드 목록 -->
-      <div id="notes-list" style="display:flex;flex-direction:column;gap:8px"></div>
-
-      <!-- 랜딩페이지 탭 구분선 -->
-      <div style="margin-top:24px;border-top:2px solid var(--border);padding-top:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:15px;font-weight:800;color:#0f172a">🔗 랜딩페이지</span>
-            <span id="landing-count-badge" style="font-size:10px;font-weight:700;background:var(--accent);color:#fff;border-radius:12px;padding:2px 8px;display:none"></span>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <input id="landing-search" class="minp" placeholder="🔍 시술명 검색..." oninput="renderLandingList()" style="width:180px;font-size:12px">
-            <select id="landing-sheet-filter" class="minp" onchange="renderLandingList()" style="font-size:12px;width:120px">
-              <option value="">전체 시트</option>
-            </select>
-            <button class="btn btn-g btn-sm" onclick="loadLandingData(true)">🔄 새로고침</button>
-            <button class="btn btn-g btn-sm" onclick="openLandingSettings()">⚙️ GAS 설정</button>
-          </div>
-        </div>
-        <div id="landing-status" style="display:none;font-size:11px;padding:6px 12px;border-radius:7px;margin-bottom:8px"></div>
-        <div id="landing-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
-      </div>
-    </div>
 
     <!-- ═══ 랜딩페이지 GAS 설정 모달 ═══ -->
     <div class="modal" id="modal-landing-settings" style="z-index:700">
@@ -2633,10 +2521,8 @@ td:first-child{text-align:left;padding-left:13px}
 
         <!-- 탭 버튼 1행 -->
         <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.2)">
-          <button id="snp-tab-notes" onclick="snpSwitchTab('notes')"
-            style="flex:1;padding:9px 4px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:17px;font-weight:800;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">📒 수가표</button>
           <button id="snp-tab-faq" onclick="snpSwitchTab('faq')"
-            style="flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:17px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">💬 FAQ</button>
+            style="flex:1;padding:9px 4px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:17px;font-weight:800;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">💬 FAQ</button>
           <button id="snp-tab-landing" onclick="snpSwitchTab('landing')"
             style="flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:17px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">🔗 랜딩</button>
           <button id="snp-tab-adlog" onclick="snpSwitchTab('adlog')"
@@ -2650,26 +2536,8 @@ td:first-child{text-align:left;padding-left:13px}
             style="flex:1;padding:8px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:16px;font-weight:600;cursor:pointer">📋 공유메모</button>
         </div>
 
-        <!-- 수가표 헤더 -->
-        <div id="snp-notes-header" style="padding:12px 14px 10px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">
-            <span style="font-size:18px;color:rgba(255,255,255,.8);flex:1">시술 가격 · 공지 · 병원 정보</span>
-            <button onclick="openNoteModal(null)" style="padding:5px 12px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:18px;font-weight:700;cursor:pointer">＋ 추가</button>
-          </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">
-            <button id="snp-br-all" onclick="snpSetBranch('')"
-              style="padding:4px 10px;border-radius:10px;border:none;background:rgba(255,255,255,.9);color:#2563eb;font-size:18px;font-weight:700;cursor:pointer">전체</button>
-            <button onclick="snpSetBranch('공통')" id="snp-br-공통"
-              style="padding:4px 10px;border-radius:10px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:18px;font-weight:600;cursor:pointer">공통</button>
-            <div id="snp-br-tabs" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-          </div>
-          <input id="snp-search" type="text" placeholder="🔍 시술명·가격·공지 검색..."
-            style="width:100%;padding:9px 12px;border-radius:8px;border:none;font-size:22px;box-sizing:border-box;background:rgba(255,255,255,.95);color:#1e293b;outline:none"
-            oninput="snpRender(this.value)">
-        </div>
-
         <!-- FAQ 헤더 -->
-        <div id="snp-faq-header" style="padding:12px 14px 10px;display:none">
+        <div id="snp-faq-header" style="padding:12px 14px 10px">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">
             <span style="font-size:18px;color:rgba(255,255,255,.8);flex:1">자주 묻는 질문 · 상담 멘트</span>
             <button onclick="openFaqModal(null)" style="padding:5px 12px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:18px;font-weight:700;cursor:pointer">＋ 추가</button>
@@ -2693,8 +2561,7 @@ td:first-child{text-align:left;padding-left:13px}
       </div><!-- /파란 헤더 끝 -->
 
       <!-- 목록 영역 (탭에 따라 전환, 스크롤) -->
-      <div id="snp-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
-      <div id="faq-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
+      <div id="faq-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
       <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
 
@@ -3299,7 +3166,6 @@ const PERM_PAGES = [
   {key:'funnel',    label:'예약 전환율',       tab:'analysis'},
   {key:'roi',       label:'채널별 광고 ROI',   tab:'analysis'},
   // 정보 탭
-  {key:'notes',     label:'수가표·병원정보',   tab:'info'},
   {key:'marketing', label:'마케팅',            tab:'info'},
   {key:'roster',    label:'직원 근태관리',     tab:'info'},
   {key:'duty',      label:'분담업무',          tab:'info'},
@@ -4099,7 +3965,7 @@ function go(pid,el){
   else if(pid==='branches') renderBranchMgmt();
   else if(pid==='notes'){
     // 로컬 데이터 즉시 표시
-    renderNotes();
+    // renderNotes() removed
     // Firebase에서 최신 노트 백그라운드 로드
     if(_syncUrl){
       const base=_syncUrl.replace(/\/+$/,'');
@@ -4891,7 +4757,7 @@ function openCallModal(sid){
     snpRenderBranchTabs();
     _snpBranch='';
     _snpActiveTab='notes';
-    snpSwitchTab('notes');
+    snpSwitchTab('faq');
     initCallSchedulePanel(); 
   }, 50);
 }
@@ -15347,41 +15213,33 @@ function snpRender(q=''){
 }
 
 let _snpBranch='';
-let _snpActiveTab='notes';
+let _snpActiveTab='faq';
 
 function snpSwitchTab(tab){
   _snpActiveTab=tab;
-  const noteHeader=document.getElementById('snp-notes-header');
   const faqHeader=document.getElementById('snp-faq-header');
   const landingHeader=document.getElementById('snp-landing-header');
-  const noteList=document.getElementById('snp-list');
   const faqList=document.getElementById('faq-list');
   const landingList=document.getElementById('snp-landing-list');
   const adlogList=document.getElementById('snp-adlog-list');
   const teamnoticeList=document.getElementById('snp-teamnotice-list');
   const teammemoList=document.getElementById('snp-teammemo-list');
 
-  const noteTab=document.getElementById('snp-tab-notes');
   const faqTab=document.getElementById('snp-tab-faq');
   const landingTab=document.getElementById('snp-tab-landing');
   const adlogTab=document.getElementById('snp-tab-adlog');
   const teamnoticeTab=document.getElementById('snp-tab-teamnotice');
   const teammemoTab=document.getElementById('snp-tab-teammemo');
 
-  [noteHeader,faqHeader,landingHeader].forEach(el=>{if(el)el.style.display='none';});
-  [noteList,faqList,landingList,adlogList,teamnoticeList,teammemoList].forEach(el=>{if(el)el.style.display='none';});
-  [noteTab,faqTab,landingTab,adlogTab,teamnoticeTab,teammemoTab].forEach(el=>{
+  [faqHeader,landingHeader].forEach(el=>{if(el)el.style.display='none';});
+  [faqList,landingList,adlogList,teamnoticeList,teammemoList].forEach(el=>{if(el)el.style.display='none';});
+  [faqTab,landingTab,adlogTab,teamnoticeTab,teammemoTab].forEach(el=>{
     if(el){el.style.background='transparent';el.style.color='rgba(255,255,255,.6)';el.style.fontWeight='600';}
   });
 
   const activateTab=el=>{ if(el){el.style.background='rgba(255,255,255,.15)';el.style.color='#fff';el.style.fontWeight='800';} };
 
-  if(tab==='notes'){
-    if(noteHeader)noteHeader.style.display='';
-    if(noteList)noteList.style.display='flex';
-    activateTab(noteTab);
-    snpRender(document.getElementById('snp-search')?.value||'');
-  } else if(tab==='faq'){
+  if(tab==='faq'){
     if(faqHeader)faqHeader.style.display='';
     if(faqList)faqList.style.display='flex';
     activateTab(faqTab);
