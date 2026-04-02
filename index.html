@@ -7935,7 +7935,7 @@ function renderRoiLogForm() {
         <textarea id="roi-new-msgcontent" rows="3" placeholder="발송된 문자 내용을 붙여넣으세요..."
           style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box;resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.5"></textarea>
       </div>
-      <button onclick="addRoiLogAndSave()" style="width:100%;padding:8px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer">💾 저장</button>
+      <button id="roi-save-btn" onclick="addRoiLogAndSave()" style="width:100%;padding:8px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer">💾 저장</button>
     </div>
 
     <!-- 입력 내역 목록 -->
@@ -7953,15 +7953,16 @@ function renderRoiLogForm() {
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
                 <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${log.date}${log.sendTime?' '+log.sendTime:''}</span>
                 <span style="font-size:11px;font-weight:700">${getChDisplayName(ch)}</span>
-                <span style="font-size:10px;color:#059669">${br?br.name+'점':'공통'}</span>
+                <span style="font-size:10px;color:#059669">${br?br.name:'전지점'}</span>
                 ${log.staff?`<span style="font-size:10px;color:#2563eb;font-weight:600">👤 ${log.staff}</span>`:''}
                 ${log.sendStatus?`<span style="font-size:10px;font-weight:700;color:${statusClr};background:${statusBg};padding:1px 6px;border-radius:8px">${log.sendStatus}</span>`:''}
                 <span style="margin-left:auto;font-size:12px;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
-                <button onclick="deleteRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">✕</button>
+                <button onclick="editRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:10px;cursor:pointer">✏️ 수정</button>
+                <button onclick="deleteRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">🗑 삭제</button>
               </div>
               ${log.sendCount?`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">📨 발송 ${log.sendCount.toLocaleString()}건</div>`:''}
               ${log.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:4px">📌 ${log.memo}</div>`:''}
-              ${log.msgContent?`<div style="font-size:11px;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;white-space:pre-wrap;line-height:1.55;margin-top:4px;cursor:pointer" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'" style="max-height:60px;overflow:hidden">💬 ${escHtml(log.msgContent)}</div>`:''}
+              ${log.msgContent?`<div style="font-size:11px;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;white-space:pre-wrap;line-height:1.55;margin-top:4px;max-height:60px;overflow:hidden;cursor:pointer" onclick="this.style.maxHeight=this.style.maxHeight==='60px'?'none':'60px'">💬 ${escHtml(log.msgContent)}</div>`:''}
             </div>`;
           }).join('')}
         </div>`}`;
@@ -7990,6 +7991,28 @@ function addRoiLog() {
   const stEl=document.getElementById('roi-new-sendtime'); if(stEl) stEl.value='';
   renderRoiLogForm();
   toast('✅ 광고비 추가됨');
+}
+
+function editRoiLog(id) {
+  const log=(S.roiLogs||[]).find(l=>l.id===id); if(!log) return;
+  // 폼에 값 채우기
+  const set=(elId,val)=>{ const el=document.getElementById(elId); if(el) el.value=val||''; };
+  set('roi-new-date', log.date);
+  set('roi-new-sendtime', log.sendTime||'');
+  set('roi-send-count', log.sendCount||'');
+  set('roi-new-amount', log.amount||'');
+  set('roi-new-bid', log.bid||'all');
+  set('roi-new-chid', log.chId||'');
+  set('roi-new-staff', log.staff||'');
+  set('roi-new-status', log.sendStatus||'발송완료');
+  set('roi-new-memo', log.memo||'');
+  set('roi-new-msgcontent', log.msgContent||'');
+  // 수정 모드: 저장 버튼에 id 임시 저장
+  const saveBtn=document.getElementById('roi-save-btn');
+  if(saveBtn){ saveBtn.dataset.editId=id; saveBtn.textContent='💾 수정 저장'; saveBtn.style.background='#059669'; }
+  // 폼 상단으로 스크롤
+  document.getElementById('roi-new-date')?.scrollIntoView({behavior:'smooth',block:'center'});
+  toast('✏️ 수정 모드 - 내용 수정 후 저장하세요');
 }
 
 function deleteRoiLog(id) {
@@ -8021,7 +8044,20 @@ function addRoiLogAndSave(){
   const sendTime = document.getElementById('roi-new-sendtime')?.value||'';
   if(!date||!chId||amount<=0){ toast('⚠️ 날짜·채널·금액을 입력해주세요'); return; }
   if(!S.roiLogs) S.roiLogs=[];
-  S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime});
+
+  // 수정 모드 체크
+  const saveBtn=document.getElementById('roi-save-btn');
+  const editId=saveBtn?.dataset.editId||'';
+  if(editId){
+    const idx=S.roiLogs.findIndex(l=>l.id===editId);
+    if(idx>=0) S.roiLogs[idx]={...S.roiLogs[idx], date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime};
+    if(saveBtn){ delete saveBtn.dataset.editId; saveBtn.textContent='💾 저장'; saveBtn.style.background='#3b82f6'; }
+    toast('✅ 수정 저장됨');
+  } else {
+    S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime});
+    toast('✅ 광고비 추가됨');
+  }
+
   S.roiLogs.sort((a,b)=>b.date.localeCompare(a.date));
   autoSave(); markConfigDirty(); syncPush(false);
   const amtEl=document.getElementById('roi-new-amount'); if(amtEl) amtEl.value='';
