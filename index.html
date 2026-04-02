@@ -3765,10 +3765,16 @@ async function syncPull(){
       const del=new Set(S._deletedIds||[]);
       Object.keys(data.calls).forEach(ds=>{
         if(!S.calls[ds]) S.calls[ds]=[];
+        // 먼저 로컬에서 삭제된 ID 제거
+        S.calls[ds]=S.calls[ds].filter(c=>!del.has(c.id));
         const li=new Set((S.calls[ds]||[]).map(c=>c.id));
         (data.calls[ds]||[]).forEach(rc=>{
           if(!li.has(rc.id)&&!del.has(rc.id)) S.calls[ds].push(rc);
         });
+      });
+      // 로컬 날짜도 삭제 ID 기준으로 정리
+      Object.keys(S.calls).forEach(ds=>{
+        S.calls[ds]=(S.calls[ds]||[]).filter(c=>!del.has(c.id));
       });
     }
     // 구버전 data 키 완전 무시 (data.staff 등으로 덮어쓰기 방지)
@@ -4669,6 +4675,9 @@ function deleteCall(cid,sid,ds){
   if(pid==='history') renderHistory();
   else if(sid) renderStaffInputPage(sid);
   else renderHistory();
+  // 예약 현황 달력이 열려있으면 갱신
+  const calPage=document.getElementById('page-booking-cal');
+  if(calPage?.classList.contains('act')) renderBookingCal();
 }
 
 // ═══════════════════════════════════
@@ -5633,6 +5642,12 @@ function confirmCall(){
     }
   }
     else if(pid==='procmatrix'){ renderProcMatrix(); renderDailyProcTable(); pmInitBrPills(); }
+    else if(pid==='booking-cal'){ renderBookingCal(); }
+  }
+  // 예약 현황 달력이 백그라운드에 있어도 갱신 (bookingDate 있는 콜이면)
+  if(callData.bookingDate){
+    const calPage=document.getElementById('page-booking-cal');
+    if(calPage&&!calPage.classList.contains('act')) renderBookingCal();
   }
   // 저장 후 토스트: 신규 콜이면 "다른 지점 예약 추가" 버튼 포함
   if(!isEdit){
