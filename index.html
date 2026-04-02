@@ -2699,7 +2699,7 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
 
       <!-- 전체공지 패널: 헤더 고정 + 내용만 스크롤 -->
-      <div id="snp-teamnotice-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;min-height:0">
+      <div id="snp-teamnotice-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;overflow:hidden;height:100%">
         <div id="snp-teamnotice-header" style="background:#1e40af;flex-shrink:0">
           <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
             <input id="snp-notice-search-input" placeholder="🔍 공지 검색..." oninput="snpTeamNoticeSearch(this.value)"
@@ -2708,11 +2708,11 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
           <div id="snp-notice-br-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
         </div>
-        <div id="snp-teamnotice-items" style="flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:0"></div>
+        <div id="snp-teamnotice-items" style="overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px"></div>
       </div>
 
       <!-- 공유메모 패널: 헤더 고정 + 내용만 스크롤 -->
-      <div id="snp-teammemo-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;min-height:0">
+      <div id="snp-teammemo-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;overflow:hidden;height:100%">
         <div id="snp-teammemo-header" style="background:#1e40af;flex-shrink:0">
           <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
             <input id="snp-memo-search-input" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
@@ -2721,7 +2721,7 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
           <div id="snp-memo-staff-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
         </div>
-        <div id="snp-teammemo-items" style="flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:0"></div>
+        <div id="snp-teammemo-items" style="overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px"></div>
       </div>
     </div>
 
@@ -15309,10 +15309,22 @@ function snpSwitchTab(tab){
     if(teamnoticeList){teamnoticeList.style.display='flex';teamnoticeList.style.flexDirection='column';}
     activateTab(teamnoticeTab);
     snpRenderTeamNotice();
+    setTimeout(()=>{
+      const h=document.getElementById('snp-teamnotice-header');
+      const it=document.getElementById('snp-teamnotice-items');
+      const p=document.getElementById('snp-teamnotice-list');
+      if(h&&it&&p) it.style.height=(p.offsetHeight-h.offsetHeight)+'px';
+    },50);
   } else if(tab==='teammemo'){
     if(teammemoList){teammemoList.style.display='flex';teammemoList.style.flexDirection='column';}
     activateTab(teammemoTab);
     snpRenderTeamMemo();
+    setTimeout(()=>{
+      const h=document.getElementById('snp-teammemo-header');
+      const it=document.getElementById('snp-teammemo-items');
+      const p=document.getElementById('snp-teammemo-list');
+      if(h&&it&&p) it.style.height=(p.offsetHeight-h.offsetHeight)+'px';
+    },50);
   }
 }
 
@@ -15444,10 +15456,11 @@ function snpOpenSiMemoForm(sid, memoId){
           </select>
         </div>
         <div>
-          <div style="font-size:10px;color:#64748b;margin-bottom:2px">지점</div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">지점 <span style="color:#ef4444">*</span></div>
           <select id="snp-simemo-bid" style="width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box">
-            <option value="">없음</option>
+            <option value="">선택 필수</option>
             ${(S.branches||[]).map(b=>`<option value="${b.id}" ${(editMemo?.bid||'')===b.id?'selected':''}>${b.name}</option>`).join('')}
+            <option value="etc" ${(editMemo?.bid||'')==='etc'?'selected':''}>기타</option>
           </select>
         </div>
         <div>
@@ -16145,7 +16158,8 @@ function renderSiMemos(sid){
 function populateSimemoBranchSel(selectedBid){
   const sel=document.getElementById('simemo-bid-inp'); if(!sel) return;
   sel.innerHTML=`<option value="">지점 없음</option>`
-    +(S.branches||[]).map(b=>`<option value="${b.id}" ${b.id===selectedBid?'selected':''}>${b.name}</option>`).join('');
+    +(S.branches||[]).map(b=>`<option value="${b.id}" ${b.id===selectedBid?'selected':''}>${b.name}</option>`).join('')
+    +`<option value="etc" ${'etc'===selectedBid?'selected':''}>기타</option>`;
 }
 
 function updateSimemoStatusStyle(){
