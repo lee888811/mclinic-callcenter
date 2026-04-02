@@ -2698,7 +2698,7 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-teamnotice-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:0;display:none;flex-direction:column"></div>
-      <div id="snp-teammemo-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:0;display:none;flex-direction:column"></div>
+      <div id="snp-teammemo-list"   style="flex:1;background:#f8fafc;padding:0;display:none;flex-direction:column;overflow:hidden"></div>
     </div>
 
     <!-- 직원근무현황 미니 패널 -->
@@ -4548,8 +4548,8 @@ function renderCallEntry(c){
       ${c.outRecallDate?`<span style="font-size:20px;font-weight:600;color:var(--amber)">재콜 ${c.outRecallDate}</span>`:''}
     </div>` : '';
   const procTags=c.procs?Object.entries(c.procs).filter(([,n])=>n>0).map(([pid,n])=>{
-    const p=S.procedures.find(x=>x.id===pid);
-    return p?`<span class="ce-proc-tag">${p.name}${n>1?` ×${n}`:''}</span>`:'';
+    const name=getProcName(pid)||pid;
+    return name?`<span class="ce-proc-tag">${name}${n>1?` ×${n}`:''}</span>`:'';
   }).join(''):'';
   const stats=[];
   if(c.pttype!=='일반'){
@@ -12627,7 +12627,12 @@ function renderDailyProcTable(){
     // 하위 카테고리 포커스 중: 해당 상위 시술만 표시
     procs = allProcs.filter(p => p.id === _focusedPid);
   } else if(_selectedPids) {
-    procs = allProcs.filter(p => _selectedPids.has(p.id));
+    // 하위 키(pid:subIdx)에서도 상위 pid 추출
+    const expandedPids = new Set(_selectedPids);
+    if(_selectedSubs) _selectedSubs.forEach(key=>{
+      if(key.includes(':')) expandedPids.add(key.split(':')[0]);
+    });
+    procs = allProcs.filter(p => expandedPids.has(p.id));
   } else {
     procs = allProcs.filter(p => usedPids.has(p.id));
   }
@@ -15270,7 +15275,7 @@ function snpSwitchTab(tab){
     activateTab(teamnoticeTab);
     snpRenderTeamNotice();
   } else if(tab==='teammemo'){
-    if(teammemoList)teammemoList.style.display='flex';
+    if(teammemoList){teammemoList.style.display='flex';teammemoList.style.flexDirection='column';}
     activateTab(teammemoTab);
     snpRenderTeamMemo();
   }
@@ -15332,16 +15337,30 @@ async function snpRenderTeamMemo(){
   if(!el.dataset.initialized){
     el.dataset.initialized='1';
     el.dataset.q='';
+    el.dataset.selSid='';
   }
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  const selSid=el.dataset.selSid||'';
+  const staffBtns=activeStaff.map(s=>{
+    const act=selSid===s.id;
+    return `<button onclick="snpTeamMemoFilterStaff('${s.id}')"
+      style="padding:3px 8px;border-radius:10px;border:none;background:${act?'rgba(255,255,255,.9)':'rgba(255,255,255,.2)'};color:${act?'#1e40af':'#fff'};font-size:10px;font-weight:${act?700:500};cursor:pointer;white-space:nowrap">${s.name}</button>`;
+  }).join('');
+
   el.innerHTML=`
-    <div style="padding:8px;background:#1e40af;border-bottom:1px solid rgba(255,255,255,.2)">
-      <div style="display:flex;gap:5px">
+    <div style="background:#1e40af;flex-shrink:0">
+      <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
         <input value="${el.dataset.q||''}" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
-          style="flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
-        <button onclick="snpOpenSiMemoForm()" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+          style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
+        <button onclick="snpOpenSiMemoForm()" style="padding:3px 9px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+      </div>
+      <div style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)">
+        <button onclick="snpTeamMemoFilterStaff('')"
+          style="padding:3px 8px;border-radius:10px;border:none;background:${selSid===''?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};color:${selSid===''?'#1e40af':'rgba(255,255,255,.8)'};font-size:10px;font-weight:${selSid===''?700:500};cursor:pointer">전체</button>
+        ${staffBtns}
       </div>
     </div>
-    <div id="snp-teammemo-items" style="padding:6px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:5px">
+    <div id="snp-teammemo-items" style="padding:6px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;height:calc(100% - 76px);min-height:200px">
       <div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">⏳ 불러오는 중...</div>
     </div>`;
   if(_syncUrl){
@@ -15363,6 +15382,12 @@ function snpTeamMemoSearch(q){
   const el=document.getElementById('snp-teammemo-list'); if(!el) return;
   el.dataset.q=q;
   snpTeamMemoRenderItems(q);
+}
+
+function snpTeamMemoFilterStaff(sid){
+  const el=document.getElementById('snp-teammemo-list'); if(!el) return;
+  el.dataset.selSid=sid;
+  snpRenderTeamMemo();
 }
 
 function snpOpenSiMemoForm(sid, memoId){
@@ -15424,7 +15449,19 @@ async function snpSaveSiMemo(editSid,editMemoId){
   const date=document.getElementById('snp-simemo-date')?.value||'';
   const status=document.getElementById('snp-simemo-status')?.value||'active';
   const id=editMemoId||uid();
-  const memo={id,title,content,bid,date,status,tags:[],ts:Date.now()};
+  const now=Date.now();
+  const me=(S.staff||[]).find(s=>s.id===(_currentUser?.sid||''));
+  const editorName=me?me.name:(_currentUser?.name||'');
+  let memo;
+  if(editMemoId){
+    // 기존 메모 유지 + 수정 정보 추가
+    const orig=(_siMemoCache[sid]||[]).find(x=>x.id===id)||{};
+    memo={...orig,id,title,content,bid,date,status,tags:orig.tags||[],
+      updatedAt:now, updatedBy:editorName,
+      ts:orig.ts||now}; // 최초 작성 시간 유지
+  } else {
+    memo={id,title,content,bid,date,status,tags:[],ts:now,createdBy:editorName};
+  }
   if(!_siMemoCache[sid]) _siMemoCache[sid]=[];
   if(editMemoId){const i=_siMemoCache[sid].findIndex(x=>x.id===id);if(i>=0)_siMemoCache[sid][i]=memo;else _siMemoCache[sid].unshift(memo);}
   else _siMemoCache[sid].unshift(memo);
@@ -15464,8 +15501,11 @@ async function snpToggleSiMemoStatus(sid,memoId){
 
 function snpTeamMemoRenderItems(q){
   const el=document.getElementById('snp-teammemo-items'); if(!el) return;
+  const listEl=document.getElementById('snp-teammemo-list');
+  const selSid=listEl?.dataset.selSid||'';
   const activeStaff=(S.staff||[]).filter(s=>!s.retired);
-  const sections=activeStaff.map(s=>{
+  const targets=selSid ? activeStaff.filter(s=>s.id===selSid) : activeStaff;
+  const sections=targets.map(s=>{
     let memos=(_siMemoCache[s.id]||[]);
     if(q) memos=memos.filter(m=>`${m.title||''} ${m.content||''}`.toLowerCase().includes(q.toLowerCase()));
     if(!memos.length) return '';
@@ -15479,6 +15519,11 @@ function snpTeamMemoRenderItems(q){
         ${memos.map(m=>{
           const br=S.branches.find(b=>b.id===m.bid);
           const isDone=m.status==='done';
+          const fmtDt=ts=>ts?new Date(ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+          const metaLine=[
+            m.createdBy?`작성 ${m.createdBy}`:'',
+            m.updatedAt&&m.updatedBy?`수정 ${m.updatedBy} ${fmtDt(m.updatedAt)}`:'',
+          ].filter(Boolean).join(' · ');
           return `<div style="padding:6px 8px;background:${isDone?'#f8fafc':'#fff'};border:1px solid #e2e8f0;border-radius:6px">
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px;align-items:center">
               ${br?`<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
@@ -15492,6 +15537,7 @@ function snpTeamMemoRenderItems(q){
             </div>
             ${m.title?`<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:2px">${escHtml(m.title)}</div>`:''}
             <div style="font-size:11px;color:#64748b;line-height:1.5;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+            ${metaLine?`<div style="font-size:10px;color:#94a3b8;margin-top:4px">${metaLine}</div>`:''}
           </div>`;
         }).join('')}
       </div>
@@ -16117,7 +16163,17 @@ async function saveSiMemo(){
   const date=document.getElementById('simemo-date-inp')?.value||'';
   const status=document.querySelector('input[name="simemo_status"]:checked')?.value||'active';
   const id=_siMemoEditId||uid();
-  const memo={id,title,content,tags,bid,date,status,ts:Date.now()};
+  const now2=Date.now();
+  const me2=(S.staff||[]).find(s=>s.id===(_currentUser?.sid||''));
+  const editorName2=me2?me2.name:(_currentUser?.name||'');
+  let memo;
+  if(_siMemoEditId){
+    const orig2=(_siMemoCache[sid]||[]).find(x=>x.id===id)||{};
+    memo={...orig2,id,title,content,tags,bid,date,status,
+      updatedAt:now2,updatedBy:editorName2,ts:orig2.ts||now2};
+  } else {
+    memo={id,title,content,tags,bid,date,status,ts:now2,createdBy:editorName2};
+  }
   if(!_siMemoCache[sid]) _siMemoCache[sid]=[];
   if(_siMemoEditId){ const i=_siMemoCache[sid].findIndex(x=>x.id===id); if(i>=0) _siMemoCache[sid][i]=memo; else _siMemoCache[sid].unshift(memo); }
   else _siMemoCache[sid].unshift(memo);
