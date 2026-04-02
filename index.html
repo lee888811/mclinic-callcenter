@@ -15963,17 +15963,23 @@ function setBookingCalPeriod(period, btn){
 }
 
 function getBookingCalDates(){
-  const today=todayStr();
+  const today=new Date(todayStr()+'T00:00:00');
   if(_bcalPeriod==='week'){
-    const end=new Date(today+'T00:00:00');
-    end.setDate(end.getDate()+6);
-    return {from:today, to:localDateStr(end)};
+    // 이번 주 월요일 ~ 일요일
+    const dow=today.getDay(); // 0=일, 1=월...
+    const monday=new Date(today);
+    monday.setDate(today.getDate() - (dow===0?6:dow-1));
+    const sunday=new Date(monday);
+    sunday.setDate(monday.getDate()+6);
+    return {from:localDateStr(monday), to:localDateStr(sunday)};
   } else if(_bcalPeriod==='month'){
-    const end=new Date(today+'T00:00:00');
-    end.setDate(end.getDate()+29);
-    return {from:today, to:localDateStr(end)};
+    // 이번 달 1일 ~ 말일
+    const first=new Date(today.getFullYear(), today.getMonth(), 1);
+    const last=new Date(today.getFullYear(), today.getMonth()+1, 0);
+    return {from:localDateStr(first), to:localDateStr(last)};
   } else {
-    return {from:document.getElementById('bcal-from')?.value||today, to:document.getElementById('bcal-to')?.value||today};
+    const t=todayStr();
+    return {from:document.getElementById('bcal-from')?.value||t, to:document.getElementById('bcal-to')?.value||t};
   }
 }
 
@@ -15989,7 +15995,8 @@ function renderBookingCal(){
   const DAY_KO=['일','월','화','수','목','금','토'];
   function fmtDate(ds){
     const d=new Date(ds+'T00:00:00');
-    return {label:`${d.getMonth()+1}/${d.getDate()}`,day:DAY_KO[d.getDay()],isSun:d.getDay()===0,isSat:d.getDay()===6};
+    const dow=d.getDay();
+    return {label:`${d.getMonth()+1}/${d.getDate()}`,day:DAY_KO[dow],isSun:dow===0,isSat:dow===6,isToday:ds===todayStr()};
   }
 
   // 예약 데이터 수집
@@ -16030,8 +16037,25 @@ function renderBookingCal(){
   const tdB='padding:5px 7px;border:1px solid var(--border);font-size:11px;vertical-align:top;width:14.28%';
 
   // 7일씩 주별로 쪼개기
+  // 월요일 기준으로 주 분할
+  const DAY_KO_MON=['월','화','수','목','금','토','일']; // 월요일 시작
   const weeks=[];
-  for(let i=0;i<dates.length;i+=7) weeks.push(dates.slice(i,i+7));
+  if(dates.length>0){
+    // 첫 날짜의 요일(월=0, 일=6)
+    const firstD=new Date(dates[0]+'T00:00:00');
+    const firstDow=firstD.getDay(); // 0=일,1=월...6=토
+    const firstMonOffset=firstDow===0?6:firstDow-1; // 월요일까지 앞으로 채울 빈칸 수
+    let week=Array(firstMonOffset).fill(null); // 앞 빈칸
+    for(const ds of dates){
+      week.push(ds);
+      const d=new Date(ds+'T00:00:00');
+      if(d.getDay()===0){ // 일요일이면 주 마감
+        weeks.push(week);
+        week=[];
+      }
+    }
+    if(week.length>0) weeks.push(week); // 마지막 미완성 주
+  }
 
   function makeCell(ds, bgStyle){
     const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
@@ -16069,19 +16093,22 @@ function renderBookingCal(){
   }
 
   const tablesHtml=weeks.map((week,wi)=>{
-    const wFrom=week[0], wTo=week[week.length-1];
-    const wCnt=week.reduce((a,ds)=>a+(byDate[ds]?.length||0),0);
+    const nonNullDates=week.filter(Boolean);
+    const wFrom=nonNullDates[0]||'', wTo=nonNullDates[nonNullDates.length-1]||'';
+    const wCnt=nonNullDates.reduce((a,ds)=>a+(byDate[ds]?.length||0),0);
 
     while(week.length<7) week.push(null);
 
     const headers=week.map(ds=>{
       if(!ds) return `<th style="${thB}"></th>`;
-      const {label,day,isSun,isSat}=fmtDate(ds);
+      const {label,day,isSun,isSat,isToday}=fmtDate(ds);
       const clr=isSun?'#ef4444':isSat?'#2563eb':'var(--text)';
-      const bg=isSun?'background:#fff5f5':isSat?'background:#eff6ff':'';
+      const bg=isToday?'background:#fef9c3':isSun?'background:#fff5f5':isSat?'background:#eff6ff':'';
+      const todayMark=isToday?'<div style="font-size:9px;color:#d97706;font-weight:800">오늘</div>':'';
       const cnt=byDate[ds]?.length||0;
       return `<th style="${thB};${bg};color:${clr}">
-        <div>${label}</div>
+        ${todayMark}
+        <div style="font-weight:${isToday?900:700}">${label}</div>
         <div style="font-size:10px;font-weight:500;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
         ${cnt>0?`<div style="margin-top:2px;font-size:10px;font-weight:800;color:#2563eb;background:#dbeafe;padding:1px 5px;border-radius:8px;display:inline-block">${cnt}</div>`:''}
       </th>`;
@@ -16089,8 +16116,8 @@ function renderBookingCal(){
 
     const cells=week.map(ds=>{
       if(!ds) return `<td style="${tdB};background:var(--s1)"></td>`;
-      const {isSun,isSat}=fmtDate(ds);
-      const bg=isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
+      const {isSun,isSat,isToday}=fmtDate(ds);
+      const bg=isToday?'background:#fefce8;':isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
       return makeCell(ds, bg);
     }).join('');
 
