@@ -988,6 +988,11 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
       <!-- 직원 필터 -->
       <div id="team-memo-staff-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <!-- 지점 필터 -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--text3)">지점</span>
+        <div id="team-memo-branch-filter" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+      </div>
       <!-- 날짜 필터 -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;color:var(--text3)">날짜</span>
@@ -1021,6 +1026,11 @@ td:first-child{text-align:left;padding-left:13px}
         <div style="margin-left:4px;display:flex;gap:5px;flex-wrap:wrap" id="smemo-branch-filter">
           <button onclick="setSharedMemoBranch('')" id="smemo-br-all" style="padding:4px 10px;border-radius:16px;border:1.5px solid #2563eb;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">전체 지점</button>
         </div>
+      </div>
+      <!-- 작성자 필터 -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--text3)">작성자</span>
+        <div id="smemo-author-filter" style="display:flex;flex-wrap:wrap;gap:5px"></div>
       </div>
       <!-- 날짜 필터 -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -4579,11 +4589,13 @@ function renderCallEntry(c){
         ${b?`<span class="ce-branch" style="background:${bc}">${b.name}점</span>`:''}
         ${c.groupId?`<span style="font-size:18px;font-weight:700;background:#fef9c3;color:#854d0e;padding:1px 8px;border-radius:8px;border:1px solid #fde68a">🔗 ${c.groupIdx+1}/${c.groupTotal} 동시예약</span>`:''}
         ${typeLabel}
+        ${c.sid?`<span style="font-size:18px;color:var(--text3)">· ${(S.staff.find(x=>x.id===c.sid)||{}).name||''}</span>`:''}
         <span class="ce-time">${c.time||''}</span>
       </div>
       ${procTags?`<div class="ce-procs">${procTags}</div>`:''}
       ${outInfo}
       ${stats.length?`<div class="ce-stats">${stats.map(s=>`<span class="ce-stat">${s}</span>`).join('')}</div>`:''}
+      ${c.bookingType?`<span style="font-size:18px;color:${c.bookingType==='당일'?'#059669':'#2563eb'};font-weight:600;background:${c.bookingType==='당일'?'rgba(5,150,105,.08)':'rgba(37,99,235,.08)'};padding:1px 7px;border-radius:7px">${c.bookingType==='당일'?'⚡ 당일예약':'📅 추후예약'}</span>`:''}
       ${c.memo?`<div style="font-size:22px;color:var(--text2);margin-top:3px">📝 ${c.memo}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-self:flex-start;display:${(_currentUser?.sid===c.sid||hasPermission('admin'))?'flex':'none'}">
@@ -8795,6 +8807,7 @@ function getNoapptRange(){
 // ══════════════════════════════════════
 let _sharedMemoFilter = 'all'; // 'all' | 'active'
 let _sharedMemoBranch = '';    // '' = 전체
+let _sharedMemoAuthor = '';    // '' = 전체
 
 function getSharedMemos(){
   try{ return JSON.parse(localStorage.getItem('shared_memos')||'[]'); }catch(e){ return []; }
@@ -8899,6 +8912,7 @@ function renderSidebarMemoList(){ renderAllStaffSharedMemos(); }
 
 // ── 공유 메모장 (직원 개인 메모 모아보기) ──
 let _teamMemoSelectedStaff = new Set();
+let _teamMemoBranch = ''; // '' = 전체
 
 async function renderTeamMemoPage(){
   const filterEl = document.getElementById('team-memo-staff-filter');
@@ -8909,6 +8923,9 @@ async function renderTeamMemoPage(){
       ...activeStaff.map(s=>`<button onclick="tmStaffFilter('${s.id}')" id="tm-staff-${s.id}" style="padding:4px 12px;border-radius:14px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">${s.name}</button>`)
     ].join('');
   }
+  // 지점 필터 렌더
+  renderTeamMemoBranchFilter();
+
   const el = document.getElementById('team-memo-list');
   if(el) el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">⏳ 불러오는 중...</div>';
   if(_syncUrl){
@@ -8923,6 +8940,18 @@ async function renderTeamMemoPage(){
       }
     }catch(e){}
   }
+  renderTeamMemoList();
+}
+
+function renderTeamMemoBranchFilter(){
+  const el=document.getElementById('team-memo-branch-filter'); if(!el) return;
+  el.innerHTML=`<button onclick="tmBranchFilter('')" style="padding:4px 10px;border-radius:14px;border:1.5px solid ${_teamMemoBranch===''?'var(--accent)':'var(--border)'};background:${_teamMemoBranch===''?'var(--accent)':'var(--s2)'};color:${_teamMemoBranch===''?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
+    activeBranches().map(b=>`<button onclick="tmBranchFilter('${b.id}')" style="padding:4px 10px;border-radius:14px;border:1.5px solid ${_teamMemoBranch===b.id?bclr(b.id):'var(--border)'};background:${_teamMemoBranch===b.id?bclr(b.id):'var(--s2)'};color:${_teamMemoBranch===b.id?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${b.name}</button>`).join('');
+}
+
+function tmBranchFilter(bid){
+  _teamMemoBranch=bid;
+  renderTeamMemoBranchFilter();
   renderTeamMemoList();
 }
 
@@ -8959,6 +8988,7 @@ function renderTeamMemoList(){
     if(q) memos=memos.filter(m=>`${m.title||''} ${m.content||''} ${(m.tags||[]).join(' ')}`.toLowerCase().includes(q));
     if(dateFrom) memos=memos.filter(m=>m.ts>=new Date(dateFrom).getTime());
     if(dateTo) memos=memos.filter(m=>m.ts<=new Date(dateTo+'T23:59:59').getTime());
+    if(_teamMemoBranch) memos=memos.filter(m=>(m.bid||'')=== _teamMemoBranch);
     if(!memos.length) return '';
     return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
@@ -8985,6 +9015,7 @@ function renderTeamMemoList(){
 
 function renderSharedMemoPage(){
   renderSharedMemoBranchFilter();
+  renderSharedMemoAuthorFilter();
   renderSharedMemoList();
 }
 
@@ -8995,6 +9026,20 @@ function renderSharedMemoBranchFilter(){
     style="padding:4px 10px;border-radius:16px;border:1.5px solid ${_sharedMemoBranch===''?'#2563eb':'var(--border)'};background:${_sharedMemoBranch===''?'#2563eb':'var(--s2)'};color:${_sharedMemoBranch===''?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체 지점</button>`+
     branches.map(b=>`<button onclick="setSharedMemoBranch('${b.id}')"
       style="padding:4px 10px;border-radius:16px;border:1.5px solid ${_sharedMemoBranch===b.id?bclr(b.id):'var(--border)'};background:${_sharedMemoBranch===b.id?bclr(b.id):'var(--s2)'};color:${_sharedMemoBranch===b.id?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${b.name}</button>`).join('');
+}
+
+function renderSharedMemoAuthorFilter(){
+  const el=document.getElementById('smemo-author-filter'); if(!el) return;
+  const memos=getSharedMemos();
+  const authors=[...new Set(memos.map(m=>m.author||'').filter(Boolean))].sort();
+  el.innerHTML=`<button onclick="setSharedMemoAuthor('')" style="padding:4px 10px;border-radius:16px;border:1.5px solid ${_sharedMemoAuthor===''?'#2563eb':'var(--border)'};background:${_sharedMemoAuthor===''?'#2563eb':'var(--s2)'};color:${_sharedMemoAuthor===''?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
+    authors.map(a=>`<button onclick="setSharedMemoAuthor('${a}')" style="padding:4px 10px;border-radius:16px;border:1.5px solid ${_sharedMemoAuthor===a?'#7c3aed':'var(--border)'};background:${_sharedMemoAuthor===a?'#7c3aed':'var(--s2)'};color:${_sharedMemoAuthor===a?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">👤 ${a}</button>`).join('');
+}
+
+function setSharedMemoAuthor(author){
+  _sharedMemoAuthor=author;
+  renderSharedMemoAuthorFilter();
+  renderSharedMemoList();
 }
 
 function setSharedMemoFilter(f){
@@ -9017,6 +9062,7 @@ function renderSharedMemoList(){
   const el=document.getElementById('shared-memo-list'); if(!el) return;
   let memos=getSharedMemos();
   if(_sharedMemoBranch) memos=memos.filter(m=>m.bid===_sharedMemoBranch);
+  if(_sharedMemoAuthor) memos=memos.filter(m=>(m.author||'')=== _sharedMemoAuthor);
   if(_sharedMemoFilter==='active') memos=memos.filter(m=>m.status!=='done');
   // 날짜 필터
   const dateFrom=document.getElementById('smemo-date-from')?.value;
@@ -9864,6 +9910,46 @@ function renderClosingReportAll(allCalls, dateLabelStr){
     topProcs.forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name}  ${p.n}건  (신환 ${p.shin} · 구환 ${p.gu} · 잔여 ${p.rem||0})\n`; });
     txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
   }
+
+  // 지점별 상세 추가
+  const branchDetails = activeBranches().map(b=>{
+    const bc=allCalls.filter(c=>c.bid===b.id);
+    if(!bc.length) return null;
+    const bShin=bc.filter(c=>c.pttype==='신환').length;
+    const bGu=bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+    const bRem=bc.filter(c=>c.pttype==='잔여시술').length;
+    const bGen=bc.filter(c=>c.pttype==='일반'||c.pttype==='일반문의').length;
+    const bCancel=bc.filter(c=>c.pttype==='예약취소').length;
+    const bNoappt=bc.filter(c=>c.pttype==='미예약').length;
+    const bPhone=bc.filter(c=>c.medium!=='chat');
+    const bChat=bc.filter(c=>c.medium==='chat');
+    const bIncall=bPhone.filter(c=>c.type==='in').length;
+    const bCb=bPhone.filter(c=>c.type==='cb').length;
+    const bShinToday=bc.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+    const bShinFuture=bc.filter(c=>c.pttype==='신환'&&(+c.today||0)>0&&c.bookingType==='추후').length;
+    const bGuToday=bc.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType!=='추후').length;
+    const bGuFuture=bc.filter(c=>(c.pttype==='구환(신규상담)'||c.pttype==='구환')&&(+c.today||0)>0&&c.bookingType==='추후').length;
+    // 예약 시술 TOP5
+    const bProcMap={};
+    bc.forEach(c=>{ Object.entries(c.procs||{}).forEach(([pid,n])=>{ if(n>0) bProcMap[pid]=(bProcMap[pid]||0)+n; }); });
+    const bTopProcs=Object.entries(bProcMap).sort((a,b2)=>b2[1]-a[1]).slice(0,5).map(([pid,n])=>{
+      const p=S.procedures.find(x=>x.id===pid); return p?`${p.name} ${n}건`:'';
+    }).filter(Boolean);
+    let s=`\n【${b.name}점】 총 ${bc.length}건 (전화 ${bPhone.length} · 채팅 ${bChat.length})\n`;
+    s+=`  신환 ${bShin}건${bShin>0?` (당일 ${bShinToday}·추후 ${bShinFuture})`:''}  구환 ${bGu}건${bGu>0?` (당일 ${bGuToday}·추후 ${bGuFuture})`:''}\n`;
+    s+=`  잔여 ${bRem}건  일반 ${bGen}건`;
+    if(bCancel) s+=`  취소 ${bCancel}건`;
+    if(bNoappt) s+=`  미예약 ${bNoappt}건`;
+    s+='\n';
+    if(bTopProcs.length) s+=`  시술: ${bTopProcs.join(' · ')}\n`;
+    return s;
+  }).filter(Boolean);
+
+  if(branchDetails.length){
+    txt+='\n'+'━'.repeat(24)+'\n📌 지점별 상세\n';
+    txt+=branchDetails.join('');
+  }
+
   txt+='\n'+'━'.repeat(24)+'\n이상 보고드립니다. 🙏';
 
   container.innerHTML=`
@@ -11981,7 +12067,6 @@ function applyDpProcPreset(presetId){
   const presets = getDpProcPresets();
   const p = presets.find(x=>x.id===presetId);
   if(!p) return;
-  // pids가 하위 키("pid:subIdx") 포함일 수 있으므로 상위 pid 추출
   const upperPids = new Set();
   const subKeys = new Set();
   (p.pids||[]).forEach(key=>{
@@ -11994,6 +12079,7 @@ function applyDpProcPreset(presetId){
   });
   _selectedPids = upperPids.size>0 ? upperPids : null;
   _selectedSubs = subKeys.size>0 ? subKeys : null;
+  _focusedPid = null;
   _activePresetAliases = {};
   _activePresetGroups = p.rowGroups || p.groups || {};
   renderDailyProcTable();
@@ -12530,7 +12616,11 @@ function renderDailyProcTable(){
     ? activeBranches().filter(b => _selectedBids.has(b.id))
     : activeBranches();
 
-  if(!dates.length||!usedPids.size){
+  if(!dates.length){
+    el.innerHTML='<div style="color:var(--text3);padding:16px;font-size:12px">해당 기간 시술 예약 데이터가 없습니다.</div>';
+    return;
+  }
+  if(!usedPids.size && !_selectedPids){
     el.innerHTML='<div style="color:var(--text3);padding:16px;font-size:12px">해당 기간 시술 예약 데이터가 없습니다.</div>';
     return;
   }
