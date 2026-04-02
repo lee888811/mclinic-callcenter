@@ -15310,19 +15310,41 @@ function snpSwitchTab(tab){
     activateTab(teamnoticeTab);
     snpRenderTeamNotice();
     setTimeout(()=>{
-      const h=document.getElementById('snp-teamnotice-header');
+      const panel=document.getElementById('side-notes-panel');
+      const blueHdr=panel?.children[1]; // 파란 헤더 div
+      const innerHdr=document.getElementById('snp-teamnotice-header');
       const it=document.getElementById('snp-teamnotice-items');
-      if(h&&it) it.style.top=h.offsetHeight+'px';
-    },30);
+      if(panel&&blueHdr&&innerHdr&&it){
+        const totalH=panel.offsetHeight;
+        const blueH=blueHdr.offsetHeight;
+        const innerH=innerHdr.offsetHeight;
+        it.style.position='absolute';
+        it.style.top=innerH+'px';
+        it.style.left='0'; it.style.right='0';
+        it.style.height=(totalH-blueH-innerH)+'px';
+        it.style.overflowY='auto';
+      }
+    },50);
   } else if(tab==='teammemo'){
     if(teammemoList){teammemoList.style.display='flex';teammemoList.style.flexDirection='column';}
     activateTab(teammemoTab);
     snpRenderTeamMemo();
     setTimeout(()=>{
-      const h=document.getElementById('snp-teammemo-header');
+      const panel=document.getElementById('side-notes-panel');
+      const blueHdr=panel?.children[1];
+      const innerHdr=document.getElementById('snp-teammemo-header');
       const it=document.getElementById('snp-teammemo-items');
-      if(h&&it) it.style.top=h.offsetHeight+'px';
-    },30);
+      if(panel&&blueHdr&&innerHdr&&it){
+        const totalH=panel.offsetHeight;
+        const blueH=blueHdr.offsetHeight;
+        const innerH=innerHdr.offsetHeight;
+        it.style.position='absolute';
+        it.style.top=innerH+'px';
+        it.style.left='0'; it.style.right='0';
+        it.style.height=(totalH-blueH-innerH)+'px';
+        it.style.overflowY='auto';
+      }
+    },50);
   }
 }
 
