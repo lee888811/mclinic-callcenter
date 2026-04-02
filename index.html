@@ -837,18 +837,10 @@ td:first-child{text-align:left;padding-left:13px}
           <span style="font-size:12px;font-weight:700;color:#0f172a;min-width:30px">지점</span>
           <div id="bcal-branch-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
         </div>
-        <!-- 시술 (카테고리 → 하위시술 + 검색) -->
-        <div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap">
-          <span style="font-size:12px;font-weight:700;color:#0f172a;min-width:30px;padding-top:3px">시술</span>
-          <div style="flex:1;min-width:0">
-            <!-- 검색 -->
-            <input id="bcal-proc-search" type="text" placeholder="🔍 시술명 검색..." oninput="renderBcalProcPills()"
-              style="width:100%;max-width:220px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px;margin-bottom:6px;box-sizing:border-box">
-            <!-- 상위 카테고리 row -->
-            <div id="bcal-cat-pills" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px"></div>
-            <!-- 하위 시술 row -->
-            <div id="bcal-proc-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
-          </div>
+        <!-- 시술 (울쎄라·써마지·세르프 고정) -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#0f172a;min-width:30px">시술</span>
+          <div id="bcal-proc-pills" style="display:flex;gap:5px;flex-wrap:wrap"></div>
         </div>
       </div>
       <!-- 달력 본체 -->
@@ -10470,7 +10462,8 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
 ${posVocs.length ? `  😊 긍정 (${posVocs.length}건)\n${posVocs.map(v=>`    · ${v.date} ${v.content}${v.procs?.length?` [${v.procs.map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?.name||pid;}).join(', ')}]`:''}`).join('\n')}` : ''}${posVocs.length&&negVocs.length?'\n':''}${negVocs.length ? `  😤 컴플레인 (${negVocs.length}건)\n${negVocs.map(v=>`    · ${v.date} ${v.content}${v.procs?.length?` [${v.procs.map(pid=>{const p=S.procedures.find(x=>x.id===pid);return p?.name||pid;}).join(', ')}]`:''} [${v.status}]`).join('\n')}` : ''}` : '';
 
   const reportText=
-`${dateStr}
+`🏥 미클리닉 ${branch.name}점 일일 보고
+${dateStr}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 전체 상담 현황
@@ -15885,12 +15878,8 @@ let _bcalSelectedPids=new Set(); // 빈 Set = 전체
 function initBookingCalPage(){
   // 지점 pill
   const brWrap=document.getElementById('bcal-branch-pills');
-  if(brWrap&&brWrap.children.length===0){
-    renderBcalBranchPills();
-  }
-  // 카테고리 pill
-  renderBcalCatPills();
-  // 시술 pill
+  if(brWrap&&brWrap.children.length===0) renderBcalBranchPills();
+  // 시술 pill (고정 3개)
   renderBcalProcPills();
   renderBookingCal();
 }
@@ -15920,76 +15909,48 @@ function toggleBcalBranch(bid){
   renderBookingCal();
 }
 
-function renderBcalCatPills(){
-  const wrap=document.getElementById('bcal-cat-pills'); if(!wrap) return;
-  const cats=[...new Set((S.procedures||[]).map(p=>p.cat).filter(Boolean))];
-  wrap.innerHTML=`<button onclick="bcalSelectCat('',this)"
-    style="padding:3px 10px;border-radius:10px;border:1.5px solid ${_bcalSelectedCat===''?'#475569':'var(--border)'};background:${_bcalSelectedCat===''?'#475569':'var(--s2)'};color:${_bcalSelectedCat===''?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
-    cats.map(cat=>{
-      const act=_bcalSelectedCat===cat;
-      return `<button onclick="bcalSelectCat('${cat}',this)"
-        style="padding:3px 10px;border-radius:10px;border:1.5px solid ${act?'#334155':'var(--border)'};background:${act?'#334155':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${cat}</button>`;
+function renderBcalProcPills(){
+  const wrap=document.getElementById('bcal-proc-pills'); if(!wrap) return;
+  const FIXED=['울쎄라','써마지','세르프'];
+  const COLORS={'울쎄라':'#7c3aed','써마지':'#dc2626','세르프':'#2563eb'};
+
+  function getKeysForName(name){
+    const keys=[];
+    (S.procedures||[]).forEach(p=>{
+      if((p.name||'').includes(name)&&!p.subs?.length) keys.push(p.id);
+      (p.subs||[]).forEach((s,i)=>{ if((s.name||'').includes(name)) keys.push(p.id+':'+i); });
+    });
+    return keys;
+  }
+
+  wrap.innerHTML=`<button onclick="bcalClearProcs()" style="padding:3px 10px;border-radius:10px;border:1.5px solid ${_bcalSelectedPids.size===0?'var(--accent)':'var(--border)'};background:${_bcalSelectedPids.size===0?'var(--accent)':'var(--s2)'};color:${_bcalSelectedPids.size===0?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">전체</button>`+
+    FIXED.map(name=>{
+      const keys=getKeysForName(name);
+      const act=keys.length>0&&keys.some(k=>_bcalSelectedPids.has(k));
+      const clr=COLORS[name]||'var(--accent)';
+      return `<button onclick="bcalSelectFixedProc('${name}')" style="padding:3px 12px;border-radius:10px;border:1.5px solid ${act?clr:'var(--border)'};background:${act?clr:'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer">${name}</button>`;
     }).join('');
 }
 
-function bcalSelectCat(cat){
-  _bcalSelectedCat=cat;
-  renderBcalCatPills();
-  renderBcalProcPills();
-}
-
-function renderBcalProcPills(){
-  const wrap=document.getElementById('bcal-proc-pills'); if(!wrap) return;
-  const q=(document.getElementById('bcal-proc-search')?.value||'').toLowerCase().trim();
-  let procs=S.procedures||[];
-  // 카테고리 필터
-  if(_bcalSelectedCat) procs=procs.filter(p=>p.cat===_bcalSelectedCat);
-  // 검색 필터
-  if(q) procs=procs.filter(p=>{
-    if((p.name||'').toLowerCase().includes(q)) return true;
-    if((p.subs||[]).some(s=>(s.name||'').toLowerCase().includes(q))) return true;
-    return false;
-  });
-
-  if(!procs.length){wrap.innerHTML='<span style="font-size:11px;color:var(--text3)">검색 결과 없음</span>';return;}
-
-  let html='';
-  procs.forEach(p=>{
-    // 상위 시술 pill (subs 없으면 직접 선택)
-    const hasS=p.subs&&p.subs.length>0;
-    if(!hasS){
-      const act=_bcalSelectedPids.has(p.id);
-      html+=`<button onclick="toggleBcalProc('${p.id}')"
-        style="padding:3px 10px;border-radius:10px;border:1.5px solid ${act?'var(--accent)':'var(--border)'};background:${act?'var(--accent)':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${p.icon||''}${p.name}</button>`;
-    } else {
-      // 상위 레이블 (선택 불가, 구분용)
-      const filteredSubs=q
-        ? p.subs.map((s,i)=>({s,i})).filter(({s})=>(s.name||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q))
-        : p.subs.map((s,i)=>({s,i}));
-      if(!filteredSubs.length) return;
-      html+=`<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:3px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);padding:2px 7px;background:var(--s2);border-radius:6px;border:1px solid var(--border)">${p.icon||''}${p.name}</span>`;
-      filteredSubs.forEach(({s,i})=>{
-        const key=`${p.id}:${i}`;
-        const act=_bcalSelectedPids.has(key);
-        html+=`<button onclick="toggleBcalProc('${key}')"
-          style="padding:2px 9px;border-radius:10px;border:1.5px solid ${act?'var(--accent)':'var(--border)'};background:${act?'var(--accent)':'var(--s2)'};color:${act?'#fff':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer">${s.icon||''}${s.name}</button>`;
-      });
-      html+=`</div>`;
-    }
-  });
-  wrap.innerHTML=html||'<span style="font-size:11px;color:var(--text3)">시술 없음</span>';
-}
-
-function toggleBcalProc(pid){
-  if(!pid){ _bcalSelectedPids.clear(); }
-  else {
-    if(_bcalSelectedPids.has(pid)) _bcalSelectedPids.delete(pid);
-    else _bcalSelectedPids.add(pid);
-  }
+function bcalClearProcs(){
+  _bcalSelectedPids.clear();
   renderBcalProcPills();
   renderBookingCal();
 }
+
+function bcalSelectFixedProc(name){
+  const keys=[];
+  (S.procedures||[]).forEach(p=>{
+    if((p.name||'').includes(name)&&!p.subs?.length) keys.push(p.id);
+    (p.subs||[]).forEach((s,i)=>{ if((s.name||'').includes(name)) keys.push(p.id+':'+i); });
+  });
+  const allSelected=keys.length>0&&keys.every(k=>_bcalSelectedPids.has(k));
+  if(allSelected){ keys.forEach(k=>_bcalSelectedPids.delete(k)); }
+  else { keys.forEach(k=>_bcalSelectedPids.add(k)); }
+  renderBcalProcPills();
+  renderBookingCal();
+}
+
 
 function setBookingCalPeriod(period, btn){
   _bcalPeriod=period;
@@ -16072,21 +16033,45 @@ function renderBookingCal(){
   const weeks=[];
   for(let i=0;i<dates.length;i+=7) weeks.push(dates.slice(i,i+7));
 
-  function makeCard(b){
-    const bc=b.bid?bclr(b.bid):'#64748b';
-    const timeStr=b.time?`<span style="font-size:10px;color:#7c3aed;font-weight:700;font-family:'DM Mono',monospace">${b.time} </span>`:'';
-    return `<div style="background:#fff;border:1px solid ${bc}33;border-left:3px solid ${bc};border-radius:6px;padding:4px 6px;margin-bottom:3px">
-      <div>${timeStr}${b.brName?`<span style="font-size:9px;font-weight:700;color:${bc}">${b.brName}</span>`:''}</div>
-      <div style="font-size:10px;color:var(--text);font-weight:600">${b.procName}</div>
-      <div style="font-size:9px;color:var(--text3)">${b.pttype||''}</div>
-    </div>`;
+  function makeCell(ds, bgStyle){
+    const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    if(!items.length) return `<td style="${tdB};${bgStyle}text-align:center;color:var(--text3);font-size:11px">-</td>`;
+
+    // 지점 순서로 그룹핑 (activeBranches 순서 기준)
+    const brOrder=activeBranches().map(b=>b.id);
+    const byBranch={};
+    items.forEach(item=>{
+      const bid=item.bid||'_none';
+      if(!byBranch[bid]) byBranch[bid]=[];
+      byBranch[bid].push(item);
+    });
+    // 지점 순서대로 정렬
+    const orderedBids=[...brOrder.filter(bid=>byBranch[bid]), ...Object.keys(byBranch).filter(bid=>!brOrder.includes(bid))];
+
+    const html=orderedBids.map(bid=>{
+      const brItems=byBranch[bid];
+      const bc=bid!=='_none'?bclr(bid):'#64748b';
+      const brName=brItems[0]?.brName||'';
+      const rows=brItems.map(b=>{
+        const timeStr=b.time?`<span style="font-size:10px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
+        return `<div style="font-size:10px;padding:2px 0;border-bottom:1px solid ${bc}22;line-height:1.4">
+          ${timeStr}<span style="font-weight:600;color:var(--text)">${b.procName}</span>
+          <span style="color:var(--text3);font-size:9px"> ${b.pttype||''}</span>
+        </div>`;
+      }).join('');
+      return `<div style="background:#fff;border:1px solid ${bc}33;border-left:3px solid ${bc};border-radius:6px;padding:5px 7px;margin-bottom:4px">
+        <div style="font-size:10px;font-weight:800;color:${bc};margin-bottom:3px">${brName}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+
+    return `<td style="${tdB};${bgStyle}">${html}</td>`;
   }
 
   const tablesHtml=weeks.map((week,wi)=>{
     const wFrom=week[0], wTo=week[week.length-1];
     const wCnt=week.reduce((a,ds)=>a+(byDate[ds]?.length||0),0);
 
-    // 7칸 맞추기 (마지막 주가 7일 미만일 경우 빈 칸)
     while(week.length<7) week.push(null);
 
     const headers=week.map(ds=>{
@@ -16104,11 +16089,9 @@ function renderBookingCal(){
 
     const cells=week.map(ds=>{
       if(!ds) return `<td style="${tdB};background:var(--s1)"></td>`;
-      const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
       const {isSun,isSat}=fmtDate(ds);
       const bg=isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
-      if(!items.length) return `<td style="${tdB};${bg}text-align:center;color:var(--text3)">-</td>`;
-      return `<td style="${tdB};${bg}">${items.map(makeCard).join('')}</td>`;
+      return makeCell(ds, bg);
     }).join('');
 
     return `<div style="margin-bottom:16px">
