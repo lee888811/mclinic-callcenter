@@ -712,16 +712,25 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- ROI 카드 -->
       <div id="roi-cards" style="margin-bottom:24px"></div>
 
+      <!-- 💰 월별 광고비 현황 (CPL 위) -->
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          <div class="slbl" style="margin:0">💰 월별 광고비 현황</div>
+          <span style="font-size:12px;color:var(--text3)">입력된 광고비 기준 · 알뜰문자 충전 참고용</span>
+        </div>
+        <div id="roi-monthly-summary"></div>
+      </div>
+
       <!-- 채널별 비교 차트 -->
       <div class="slbl" style="margin-bottom:10px">📊 채널별 CPL 비교 (신환 1명 획득 비용)</div>
       <div id="roi-cpl-chart" style="margin-bottom:24px"></div>
 
-      <!-- 월별 ROI 추이 -->
+      <!-- 일별 신환 추이 + 광고 발송일 표시 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <div class="slbl" style="margin:0">📈 월별 광고비 vs 신환 추이</div>
+        <div class="slbl" style="margin:0">📈 일별 신환 추이 (광고 발송일 표시)</div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto">
-          <button class="period-btn" id="roi-trend-btn-1" onclick="setRoiTrendPeriod(1,this)">이번달</button>
-          <button class="period-btn act" id="roi-trend-btn-3" onclick="setRoiTrendPeriod(3,this)">3개월</button>
+          <button class="period-btn act" id="roi-trend-btn-1" onclick="setRoiTrendPeriod(1,this)">이번달</button>
+          <button class="period-btn" id="roi-trend-btn-3" onclick="setRoiTrendPeriod(3,this)">3개월</button>
           <button class="period-btn" id="roi-trend-btn-6" onclick="setRoiTrendPeriod(6,this)">6개월</button>
           <button class="period-btn" id="roi-trend-btn-12" onclick="setRoiTrendPeriod(12,this)">12개월</button>
           <button class="period-btn" id="roi-trend-btn-custom" onclick="setRoiTrendPeriod('custom',this)">직접선택</button>
@@ -8316,16 +8325,6 @@ function renderRoi() {
               <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;text-align:center">
                 <button onclick="openRoiAdCostModalForCh('${s.ch.id}')" style="width:100%;padding:5px 10px;border-radius:6px;border:1px solid var(--accent);background:rgba(37,99,235,.06);color:var(--accent);font-size:22px;font-weight:700;cursor:pointer">💸 광고비 입력하기</button>
               </div>
-              ${s.total>0?`
-              <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
-                <div style="font-size:10px;color:var(--text3);margin-bottom:4px">📊 콜→예약 전환율 (광고비 무관)</div>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <div style="flex:1;height:4px;background:var(--s3);border-radius:2px">
-                    <div style="height:100%;width:${Math.min(100,+s.convR)}%;background:#8b5cf6;border-radius:2px"></div>
-                  </div>
-                  <span style="font-size:20px;color:#8b5cf6;font-weight:700">${s.convR}%</span>
-                </div>
-              </div>`:''}
             </div>
           </div>`;
       }).join('')}
@@ -8362,109 +8361,218 @@ function renderRoi() {
     }
   }
 
-  // 월별 추이 테이블 (지점별 포함)
-  const today3=new Date();
-  const trendMonths=[];
-  const _trendN=window._roiTrendN||6;
-  const _trendMode=window._roiTrendMode||'6';
+  // 일별 신환 추이 + 광고 발송일 표시
+  const trendEl=document.getElementById('roi-trend');
+  if(!trendEl) return;
+
+  // 기간 계산
+  const _trendN=window._roiTrendN||1;
+  const _trendMode=window._roiTrendMode||'1';
+  let trendDates=[];
   if(_trendMode==='custom'){
     const fromM=document.getElementById('roi-trend-from')?.value;
     const toM=document.getElementById('roi-trend-to')?.value;
     if(fromM&&toM){
+      // month 범위 → 해당 월들의 모든 일자
       const [fy,fm]=fromM.split('-').map(Number);
       const [ty,tm]=toM.split('-').map(Number);
       let cy=fy,cm=fm;
       while(cy<ty||(cy===ty&&cm<=tm)){
-        trendMonths.push(`${cy}-${String(cm).padStart(2,'0')}`);
+        const mk=`${cy}-${String(cm).padStart(2,'0')}`;
+        const daysInMonth=new Date(cy,cm,0).getDate();
+        for(let d=1;d<=daysInMonth;d++) trendDates.push(`${mk}-${String(d).padStart(2,'0')}`);
         cm++; if(cm>12){cm=1;cy++;}
-        if(trendMonths.length>24) break;
+        if(trendDates.length>366) break;
       }
     }
   } else {
+    // N개월치 일자
+    const today3=new Date();
     for(let i=_trendN-1;i>=0;i--){
-      const d=new Date(today3); d.setMonth(d.getMonth()-i);
-      trendMonths.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+      const d=new Date(today3); d.setDate(1); d.setMonth(d.getMonth()-i);
+      const y=d.getFullYear(), m=d.getMonth()+1;
+      const mk=`${y}-${String(m).padStart(2,'0')}`;
+      const daysInMonth=new Date(y,m,0).getDate();
+      const isCurrentMonth=(i===0);
+      const maxDay=isCurrentMonth?today3.getDate():daysInMonth;
+      for(let day=1;day<=maxDay;day++) trendDates.push(`${mk}-${String(day).padStart(2,'0')}`);
     }
   }
 
-  // 지점 목록 (전체 합계 + 공통광고 + 각 지점)
-  const trendBranches = filterBid==='all'
-    ? [{id:'all',name:'전체 합계'}, {id:'common',name:'공통광고(전지점)'}, ...S.branches]
-    : [S.branches.find(b=>b.id===filterBid)||{id:filterBid,name:filterBid}];
-
-  const trendRows = [];
-  trendMonths.forEach(mk=>{
-    trendBranches.forEach(br=>{
-      let mShin=0, mTotal=0;
-      // 공통광고 행은 콜 데이터 없음 (광고비만 표시)
-      if(br.id!=='common'){
-        Object.keys(S.calls).forEach(ds=>{
-          if(!ds.startsWith(mk)) return;
-          const dc=getAnalysisCalls(ds).filter(c=>br.id==='all'||c.bid===br.id);
-          mShin+=dc.filter(c=>c.pttype==='신환').length;
-          mTotal+=dc.length;
-        });
-      }
-      let mAdCost=0;
-      if(br.id==='all'){
-        // 전체 합계: 모든 광고비
-        mAdCost=S.roiLogs.filter(l=>l.date.startsWith(mk)).reduce((a,l)=>a+l.amount,0);
-      } else if(br.id==='common'){
-        // 공통광고: bid='all'인 것만
-        mAdCost=S.roiLogs.filter(l=>l.date.startsWith(mk)&&l.bid==='all').reduce((a,l)=>a+l.amount,0);
-      } else {
-        // 각 지점: 해당 지점 광고비만
-        mAdCost=S.roiLogs.filter(l=>l.date.startsWith(mk)&&l.bid===br.id).reduce((a,l)=>a+l.amount,0);
-      }
-      trendRows.push({mk, brId:br.id, brName:br.name, shin:mShin, total:mTotal, adCost:mAdCost,
-        cpl:mAdCost>0&&mShin>0?Math.round(mAdCost/mShin):null,
-        isCommon:br.id==='common'});
-    });
+  // 광고 발송일 맵
+  const adDateMap={};
+  (S.roiLogs||[]).forEach(log=>{
+    if(!adDateMap[log.date]) adDateMap[log.date]=[];
+    adDateMap[log.date].push(log);
   });
 
-  const trendEl=document.getElementById('roi-trend');
-  if(trendEl){
-    const showBranch = trendBranches.length > 1;
-    trendEl.innerHTML=`
+  // 월별 그룹핑으로 렌더
+  const monthGroups={};
+  trendDates.forEach(ds=>{
+    const mk=ds.slice(0,7);
+    if(!monthGroups[mk]) monthGroups[mk]=[];
+    monthGroups[mk].push(ds);
+  });
+
+  const maxShin=Math.max(1,...trendDates.map(ds=>{
+    const dc=getAnalysisCalls(ds).filter(c=>filterBid==='all'||c.bid===filterBid);
+    return dc.filter(c=>c.pttype==='신환').length;
+  }));
+
+  let html='<div style="display:flex;flex-direction:column;gap:16px">';
+  Object.entries(monthGroups).forEach(([mk,days])=>{
+    const monthShin=days.reduce((a,ds)=>{
+      const dc=getAnalysisCalls(ds).filter(c=>filterBid==='all'||c.bid===filterBid);
+      return a+dc.filter(c=>c.pttype==='신환').length;
+    },0);
+    const monthTotal=days.reduce((a,ds)=>{
+      const dc=getAnalysisCalls(ds).filter(c=>filterBid==='all'||c.bid===filterBid);
+      return a+dc.length;
+    },0);
+    const monthAd=(S.roiLogs||[]).filter(l=>l.date.startsWith(mk)&&(filterBid==='all'||l.bid===filterBid||l.bid==='all')).reduce((a,l)=>a+l.amount,0);
+
+    html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:15px;font-weight:800;color:var(--text);font-family:'DM Mono',monospace">${mk}</span>
+        <span style="font-size:12px;color:#059669;font-weight:700">신환 ${monthShin}명</span>
+        <span style="font-size:12px;color:#3b82f6">총 콜 ${monthTotal}건</span>
+        ${monthAd?`<span style="font-size:12px;color:#f59e0b;font-weight:700">광고비 ${fmt(monthAd)}</span>`:''}
+        ${monthAd&&monthShin?`<span style="font-size:12px;font-weight:800;color:${Math.round(monthAd/monthShin)<30000?'#059669':Math.round(monthAd/monthShin)<80000?'#f59e0b':'#ef4444'}">CPL ${fmt(Math.round(monthAd/monthShin))}</span>`:''}
+        <span style="font-size:11px;color:var(--text3);margin-left:4px">🔴 = 광고 발송일</span>
+      </div>
       <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:24px;min-width:500px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">
         <thead>
           <tr style="background:var(--s2)">
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:left;font-size:16px;font-weight:700">월</th>
-            ${showBranch?`<th style="padding:10px 12px;border:1px solid var(--border);text-align:left;font-size:16px;font-weight:700">지점</th>`:''}
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:right;color:#f59e0b;font-size:16px;font-weight:700">광고비</th>
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:right;color:#059669;font-size:16px;font-weight:700">신환</th>
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:right;color:#3b82f6;font-size:16px;font-weight:700">총 콜</th>
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:right;color:#ec4899;font-size:16px;font-weight:700">CPL</th>
-            <th style="padding:10px 12px;border:1px solid var(--border);text-align:center;font-size:16px;font-weight:700">효율</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:left;font-size:11px;font-weight:700;min-width:80px">날짜</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:right;color:#3b82f6;font-size:11px;font-weight:700">총 콜</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:right;color:#059669;font-size:11px;font-weight:700">신환</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:right;color:#7c3aed;font-size:11px;font-weight:700">구환(신규예약)</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:right;color:#f59e0b;font-size:11px;font-weight:700">광고비</th>
+            <th style="padding:6px 10px;border:1px solid var(--border);text-align:left;color:#ef4444;font-size:11px;font-weight:700">📢 광고 발송</th>
           </tr>
         </thead>
         <tbody>
-          ${trendRows.map((d,idx)=>{
-            const isFirstBrOfMonth = !showBranch || trendBranches.findIndex(b=>b.id===d.brId)===0;
-            const isAll = d.brId==='all';
-            const isCommon = d.brId==='common';
-            const rowBg = isAll ? 'background:var(--s2);font-weight:700;' : isCommon ? 'background:#fffbeb;' : '';
-            const borderTop = showBranch && isFirstBrOfMonth ? 'border-top:2px solid #2563eb33;' : '';
-            return `<tr style="${rowBg}${borderTop}">
-              <td style="padding:8px 12px;border:1px solid var(--border);font-size:22px;font-weight:${isAll?700:500};${(!isAll&&!isCommon)?'color:var(--text3);':''}">${isFirstBrOfMonth||!showBranch?d.mk:''}</td>
-              ${showBranch?`<td style="padding:8px 12px;border:1px solid var(--border);font-size:22px;font-weight:${isAll?700:isCommon?600:500};color:${isAll?'#0f172a':isCommon?'#d97706':'var(--text2)'}">
-                ${isAll?'🏢 합계':isCommon?'📣 공통광고':d.brName}</td>`:''}
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;color:#f59e0b;font-family:'DM Mono',monospace">${d.adCost>0?fmt(d.adCost):'-'}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;font-weight:700;color:#059669">${isCommon?'-':d.shin}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;color:#3b82f6">${isCommon?'-':d.total}</td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:right;font-size:22px;font-weight:800;
-                color:${!d.cpl?'var(--text3)':d.cpl<30000?'#059669':d.cpl<80000?'#f59e0b':'#ef4444'}">
-                ${isCommon?'-':d.cpl?fmt(d.cpl):'—'}
+          ${days.map(ds=>{
+            const dc=getAnalysisCalls(ds).filter(c=>filterBid==='all'||c.bid===filterBid);
+            const shin=dc.filter(c=>c.pttype==='신환').length;
+            const gu=dc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+            const total=dc.length;
+            const adLogs=adDateMap[ds]||[];
+            const hasAd=adLogs.length>0;
+            const dayAdCost=adLogs.reduce((a,l)=>a+(l.amount||0),0);
+            const barW=maxShin>0?Math.round(shin/maxShin*80):0;
+            const dayLabel=`${ds.slice(5)} (${['일','월','화','수','목','금','토'][new Date(ds+'T00:00:00').getDay()]})`;
+            const isSun=new Date(ds+'T00:00:00').getDay()===0;
+            const isSat=new Date(ds+'T00:00:00').getDay()===6;
+            const rowBg=hasAd?'background:#fff5f5;':'';
+            const dayClr=hasAd?'#ef4444':isSun?'#ef4444':isSat?'#2563eb':'var(--text)';
+            const adInfo=adLogs.map(l=>{
+              const ch=S.channels.find(c=>c.id===l.chId)||{name:l.chId,icon:'📡'};
+              const br=S.branches.find(b=>b.id===l.bid);
+              return `${ch.icon||''}${ch.name}${l.sendCount?' '+Number(l.sendCount).toLocaleString()+'건':''}${l.sendStatus?' ('+l.sendStatus+')':''}${br?' '+br.name:''}`;
+            }).join(' / ');
+            return `<tr style="${rowBg}">
+              <td style="padding:5px 10px;border:1px solid var(--border);font-size:12px;font-weight:${hasAd?700:400};color:${dayClr};white-space:nowrap">
+                ${hasAd?'🔴 ':''}${dayLabel}
               </td>
-              <td style="padding:8px 12px;border:1px solid var(--border);text-align:center;font-size:22px">
-                ${isCommon?'':(!d.cpl?'':d.cpl<30000?'🟢':d.cpl<80000?'🟡':'🔴')}
+              <td style="padding:5px 10px;border:1px solid var(--border);text-align:right;font-size:12px;color:${total>0?'#3b82f6':'var(--text3)'}">${total||'-'}</td>
+              <td style="padding:5px 10px;border:1px solid var(--border);text-align:right">
+                <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
+                  ${shin>0?`<div style="height:6px;width:${barW}px;background:#059669;border-radius:3px;flex-shrink:0"></div>`:''}
+                  <span style="font-size:12px;font-weight:${shin>0?700:400};color:${shin>0?'#059669':'var(--text3)'}">${shin||'-'}</span>
+                </div>
               </td>
+              <td style="padding:5px 10px;border:1px solid var(--border);text-align:right;font-size:12px;color:${gu>0?'#7c3aed':'var(--text3)'}">${gu||'-'}</td>
+              <td style="padding:5px 10px;border:1px solid var(--border);text-align:right;font-size:12px;color:${dayAdCost>0?'#f59e0b':'var(--text3)'};font-family:'DM Mono',monospace;font-weight:${dayAdCost>0?700:400}">${dayAdCost>0?fmt(dayAdCost):'-'}</td>
+              <td style="padding:5px 10px;border:1px solid var(--border);font-size:11px;color:#ef4444;font-weight:600">${hasAd?adInfo:''}</td>
             </tr>`;
           }).join('')}
         </tbody>
-      </table></div>`;
+      </table>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  trendEl.innerHTML=html;
+  renderRoiMonthlySummary();
+}
+
+function renderRoiMonthlySummary(){
+  const el=document.getElementById('roi-monthly-summary'); if(!el) return;
+  const logs=(S.roiLogs||[]);
+  if(!logs.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">입력된 광고비가 없습니다</div>';
+    return;
   }
+  const monthMap={};
+  logs.forEach(log=>{
+    const mk=log.date.slice(0,7);
+    if(!monthMap[mk]) monthMap[mk]={total:0,byChannel:{},logs:[]};
+    monthMap[mk].total+=log.amount||0;
+    monthMap[mk].logs.push(log);
+    monthMap[mk].byChannel[log.chId]=(monthMap[mk].byChannel[log.chId]||0)+(log.amount||0);
+  });
+  const months=Object.keys(monthMap).sort((a,b)=>b.localeCompare(a));
+  const fmt=n=>n>=100000000?(n/100000000).toFixed(1)+'억':n>=10000?(n/10000).toFixed(0)+'만원':n.toLocaleString()+'원';
+  const maxTotal=Math.max(...months.map(m=>monthMap[m].total));
+  const totalAll=logs.reduce((a,l)=>a+(l.amount||0),0);
+  const totalSendAll=logs.reduce((a,l)=>a+(+l.sendCount||0),0);
+
+  el.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${months.map(mk=>{
+        const d=monthMap[mk];
+        const barPct=maxTotal>0?Math.round(d.total/maxTotal*100):0;
+        const chBreakdown=Object.entries(d.byChannel).map(([chId,amt])=>{
+          const ch=S.channels.find(c=>c.id===chId)||{name:chId,icon:'📡'};
+          return `<span style="font-size:11px;color:var(--text2)">${ch.icon||''} ${ch.name} <strong>${fmt(amt)}</strong></span>`;
+        }).join('<span style="color:var(--text3);margin:0 4px">·</span>');
+        const totalSendCount=d.logs.reduce((a,l)=>a+(+l.sendCount||0),0);
+        const byStatus={};
+        d.logs.forEach(l=>{ const s=l.sendStatus||'미지정'; byStatus[s]=(byStatus[s]||0)+1; });
+        const statusClr={발송완료:'#059669',발송취소:'#ef4444',예약발송:'#f59e0b'};
+        const statusBg={발송완료:'#f0fdf4',발송취소:'#fff5f5',예약발송:'#fffbeb'};
+        const statusBadges=Object.entries(byStatus).map(([s,n])=>
+          `<span style="font-size:10px;font-weight:700;color:${statusClr[s]||'#94a3b8'};background:${statusBg[s]||'#f1f5f9'};padding:1px 7px;border-radius:8px">${s} ${n}건</span>`
+        ).join(' ');
+        return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:16px;font-weight:800;color:var(--text);font-family:'DM Mono',monospace">${mk}</span>
+            <span style="font-size:22px;font-weight:900;color:#f59e0b">${fmt(d.total)}</span>
+            ${totalSendCount?`<span style="font-size:12px;color:var(--text3)">📨 ${totalSendCount.toLocaleString()}건</span>`:''}
+            <div style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap">${statusBadges}</div>
+          </div>
+          <div style="height:7px;background:var(--s3);border-radius:4px;margin-bottom:10px;overflow:hidden">
+            <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px"></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">${chBreakdown}</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${d.logs.sort((a,b)=>a.date.localeCompare(b.date)).map(log=>{
+              const ch=S.channels.find(c=>c.id===log.chId)||{name:log.chId,icon:'📡'};
+              const br=S.branches.find(b=>b.id===log.bid);
+              const sc=log.sendStatus==='발송완료'?'#059669':log.sendStatus==='발송취소'?'#ef4444':'#f59e0b';
+              return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s2);border:1px solid var(--border);border-radius:7px;flex-wrap:wrap">
+                <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${log.date}${log.sendTime?' '+log.sendTime:''}</span>
+                <span style="font-size:11px">${ch.icon||''} ${ch.name}</span>
+                <span style="font-size:11px;color:#059669">${br?br.name:'공통'}</span>
+                ${log.staff?`<span style="font-size:11px;color:#2563eb">👤 ${log.staff}</span>`:''}
+                ${log.sendStatus?`<span style="font-size:10px;font-weight:700;color:${sc}">${log.sendStatus}</span>`:''}
+                ${log.sendCount?`<span style="font-size:11px;color:var(--text3)">📨 ${(+log.sendCount).toLocaleString()}건</span>`:''}
+                ${log.memo?`<span style="font-size:11px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📌 ${log.memo}</span>`:''}
+                <span style="margin-left:auto;font-size:12px;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-size:14px;font-weight:700;color:#94a3b8">📊 전체 합계 (${months.length}개월)</span>
+        <span style="font-size:24px;font-weight:900;color:#f59e0b">${fmt(totalAll)}</span>
+        ${totalSendAll?`<span style="font-size:13px;color:#94a3b8">📨 총 ${totalSendAll.toLocaleString()}건</span>`:''}
+        <span style="font-size:12px;color:#64748b;margin-left:auto">월 평균 ${fmt(Math.round(totalAll/months.length))}</span>
+      </div>
+    </div>`;
 }
 
 
