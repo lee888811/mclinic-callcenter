@@ -7899,8 +7899,8 @@ function renderRoiLogForm() {
         <div>
           <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">지점</label>
           <select id="roi-new-bid" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
-            <option value="all">전체 공통</option>
-            ${activeBranches().map(b=>`<option value="${b.id}">${b.name}점</option>`).join('')}
+            <option value="all">전지점 공통</option>
+            ${activeBranches().map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
           </select>
         </div>
         <div>
