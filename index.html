@@ -1751,6 +1751,80 @@ td:first-child{text-align:left;padding-left:13px}
 </div><!-- /app-wrap -->
 
 <!-- Modal: 특근 보상휴가 관리 -->
+<!-- Modal: 미예약 수정 -->
+<div class="modal" id="modal-noappt-edit" style="z-index:720">
+  <div class="mbox" style="width:540px">
+    <div class="mt">✏️ 미예약 관리</div>
+    <input type="hidden" id="noappt-edit-callid">
+    <input type="hidden" id="noappt-edit-date">
+
+    <!-- 탭 -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--border);padding-bottom:0">
+      <button id="noappt-tab-btn-info" onclick="switchNoapptTab('info')" style="padding:7px 16px;border:none;border-bottom:3px solid #2563eb;background:transparent;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer">📋 기본정보</button>
+      <button id="noappt-tab-btn-outcall" onclick="switchNoapptTab('outcall')" style="padding:7px 16px;border:none;border-bottom:3px solid transparent;background:transparent;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer">📞 아웃콜</button>
+      <button id="noappt-tab-btn-revisit" onclick="switchNoapptTab('revisit')" style="padding:7px 16px;border:none;border-bottom:3px solid transparent;background:transparent;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer">🔄 재인입</button>
+      <button id="noappt-tab-btn-memo" onclick="switchNoapptTab('memo')" style="padding:7px 16px;border:none;border-bottom:3px solid transparent;background:transparent;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer">📝 메모</button>
+    </div>
+
+    <!-- 기본정보 탭 -->
+    <div id="noappt-tab-info">
+      <div class="ml">미예약 사유</div>
+      <input id="noappt-edit-reason" class="minp" style="margin-top:4px" placeholder="예: 비용문제, 고민중, 상담만...">
+      <div class="ml" style="margin-top:10px">메모</div>
+      <textarea id="noappt-edit-memo" rows="4" class="minp" style="margin-top:4px;resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6" placeholder="특이사항, 고객 요청 등..."></textarea>
+    </div>
+
+    <!-- 아웃콜 탭 -->
+    <div id="noappt-tab-outcall" style="display:none">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">아웃콜 시도 내역을 기록하세요</div>
+      <textarea id="noappt-edit-outcall" rows="5" class="minp" style="resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6" placeholder="예: 4/2 10:00 아웃콜 시도 - 연결안됨&#10;4/3 14:00 재시도 - 예약확정"></textarea>
+    </div>
+
+    <!-- 재인입 탭 -->
+    <div id="noappt-tab-revisit" style="display:none">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">미예약 후 재인입되어 예약한 내용을 기록하세요</div>
+      <textarea id="noappt-edit-revisit" rows="5" class="minp" style="resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6" placeholder="예: 4/5 재인입 - 강남 보톡스 예약완료 (4/10)"></textarea>
+    </div>
+
+    <!-- 메모 탭 -->
+    <div id="noappt-tab-memo" style="display:none">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">팀 공유 메모 (인수인계, 특이사항 등)</div>
+      <textarea id="noappt-edit-sharedmemo" rows="5" class="minp" style="resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6" placeholder="팀원 공유 메모..."></textarea>
+    </div>
+
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-noappt-edit')">취소</button>
+      <button class="btn btn-p" onclick="saveNoapptEdit()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: VOC 수정 -->
+<div class="modal" id="modal-voc-edit" style="z-index:720">
+  <div class="mbox" style="width:520px">
+    <div class="mt">✏️ VOC 수정</div>
+    <input type="hidden" id="voc-edit-callid">
+    <input type="hidden" id="voc-edit-date">
+    <div class="ml">유형</div>
+    <select id="voc-edit-type" class="minp" style="margin-top:4px">
+      <option value="컴플레인">컴플레인</option>
+      <option value="긍정VOC">긍정VOC</option>
+    </select>
+    <div class="ml" style="margin-top:10px">내용</div>
+    <textarea id="voc-edit-content" rows="5" class="minp" style="margin-top:4px;resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6"></textarea>
+    <div class="ml" style="margin-top:10px">처리 상태</div>
+    <select id="voc-edit-status" class="minp" style="margin-top:4px">
+      <option value="접수">접수</option>
+      <option value="처리중">처리중</option>
+      <option value="완료">완료</option>
+    </select>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-voc-edit')">취소</button>
+      <button class="btn btn-p" onclick="saveVocEdit()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="modal-overtime-use" style="z-index:710">
   <div class="mbox" style="width:400px">
     <div class="mt">🔥 특근 보상휴가 관리</div>
@@ -8979,13 +9053,26 @@ function renderTeamMemoList(){
       </div>
       <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
         ${memos.map(m=>{
-          const dt=m.ts?new Date(m.ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
-          return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 12px">
-            ${m.title?`<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px">${escHtml(m.title)}</div>`:''}
-            <div style="font-size:12px;color:var(--text2);line-height:1.55;white-space:pre-wrap">${escHtml(m.content||'')}</div>
-            <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-              ${dt?`<span style="font-size:10px;color:var(--text3)">${dt}</span>`:''}
-              ${(m.tags||[]).map(t=>`<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:6px">#${t}</span>`).join('')}
+          const br=S.branches.find(b=>b.id===m.bid)||(m.bid==='etc'?{name:'기타'}:null);
+          const isDone=m.status==='done';
+          const dt=m.ts?new Date(m.ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):m.date||'';
+          return `<div style="background:${isDone?'var(--s2)':'#fff'};border:1px solid var(--border);border-radius:8px;padding:9px 12px;opacity:${isDone?0.7:1}">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                  ${br?`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:7px;background:${m.bid==='etc'?'#64748b':bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+                  ${dt?`<span style="font-size:10px;color:var(--text3)">${dt}</span>`:''}
+                  <span style="font-size:10px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
+                </div>
+                ${m.title?`<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;${isDone?'text-decoration:line-through':''}}">${escHtml(m.title)}</div>`:''}
+                <div style="font-size:12px;color:var(--text2);line-height:1.55;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+                ${(m.tags||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${m.tags.map(t=>`<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:6px">#${t}</span>`).join('')}</div>`:''}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                <button onclick="toggleSiMemoStatus('${s.id}','${m.id}')" style="border:none;background:${isDone?'var(--s2)':'#fefce8'};color:${isDone?'var(--text3)':'#854d0e'};border:1px solid ${isDone?'var(--border)':'#fde68a'};border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
+                <button onclick="openSiMemoEdit('${s.id}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">✏️</button>
+                <button onclick="deleteSiMemo('${s.id}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">🗑</button>
+              </div>
             </div>
           </div>`;
         }).join('')}
@@ -9262,9 +9349,12 @@ function renderNoapptPage(){
           ${reason?`<span style="font-size:12px;background:#fff7ed;color:#d97706;padding:2px 9px;border-radius:8px;border:1px solid #fed7aa;font-weight:700">${reason}</span>`:'<span style="font-size:12px;color:var(--text3)">사유미입력</span>'}
           <span style="font-size:11px;color:var(--text3);margin-left:auto">${c.date||''} ${c.time||''}</span>
           ${staff?`<span style="font-size:11px;font-weight:600;color:var(--text2)">${staff.name}</span>`:''}
+          <button onclick="openNoapptEditModal('${c.id}','${c.date||''}')" style="padding:2px 8px;border-radius:6px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;cursor:pointer">✏️ 수정</button>
         </div>
         ${procs?`<div style="font-size:12px;color:var(--text2);margin-bottom:2px">🎯 ${procs}</div>`:''}
         ${memo?`<div style="font-size:12px;color:#b45309">📝 ${escHtml(memo)}</div>`:''}
+        ${c.noapptOutcall?`<div style="font-size:11px;color:#7c3aed;margin-top:3px">📞 아웃콜: ${escHtml(c.noapptOutcall)}</div>`:''}
+        ${c.noapptRevisit?`<div style="font-size:11px;color:#059669;margin-top:2px">🔄 재인입: ${escHtml(c.noapptRevisit)}</div>`:''}
       </div>`;
     }).join('');
     return `
@@ -13399,13 +13489,18 @@ function renderTrendBrChart(monthDefs, filterBid){
 
   const data = monthDefs.map(m=>{
     const allCalls = getMonthAnalysisCalls(m.key);
-    const byBr = activeBrs.map(b=>allCalls.filter(c=>c.bid===b.id).length);
-    const total = byBr.reduce((a,v)=>a+v,0);
+    const byBr = activeBrs.map(b=>{
+      const bc = allCalls.filter(c=>c.bid===b.id);
+      const shin = bc.filter(c=>c.pttype==='신환').length;
+      const gu = bc.filter(c=>c.pttype==='구환(신규상담)'||c.pttype==='구환').length;
+      return {total:bc.length, shin, gu, newCnt:shin+gu};
+    });
+    const total = byBr.reduce((a,v)=>a+v.total,0);
     return {label:m.label, byBr, total, key:m.key};
   });
 
   // ── 상단: 지점별 그룹 막대 ──
-  const maxVal = Math.max(1, ...data.flatMap(d=>d.byBr));
+  const maxVal = Math.max(1, ...data.flatMap(d=>d.byBr.map(b=>b.total)));
   const W=600, H=200, PL=36, PB=26, PT=14, PR=10;
   const iH=H-PT-PB, iW=W-PL-PR;
   const groupW = iW/nMo;
@@ -13428,18 +13523,15 @@ function renderTrendBrChart(monthDefs, filterBid){
   // 막대
   data.forEach((d,i)=>{
     activeBrs.forEach((b,bi)=>{
-      const v = d.byBr[bi];
+      const v = d.byBr[bi].total;
       const x = barX(i,bi).toFixed(1);
       const y = barY(v).toFixed(1);
       const h = Math.max(0, (v/maxVal)*iH).toFixed(1);
       const cl = activeBrColors[bi];
-      // 막대 (radius top)
       bars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${cl}" opacity="0.85" rx="3">
         <title>${d.label} ${b.name}: ${v}건</title></rect>`;
-      // 수치 (막대 위)
       if(v>0) vals += `<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-4).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${cl}">${v}</text>`;
     });
-    // 월 레이블 - 30일이면 5일 간격으로만 표시
     const cx = (groupX(i)+(barW*nBr+gap*(nBr-1))/2).toFixed(1);
     const showLbl = nMo<=12 || i===0 || i===nMo-1 || (i+1)%5===0;
     if(showLbl) xlbls += `<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="${nMo>15?8:10}" fill="var(--text2)">${d.label}</text>`;
@@ -13449,7 +13541,7 @@ function renderTrendBrChart(monthDefs, filterBid){
   activeBrs.forEach((b,bi)=>{
     let path='', dots='';
     data.forEach((d,i)=>{
-      const v = d.byBr[bi];
+      const v = d.byBr[bi].total;
       const cx = (barX(i,bi) + barW/2).toFixed(1);
       const cy = barY(v).toFixed(1);
       path += `${i===0?'M':'L'}${cx},${cy} `;
@@ -13467,20 +13559,39 @@ function renderTrendBrChart(monthDefs, filterBid){
   // ── 테이블 렌더 ──
   const tableEl=document.getElementById('trend-br-table');
   if(tableEl){
-    const thStyle='padding:6px 10px;border:1px solid var(--border);background:var(--s2);font-size:11px;font-weight:700;color:var(--text2);text-align:center;white-space:nowrap';
-    const tdStyle='padding:5px 10px;border:1px solid var(--border);font-size:12px;font-weight:700;text-align:center;font-family:"DM Mono",monospace';
+    const thS='padding:5px 6px;border:1px solid var(--border);background:var(--s2);font-size:10px;font-weight:700;text-align:center;white-space:nowrap';
+    const tdS='padding:4px 5px;border:1px solid var(--border);font-size:11px;font-weight:700;text-align:center;font-family:"DM Mono",monospace';
     const isDaily = monthDefs[0]?.isDaily;
-    const header=`<tr><th style="${thStyle}">${isDaily?'날짜':'월'}</th>${activeBrs.map(b=>`<th style="${thStyle};color:${bclr(b.id)}">${b.name}</th>`).join('')}<th style="${thStyle}">합계</th></tr>`;
+
+    // 헤더 1행: 날짜 + 지점명(colspan4) + 합계(colspan4)
+    const brHdrs = activeBrs.map(b=>`<th colspan="4" style="${thS};color:${bclr(b.id)}">${b.name}</th>`).join('');
+    const header1=`<tr><th rowspan="2" style="${thS}">${isDaily?'날짜':'월'}</th>${brHdrs}<th colspan="4" style="${thS}">합계</th></tr>`;
+    // 헤더 2행: 신환/구환/신+구/총콜
+    const subHdr=`<th style="${thS};color:var(--green)">신환</th><th style="${thS};color:#7c3aed">구환</th><th style="${thS};color:#059669">신+구</th><th style="${thS};color:var(--accent)">총콜</th>`;
+    const header2=`<tr>${activeBrs.map(()=>subHdr).join('')}${subHdr}</tr>`;
+
     const rows=data.map(d=>{
-      const total=d.byBr.reduce((a,v)=>a+v,0);
-      const cells=d.byBr.map((v,bi)=>`<td style="${tdStyle};color:${activeBrColors[bi]}">${v||'-'}</td>`).join('');
-      return `<tr><td style="${thStyle}">${d.label}</td>${cells}<td style="${tdStyle};color:var(--accent);background:rgba(37,99,235,.05)">${total}</td></tr>`;
+      let tShin=0,tGu=0,tNew=0,tTotal=0;
+      const cells=d.byBr.map((br,bi)=>{
+        tShin+=br.shin; tGu+=br.gu; tNew+=br.newCnt; tTotal+=br.total;
+        const cl=activeBrColors[bi];
+        return `<td style="${tdS};color:var(--green)">${br.shin||'-'}</td><td style="${tdS};color:#7c3aed">${br.gu||'-'}</td><td style="${tdS};color:#059669">${br.newCnt||'-'}</td><td style="${tdS};color:${cl};font-weight:800">${br.total||'-'}</td>`;
+      }).join('');
+      return `<tr><td style="${thS}">${d.label}</td>${cells}<td style="${tdS};color:var(--green)">${tShin||'-'}</td><td style="${tdS};color:#7c3aed">${tGu||'-'}</td><td style="${tdS};color:#059669">${tNew||'-'}</td><td style="${tdS};color:var(--accent);background:rgba(37,99,235,.05);font-weight:800">${tTotal||'-'}</td></tr>`;
     });
+
     // 합계 행
-    const colTotals=activeBrs.map((_,bi)=>data.reduce((a,d)=>a+d.byBr[bi],0));
-    const grandTotal=colTotals.reduce((a,v)=>a+v,0);
-    const totalRow=`<tr><td style="${thStyle};background:#e2e8f0">합계</td>${colTotals.map((v,bi)=>`<td style="${tdStyle};color:${activeBrColors[bi]};background:#f8fafc;font-weight:800">${v}</td>`).join('')}<td style="${tdStyle};color:var(--accent);background:rgba(37,99,235,.1);font-weight:800">${grandTotal}</td></tr>`;
-    tableEl.innerHTML=`<table style="border-collapse:collapse;width:100%;min-width:300px">${header}${rows.join('')}${totalRow}</table>`;
+    let gShin=0,gGu=0,gNew=0,gTotal=0;
+    const colTotals=activeBrs.map((_,bi)=>{
+      const s=data.reduce((a,d)=>a+d.byBr[bi].shin,0);
+      const g=data.reduce((a,d)=>a+d.byBr[bi].gu,0);
+      const n=data.reduce((a,d)=>a+d.byBr[bi].newCnt,0);
+      const t=data.reduce((a,d)=>a+d.byBr[bi].total,0);
+      gShin+=s; gGu+=g; gNew+=n; gTotal+=t;
+      return {s,g,n,t};
+    });
+    const totalRow=`<tr><td style="${thS};background:#e2e8f0">합계</td>${colTotals.map((ct,bi)=>`<td style="${tdS};color:var(--green);background:#f8fafc;font-weight:800">${ct.s||'-'}</td><td style="${tdS};color:#7c3aed;background:#f8fafc;font-weight:800">${ct.g||'-'}</td><td style="${tdS};color:#059669;background:#f8fafc;font-weight:800">${ct.n||'-'}</td><td style="${tdS};color:${activeBrColors[bi]};background:#f8fafc;font-weight:800">${ct.t||'-'}</td>`).join('')}<td style="${tdS};color:var(--green);background:rgba(37,99,235,.1);font-weight:800">${gShin}</td><td style="${tdS};color:#7c3aed;background:rgba(37,99,235,.1);font-weight:800">${gGu}</td><td style="${tdS};color:#059669;background:rgba(37,99,235,.1);font-weight:800">${gNew}</td><td style="${tdS};color:var(--accent);background:rgba(37,99,235,.1);font-weight:800">${gTotal}</td></tr>`;
+    tableEl.innerHTML=`<table style="border-collapse:collapse;width:100%;min-width:300px">${header1}${header2}${rows.join('')}${totalRow}</table>`;
   }
 
   // 탭 모드 적용
@@ -15759,9 +15870,81 @@ function renderVocList(){
         </div>
         <button onclick="deleteVoc('${v.callId}','${v.date}')"
           style="padding:5px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fff1f2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer">🗑 삭제</button>
+        <button onclick="openVocEditModal('${v.callId}','${v.date}')"
+          style="padding:5px 12px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:700;cursor:pointer">✏️ 수정</button>
       </div>
     </div>`;
   }).join('');
+}
+
+let _noapptEditTab='info';
+function switchNoapptTab(tab){
+  _noapptEditTab=tab;
+  ['info','outcall','revisit','memo'].forEach(t=>{
+    const el=document.getElementById('noappt-tab-'+t);
+    const btn=document.getElementById('noappt-tab-btn-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+    if(btn){
+      btn.style.color=t===tab?'#2563eb':'var(--text3)';
+      btn.style.fontWeight=t===tab?'700':'600';
+      btn.style.borderBottomColor=t===tab?'#2563eb':'transparent';
+    }
+  });
+}
+
+function openNoapptEditModal(callId, ds){
+  const call=(S.calls[ds]||[]).find(c=>c.id===callId); if(!call) return;
+  document.getElementById('noappt-edit-callid').value=callId;
+  document.getElementById('noappt-edit-date').value=ds;
+  document.getElementById('noappt-edit-reason').value=call.noapptReason||'';
+  document.getElementById('noappt-edit-memo').value=call.noapptMemo||call.memo||'';
+  document.getElementById('noappt-edit-outcall').value=call.noapptOutcall||'';
+  document.getElementById('noappt-edit-revisit').value=call.noapptRevisit||'';
+  document.getElementById('noappt-edit-sharedmemo').value=call.noapptSharedMemo||'';
+  switchNoapptTab('info');
+  document.getElementById('modal-noappt-edit').classList.add('open');
+}
+
+function saveNoapptEdit(){
+  const callId=document.getElementById('noappt-edit-callid').value;
+  const ds=document.getElementById('noappt-edit-date').value;
+  const call=(S.calls[ds]||[]).find(c=>c.id===callId);
+  if(!call) return;
+  call.noapptReason=document.getElementById('noappt-edit-reason').value.trim();
+  call.noapptMemo=document.getElementById('noappt-edit-memo').value.trim();
+  call.noapptOutcall=document.getElementById('noappt-edit-outcall').value.trim();
+  call.noapptRevisit=document.getElementById('noappt-edit-revisit').value.trim();
+  call.noapptSharedMemo=document.getElementById('noappt-edit-sharedmemo').value.trim();
+  autoSave(); syncPush(false);
+  closeModal('modal-noappt-edit');
+  renderNoapptPage();
+  toast('✅ 미예약 정보 저장됨');
+}
+
+function openVocEditModal(callId, ds){
+  const vocs=(S.calls[ds]||[]);
+  const call=vocs.find(c=>c.id===callId); if(!call||!call.voc) return;
+  document.getElementById('voc-edit-callid').value=callId;
+  document.getElementById('voc-edit-date').value=ds;
+  document.getElementById('voc-edit-type').value=call.voc.type||'컴플레인';
+  document.getElementById('voc-edit-content').value=call.voc.content||'';
+  document.getElementById('voc-edit-status').value=call.voc.status||'접수';
+  document.getElementById('modal-voc-edit').classList.add('open');
+}
+
+function saveVocEdit(){
+  const callId=document.getElementById('voc-edit-callid').value;
+  const ds=document.getElementById('voc-edit-date').value;
+  const type=document.getElementById('voc-edit-type').value;
+  const content=document.getElementById('voc-edit-content').value.trim();
+  const status=document.getElementById('voc-edit-status').value;
+  if(!content){toast('⚠️ 내용을 입력해주세요');return;}
+  const call=(S.calls[ds]||[]).find(c=>c.id===callId);
+  if(call&&call.voc){ call.voc.type=type; call.voc.content=content; call.voc.status=status; }
+  autoSave(); syncPush(false);
+  closeModal('modal-voc-edit');
+  renderVocList();
+  toast('✅ VOC 수정됨');
 }
 
 function deleteVoc(callId, ds){
