@@ -2698,9 +2698,9 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
 
-      <!-- 전체공지 패널: 헤더 고정 + 내용 absolute 스크롤 -->
-      <div id="snp-teamnotice-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;overflow:hidden;position:relative">
-        <div id="snp-teamnotice-header" style="background:#1e40af;position:relative;z-index:1">
+      <!-- 전체공지 패널 -->
+      <div id="snp-teamnotice-list" style="flex:1;overflow-y:auto;background:#f8fafc;display:none;flex-direction:column">
+        <div id="snp-teamnotice-header" style="background:#1e40af;position:sticky;top:0;z-index:10;flex-shrink:0">
           <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
             <input id="snp-notice-search-input" placeholder="🔍 공지 검색..." oninput="snpTeamNoticeSearch(this.value)"
               style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
@@ -2708,12 +2708,12 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
           <div id="snp-notice-br-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
         </div>
-        <div id="snp-teamnotice-items" style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;padding-top:4px"></div>
+        <div id="snp-teamnotice-items" style="padding:6px;display:flex;flex-direction:column;gap:5px"></div>
       </div>
 
-      <!-- 공유메모 패널: 헤더 고정 + 내용 absolute 스크롤 -->
-      <div id="snp-teammemo-list" style="flex:1;background:#f8fafc;display:none;flex-direction:column;overflow:hidden;position:relative">
-        <div id="snp-teammemo-header" style="background:#1e40af;position:relative;z-index:1">
+      <!-- 공유메모 패널 -->
+      <div id="snp-teammemo-list" style="flex:1;overflow-y:auto;background:#f8fafc;display:none;flex-direction:column">
+        <div id="snp-teammemo-header" style="background:#1e40af;position:sticky;top:0;z-index:10;flex-shrink:0">
           <div style="padding:6px 8px;display:flex;gap:5px;border-bottom:1px solid rgba(255,255,255,.15)">
             <input id="snp-memo-search-input" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
               style="flex:1;padding:4px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
@@ -2721,7 +2721,7 @@ td:first-child{text-align:left;padding-left:13px}
           </div>
           <div id="snp-memo-staff-filter" style="padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.15)"></div>
         </div>
-        <div id="snp-teammemo-items" style="position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px;padding-top:4px"></div>
+        <div id="snp-teammemo-items" style="padding:6px;display:flex;flex-direction:column;gap:5px"></div>
       </div>
     </div>
 
@@ -4348,8 +4348,21 @@ function renderStaffInputPage(sid){
             <button onclick="openSiMemoAdd('${sid}')" style="border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer">＋ 추가</button>
           </div>
         </div>
+        <!-- 필터 행 -->
+        <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--s2)">
+          <span style="font-size:11px;color:var(--text3);font-weight:600">상태</span>
+          <button onclick="siMemoFilterStatus('${sid}','all',this)" id="si-memo-fs-all-${sid}" style="padding:2px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer">전체</button>
+          <button onclick="siMemoFilterStatus('${sid}','active',this)" id="si-memo-fs-active-${sid}" style="padding:2px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer">⏳ 진행중</button>
+          <button onclick="siMemoFilterStatus('${sid}','done',this)" id="si-memo-fs-done-${sid}" style="padding:2px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--s1);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer">✅ 완료</button>
+          <span style="font-size:11px;color:var(--text3);font-weight:600;margin-left:6px">지점</span>
+          <select id="si-memo-fb-${sid}" onchange="renderSiMemos('${sid}')" style="padding:3px 8px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:11px">
+            <option value="">전체</option>
+            ${(S.branches||[]).map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+            <option value="etc">기타</option>
+          </select>
+        </div>
         <!-- 메모 목록 -->
-        <div id="si-memo-list-${sid}" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto"></div>
+        <div id="si-memo-list-${sid}" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto"></div>
       </div>
     </div>
 
@@ -9141,6 +9154,7 @@ function renderSharedMemoList(){
             <span style="padding:2px 10px;border-radius:10px;background:${cl};color:#fff;font-size:11px;font-weight:700">${brName}점</span>
             <span style="padding:2px 10px;border-radius:10px;background:${isDone?'#dcfce7':'#fef9c3'};color:${isDone?'#166534':'#854d0e'};font-size:11px;font-weight:700;border:1px solid ${isDone?'#bbf7d0':'#fde68a'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
             <span style="font-size:11px;color:var(--text3)">${dtStr} · ${escHtml(m.author||'')}</span>
+            ${m.updatedBy&&m.updatedAt&&m.updatedAt!==m.createdAt?`<span style="font-size:10px;color:#94a3b8;background:#f1f5f9;padding:1px 6px;border-radius:5px">수정 ${m.updatedBy} ${new Date(m.updatedAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
           </div>
           <div style="font-size:13px;color:${isDone?'var(--text3)':'var(--text)'};line-height:1.6;white-space:pre-wrap;${isDone?'text-decoration:line-through;':''}">${escHtml(m.content)}</div>
         </div>
@@ -9244,7 +9258,7 @@ function saveSharedMemo(){
   const now=Date.now();
   if(editId){
     const idx=memos.findIndex(m=>m.id===editId);
-    if(idx>=0) memos[idx]={...memos[idx],bid,content,status,author,updatedAt:now};
+    if(idx>=0) memos[idx]={...memos[idx],bid,content,status,author,updatedAt:now,updatedBy:author};
   } else {
     memos.unshift({id:'sm_'+now,bid,content,status,author,createdAt:now,updatedAt:now});
   }
@@ -15309,42 +15323,10 @@ function snpSwitchTab(tab){
     if(teamnoticeList){teamnoticeList.style.display='flex';teamnoticeList.style.flexDirection='column';}
     activateTab(teamnoticeTab);
     snpRenderTeamNotice();
-    setTimeout(()=>{
-      const panel=document.getElementById('side-notes-panel');
-      const blueHdr=panel?.children[1]; // 파란 헤더 div
-      const innerHdr=document.getElementById('snp-teamnotice-header');
-      const it=document.getElementById('snp-teamnotice-items');
-      if(panel&&blueHdr&&innerHdr&&it){
-        const totalH=panel.offsetHeight;
-        const blueH=blueHdr.offsetHeight;
-        const innerH=innerHdr.offsetHeight;
-        it.style.position='absolute';
-        it.style.top=innerH+'px';
-        it.style.left='0'; it.style.right='0';
-        it.style.height=(totalH-blueH-innerH)+'px';
-        it.style.overflowY='auto';
-      }
-    },50);
   } else if(tab==='teammemo'){
     if(teammemoList){teammemoList.style.display='flex';teammemoList.style.flexDirection='column';}
     activateTab(teammemoTab);
     snpRenderTeamMemo();
-    setTimeout(()=>{
-      const panel=document.getElementById('side-notes-panel');
-      const blueHdr=panel?.children[1];
-      const innerHdr=document.getElementById('snp-teammemo-header');
-      const it=document.getElementById('snp-teammemo-items');
-      if(panel&&blueHdr&&innerHdr&&it){
-        const totalH=panel.offsetHeight;
-        const blueH=blueHdr.offsetHeight;
-        const innerH=innerHdr.offsetHeight;
-        it.style.position='absolute';
-        it.style.top=innerH+'px';
-        it.style.left='0'; it.style.right='0';
-        it.style.height=(totalH-blueH-innerH)+'px';
-        it.style.overflowY='auto';
-      }
-    },50);
   }
 }
 
@@ -15385,6 +15367,7 @@ function snpRenderTeamNotice(){
           ${br?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
           <span style="font-size:10px;color:${isDone?'#059669':'#d97706'};font-weight:700">${isDone?'✅ 완료':'⏳ 진행중'}</span>
           <span style="font-size:10px;color:#94a3b8">${fmt(m.createdAt)}${m.author?' · '+m.author:''}</span>
+          ${m.updatedBy&&m.updatedAt&&m.updatedAt!==m.createdAt?`<span style="font-size:9px;color:#94a3b8;background:#f1f5f9;padding:1px 5px;border-radius:4px">수정 ${m.updatedBy} ${fmt(m.updatedAt)}</span>`:''}
           <div style="margin-left:auto;display:flex;gap:4px">
             <button onclick="toggleSharedMemoStatus('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
             <button onclick="snpEditSharedMemo('${m.id}')" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">✏️</button>
@@ -16142,22 +16125,42 @@ function loadSiMemos(sid){
     renderSiMemos(sid);
   }).catch(()=>{ _siMemoCache[sid]=[]; renderSiMemos(sid); });
 }
+function siMemoFilterStatus(sid, status, btn){
+  // 버튼 스타일 갱신
+  ['all','active','done'].forEach(s=>{
+    const b=document.getElementById(`si-memo-fs-${s}-${sid}`);
+    if(!b) return;
+    const act=s===status;
+    b.style.background=act?'var(--accent)':'var(--s1)';
+    b.style.color=act?'#fff':'var(--text2)';
+    b.style.borderColor=act?'var(--accent)':'var(--border)';
+  });
+  const el=document.getElementById(`si-memo-list-${sid}`);
+  if(el) el.dataset.statusFilter=status;
+  renderSiMemos(sid);
+}
+
 function renderSiMemos(sid){
   const el=document.getElementById(`si-memo-list-${sid}`); if(!el) return;
   const q=(document.getElementById(`si-memo-search-${sid}`)?.value||'').toLowerCase();
+  const statusFilter=el.dataset.statusFilter||'all';
+  const bidFilter=document.getElementById(`si-memo-fb-${sid}`)?.value||'';
   let memos=(_siMemoCache[sid]||[]).filter(m=>!q||`${m.title||''} ${m.content||''}`.toLowerCase().includes(q));
+  if(statusFilter==='active') memos=memos.filter(m=>m.status!=='done');
+  else if(statusFilter==='done') memos=memos.filter(m=>m.status==='done');
+  if(bidFilter) memos=memos.filter(m=>(m.bid||'')=== bidFilter);
   const cnt=document.getElementById(`si-memo-count-${sid}`);
   if(cnt) cnt.textContent=memos.length+'건';
   if(!memos.length){ el.innerHTML='<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">메모가 없습니다. + 추가를 눌러보세요</div>'; return; }
   el.innerHTML=memos.map(m=>{
-    const br=S.branches.find(b=>b.id===m.bid);
+    const br=S.branches.find(b=>b.id===m.bid)||(m.bid==='etc'?{name:'기타'}:null);
     const isDone=m.status==='done';
     const dt=m.date||'';
     return `<div style="background:${isDone?'var(--s2)':'#fff'};border:1px solid var(--border);border-radius:8px;padding:10px 14px;opacity:${isDone?.7:1}">
       <div style="display:flex;align-items:flex-start;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
-            ${br?`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:7px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+            ${br?`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:7px;background:${m.bid==='etc'?'#64748b':bclr(m.bid)};color:#fff">${br.name}</span>`:''}
             ${dt?`<span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${dt}</span>`:''}
             <span style="font-size:10px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
           </div>
