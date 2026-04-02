@@ -16021,7 +16021,8 @@ function renderBookingCal(){
           date:c.bookingDate, time:c.bookingTime||'',
           pid, procName:getProcName(pid),
           bid:c.bid, brName:br?.name||'',
-          pttype:c.pttype, callId:c.id, callDate:ds
+          pttype:c.pttype, callId:c.id, callDate:ds,
+          memo:c.memo||''
         });
       });
     });
@@ -16033,8 +16034,8 @@ function renderBookingCal(){
   bookings.forEach(b=>{if(byDate[b.date]!==undefined) byDate[b.date].push(b);});
 
   const totalCnt=bookings.length;
-  const thB='padding:6px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;text-align:center;white-space:nowrap;background:var(--s2)';
-  const tdB='padding:5px 7px;border:1px solid var(--border);font-size:11px;vertical-align:top;width:14.28%';
+  const thB='padding:12px 10px;border:1px solid var(--border);font-size:14px;font-weight:700;text-align:center;white-space:nowrap;background:var(--s2)';
+  const tdB='padding:8px 10px;border:1px solid var(--border);font-size:13px;vertical-align:top;width:14.28%;min-width:120px';
 
   // 7일씩 주별로 쪼개기
   // 월요일 기준으로 주 분할
@@ -16059,7 +16060,7 @@ function renderBookingCal(){
 
   function makeCell(ds, bgStyle){
     const items=(byDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
-    if(!items.length) return `<td style="${tdB};${bgStyle}text-align:center;color:var(--text3);font-size:11px">-</td>`;
+    if(!items.length) return `<td style="${tdB};${bgStyle}text-align:center;color:var(--text3);font-size:14px">-</td>`;
 
     // 지점 순서로 그룹핑 (activeBranches 순서 기준)
     const brOrder=activeBranches().map(b=>b.id);
@@ -16077,14 +16078,15 @@ function renderBookingCal(){
       const bc=bid!=='_none'?bclr(bid):'#64748b';
       const brName=brItems[0]?.brName||'';
       const rows=brItems.map(b=>{
-        const timeStr=b.time?`<span style="font-size:10px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
-        return `<div style="font-size:10px;padding:2px 0;border-bottom:1px solid ${bc}22;line-height:1.4">
-          ${timeStr}<span style="font-weight:600;color:var(--text)">${b.procName}</span>
-          <span style="color:var(--text3);font-size:9px"> ${b.pttype||''}</span>
+        const timeStr=b.time?`<span style="font-size:13px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
+        return `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid ${bc}22;line-height:1.5">
+          ${timeStr}<span style="font-weight:700;color:var(--text)">${b.procName}</span>
+          <span style="color:var(--text3);font-size:11px"> ${b.pttype||''}</span>
+          ${b.memo?`<div style="font-size:11px;color:#b45309;margin-top:2px">📝 ${escHtml(b.memo)}</div>`:''}
         </div>`;
       }).join('');
-      return `<div style="background:#fff;border:1px solid ${bc}33;border-left:3px solid ${bc};border-radius:6px;padding:5px 7px;margin-bottom:4px">
-        <div style="font-size:10px;font-weight:800;color:${bc};margin-bottom:3px">${brName}</div>
+      return `<div style="background:#fff;border:1px solid ${bc}33;border-left:4px solid ${bc};border-radius:8px;padding:8px 10px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:800;color:${bc};margin-bottom:4px">${brName}</div>
         ${rows}
       </div>`;
     }).join('');
@@ -16108,9 +16110,9 @@ function renderBookingCal(){
       const cnt=byDate[ds]?.length||0;
       return `<th style="${thB};${bg};color:${clr}">
         ${todayMark}
-        <div style="font-weight:${isToday?900:700}">${label}</div>
-        <div style="font-size:10px;font-weight:500;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
-        ${cnt>0?`<div style="margin-top:2px;font-size:10px;font-weight:800;color:#2563eb;background:#dbeafe;padding:1px 5px;border-radius:8px;display:inline-block">${cnt}</div>`:''}
+        <div style="font-size:15px;font-weight:${isToday?900:700}">${label}</div>
+        <div style="font-size:13px;font-weight:600;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
+        ${cnt>0?`<div style="margin-top:3px;font-size:12px;font-weight:800;color:#2563eb;background:#dbeafe;padding:2px 8px;border-radius:10px;display:inline-block">${cnt}</div>`:''}
       </th>`;
     }).join('');
 
@@ -16122,7 +16124,7 @@ function renderBookingCal(){
     }).join('');
 
     return `<div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;padding:4px 8px;background:var(--s2);border-radius:6px;display:inline-block">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px;padding:5px 10px;background:var(--s2);border-radius:6px;display:inline-block">
         📅 ${wFrom} ~ ${wTo} &nbsp;·&nbsp; ${wCnt}건
       </div>
       <table style="border-collapse:collapse;width:100%;table-layout:fixed">
