@@ -357,7 +357,8 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="sdiv"></div>
     <div class="sg">메인</div>
     <div class="si act" data-page="ceo" onclick="go('ceo',this)"><span class="sico">👑</span>대표 보고</div>
-    <div class="si" data-page="shared-memo" onclick="go('shared-memo',this)"><span class="sico">📋</span>공유 메모장</div>
+    <div class="si" data-page="shared-memo" onclick="go('shared-memo',this)"><span class="sico">📢</span>직원 전체 공지</div>
+    <div class="si" data-page="team-memo" onclick="go('team-memo',this)"><span class="sico">📋</span>공유 메모장</div>
     <div class="si" data-page="brsum" onclick="go('brsum',this)"><span class="sico">🗂</span>지점별 현황</div>
     <div class="sdiv"></div>
     <div class="sg">분석</div>
@@ -742,8 +743,21 @@ td:first-child{text-align:left;padding-left:13px}
           <div class="mt" style="padding-right:32px">💸 채널별 광고비 입력</div>
         </div>
         <div style="padding:12px 16px 16px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;padding:8px 10px;background:var(--s2);border-radius:7px">
-            💡 월별로 각 채널에 집행한 광고비를 입력하세요. 입력된 광고비와 실제 신환 유입 데이터를 기반으로 CPL(신환 획득 비용)과 ROI를 자동 계산합니다.
+          <!-- 공지사항 (요금 안내) -->
+          <div id="roi-notice-wrap" style="margin-bottom:12px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="font-size:11px;font-weight:700;color:#854d0e">📢 요금 안내</span>
+              <button onclick="toggleRoiNoticeEdit()" id="roi-notice-edit-btn" style="padding:1px 8px;border-radius:5px;border:1px solid #d97706;background:#fff;color:#d97706;font-size:10px;font-weight:700;cursor:pointer;margin-left:auto">✏️ 수정</button>
+            </div>
+            <div id="roi-notice-view" style="font-size:11px;color:#92400e;white-space:pre-wrap;line-height:1.6"></div>
+            <div id="roi-notice-edit" style="display:none">
+              <textarea id="roi-notice-input" rows="3"
+                style="width:100%;padding:5px 8px;border:1px solid #fde68a;border-radius:6px;background:#fff;color:var(--text);font-size:11px;box-sizing:border-box;resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.6"></textarea>
+              <div style="display:flex;gap:6px;margin-top:5px">
+                <button onclick="saveRoiNotice()" style="padding:3px 12px;border-radius:5px;border:none;background:#d97706;color:#fff;font-size:11px;font-weight:700;cursor:pointer">💾 저장</button>
+                <button onclick="toggleRoiNoticeEdit()" style="padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--s1);color:var(--text2);font-size:11px;cursor:pointer">취소</button>
+              </div>
+            </div>
           </div>
           <div id="roi-cost-form"></div>
         </div>
@@ -954,21 +968,61 @@ td:first-child{text-align:left;padding-left:13px}
       </div>
     </div>
 
+    <!-- 공유 메모장 페이지 (직원 개인 메모 모아보기) -->
+    <div class="page" id="page-team-memo">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:24px;font-weight:800;color:var(--text)">📋 공유 메모장</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">직원 개인 메모장을 한눈에 모아보기</div>
+        </div>
+        <button onclick="renderTeamMemoPage()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:12px;cursor:pointer">🔄 새로고침</button>
+      </div>
+      <!-- 직원 필터 -->
+      <div id="team-memo-staff-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <!-- 날짜 필터 -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--text3)">날짜</span>
+        <input type="date" id="team-memo-date-from" onchange="renderTeamMemoList()"
+          style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+        <span style="font-size:11px;color:var(--text3)">~</span>
+        <input type="date" id="team-memo-date-to" onchange="renderTeamMemoList()"
+          style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+        <button onclick="document.getElementById('team-memo-date-from').value='';document.getElementById('team-memo-date-to').value='';renderTeamMemoList()"
+          style="padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;cursor:pointer">초기화</button>
+      </div>
+      <!-- 검색 -->
+      <input id="team-memo-search" placeholder="🔍 메모 검색..." oninput="renderTeamMemoList()"
+        style="width:100%;max-width:320px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--s2);color:var(--text);margin-bottom:14px;box-sizing:border-box">
+      <!-- 메모 목록 -->
+      <div id="team-memo-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
     <div class="page" id="page-shared-memo">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
         <div>
-          <div style="font-size:24px;font-weight:800;color:var(--text)">📋 공유 메모장</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px">직원 간 공유 메모 · Firebase 실시간 동기화</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text)">📢 직원 전체 공지</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">전체 공지 메모 · Firebase 실시간 동기화</div>
         </div>
-        <button onclick="openSharedMemoForm()" style="padding:8px 18px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">+ 메모 추가</button>
+        <button onclick="openSharedMemoForm()" style="padding:8px 18px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">+ 공지 추가</button>
       </div>
       <!-- 필터 -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <button id="smemo-filter-all" onclick="setSharedMemoFilter('all')" style="padding:5px 14px;border-radius:20px;border:1.5px solid #2563eb;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">전체</button>
         <button id="smemo-filter-active" onclick="setSharedMemoFilter('active')" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">진행중만</button>
         <div style="margin-left:4px;display:flex;gap:5px;flex-wrap:wrap" id="smemo-branch-filter">
           <button onclick="setSharedMemoBranch('')" id="smemo-br-all" style="padding:4px 10px;border-radius:16px;border:1.5px solid #2563eb;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">전체 지점</button>
         </div>
+      </div>
+      <!-- 날짜 필터 -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;color:var(--text3)">날짜</span>
+        <input type="date" id="smemo-date-from" onchange="renderSharedMemoList()"
+          style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+        <span style="font-size:11px;color:var(--text3)">~</span>
+        <input type="date" id="smemo-date-to" onchange="renderSharedMemoList()"
+          style="padding:4px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--s2);color:var(--text);font-family:'DM Mono',monospace">
+        <button onclick="document.getElementById('smemo-date-from').value='';document.getElementById('smemo-date-to').value='';renderSharedMemoList()"
+          style="padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:11px;cursor:pointer">초기화</button>
       </div>
       <!-- 리스트 -->
       <div id="shared-memo-list" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -983,6 +1037,12 @@ td:first-child{text-align:left;padding-left:13px}
         </div>
         <input type="hidden" id="smemo-edit-id">
         <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">작성자 <span style="color:#ef4444">*</span></div>
+            <select id="smemo-author-sel" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;color:var(--text);box-sizing:border-box">
+              <option value="">-- 작성자 선택 --</option>
+            </select>
+          </div>
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">지점 *</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap" id="smemo-branch-pills"></div>
@@ -2072,8 +2132,31 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="mt" id="simemo-modal-title">📝 메모 추가</div>
     <div class="ml">제목 *</div>
     <input class="minp" id="simemo-title-inp" placeholder="메모 제목" maxlength="100" onkeydown="if(event.key==='Enter')document.getElementById('simemo-content-inp').focus()">
+    <!-- 지점 + 날짜 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div>
+        <div class="ml" style="margin-bottom:4px">지점</div>
+        <select id="simemo-bid-inp" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--s2);color:var(--text);box-sizing:border-box">
+          <option value="">지점 없음</option>
+        </select>
+      </div>
+      <div>
+        <div class="ml" style="margin-bottom:4px">날짜</div>
+        <input type="date" id="simemo-date-inp" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--s2);color:var(--text);box-sizing:border-box;font-family:'DM Mono',monospace">
+      </div>
+    </div>
+    <!-- 진행 상태 -->
+    <div class="ml" style="margin-bottom:6px">진행 상태</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <label id="simemo-lbl-active" style="flex:1;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1.5px solid #d97706;background:#fefce8;color:#854d0e;cursor:pointer;font-size:13px;font-weight:600">
+        <input type="radio" name="simemo_status" value="active" checked onchange="updateSimemoStatusStyle()"> ⏳ 진행중
+      </label>
+      <label id="simemo-lbl-done" style="flex:1;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer;font-size:13px;font-weight:600">
+        <input type="radio" name="simemo_status" value="done" onchange="updateSimemoStatusStyle()"> ✅ 완료
+      </label>
+    </div>
     <div class="ml">내용</div>
-    <textarea id="simemo-content-inp" class="minp" rows="7" placeholder="내용을 자유롭게 적어보세요..." style="resize:vertical;line-height:1.6;font-size:13px"></textarea>
+    <textarea id="simemo-content-inp" class="minp" rows="5" placeholder="내용을 자유롭게 적어보세요..." style="resize:vertical;line-height:1.6;font-size:13px"></textarea>
     <div class="ml">태그 <span style="color:var(--text3);font-weight:400">(쉼표 구분, 선택)</span></div>
     <input class="minp" id="simemo-tags-inp" placeholder="예: 공지, 중요, 업무">
     <div class="mbtns">
@@ -2344,25 +2427,32 @@ td:first-child{text-align:left;padding-left:13px}
       </button>
     </div>
     <!-- 동행 버튼 -->
-    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:700;color:var(--text3)">👥 동행:</span>
-      <button id="together-btn-1" onclick="setTogetherCount(1)"
-        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--accent);color:#fff;transition:all .15s">
-        1명 (기본)
-      </button>
-      <button id="together-btn-2" onclick="setTogetherCount(2)"
-        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
-        2명
-      </button>
-      <button id="together-btn-3" onclick="setTogetherCount(3)"
-        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
-        3명
-      </button>
-      <button id="together-btn-4" onclick="setTogetherCount(4)"
-        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);transition:all .15s">
-        4명
-      </button>
-      <span id="together-hint" style="font-size:11px;color:#f59e0b;display:none">→ 저장 시 콜 N개 자동 생성</span>
+    <div style="margin-top:8px;padding:8px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px">👥 동행 인원 설정</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:#059669;width:52px">🆕 신환</span>
+          <button onclick="adjustTogether('shin',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #059669;background:#fff;color:#059669;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          <span id="together-shin" style="font-size:15px;font-weight:800;color:#059669;width:24px;text-align:center">0</span>
+          <button onclick="adjustTogether('shin',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #059669;background:#059669;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">＋</button>
+          <span style="font-size:11px;color:var(--text3)">명</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:#7c3aed;width:52px">🔄 구환</span>
+          <button onclick="adjustTogether('gu',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #7c3aed;background:#fff;color:#7c3aed;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          <span id="together-gu" style="font-size:15px;font-weight:800;color:#7c3aed;width:24px;text-align:center">0</span>
+          <button onclick="adjustTogether('gu',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #7c3aed;background:#7c3aed;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">＋</button>
+          <span style="font-size:11px;color:var(--text3)">명</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:#0891b2;width:52px">🗓 잔여</span>
+          <button onclick="adjustTogether('rem',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #0891b2;background:#fff;color:#0891b2;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          <span id="together-rem" style="font-size:15px;font-weight:800;color:#0891b2;width:24px;text-align:center">0</span>
+          <button onclick="adjustTogether('rem',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid #0891b2;background:#0891b2;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">＋</button>
+          <span style="font-size:11px;color:var(--text3)">명</span>
+        </div>
+        <div id="together-hint" style="font-size:11px;color:#f59e0b;display:none;margin-top:2px;padding:4px 6px;background:#fffbeb;border-radius:5px"></div>
+      </div>
     </div>
 
     <div id="below-branch-wrap">
@@ -2522,14 +2612,23 @@ td:first-child{text-align:left;padding-left:13px}
       <!-- 파란 헤더 (탭 + 검색) -->
       <div style="background:#2563eb;flex-shrink:0">
 
-        <!-- 탭 버튼 -->
+        <!-- 탭 버튼 1행 -->
         <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.2)">
           <button id="snp-tab-notes" onclick="snpSwitchTab('notes')"
-            style="flex:1;padding:12px 6px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:20px;font-weight:800;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">📒 수가표</button>
+            style="flex:1;padding:9px 4px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:17px;font-weight:800;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">📒 수가표</button>
           <button id="snp-tab-faq" onclick="snpSwitchTab('faq')"
-            style="flex:1;padding:12px 6px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:20px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">💬 FAQ</button>
+            style="flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:17px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">💬 FAQ</button>
           <button id="snp-tab-landing" onclick="snpSwitchTab('landing')"
-            style="flex:1;padding:12px 6px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:20px;font-weight:600;cursor:pointer">🔗 랜딩페이지</button>
+            style="flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:17px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">🔗 랜딩</button>
+          <button id="snp-tab-adlog" onclick="snpSwitchTab('adlog')"
+            style="flex:1;padding:9px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:17px;font-weight:600;cursor:pointer">📢 광고</button>
+        </div>
+        <!-- 탭 버튼 2행 -->
+        <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.2)">
+          <button id="snp-tab-teamnotice" onclick="snpSwitchTab('teamnotice')"
+            style="flex:1;padding:8px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:16px;font-weight:600;cursor:pointer;border-right:1px solid rgba(255,255,255,.15)">📢 전체공지</button>
+          <button id="snp-tab-teammemo" onclick="snpSwitchTab('teammemo')"
+            style="flex:1;padding:8px 4px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:16px;font-weight:600;cursor:pointer">📋 공유메모</button>
         </div>
 
         <!-- 수가표 헤더 -->
@@ -2578,6 +2677,9 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="snp-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
       <div id="faq-list"         style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
       <div id="snp-landing-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
+      <div id="snp-adlog-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:8px;display:none;flex-direction:column;gap:6px"></div>
+      <div id="snp-teamnotice-list" style="flex:1;overflow-y:auto;background:#f8fafc;padding:0;display:none;flex-direction:column"></div>
+      <div id="snp-teammemo-list"   style="flex:1;overflow-y:auto;background:#f8fafc;padding:0;display:none;flex-direction:column"></div>
     </div>
 
     <!-- 직원근무현황 미니 패널 -->
@@ -3921,6 +4023,7 @@ function go(pid,el){
   else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
   else if(pid==='shared-memo') renderSharedMemoPage();
+  else if(pid==='team-memo') renderTeamMemoPage();
   else if(pid==='trend'){
     renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets();
     // Firebase에서 최신 즐겨찾기 pull
@@ -4166,12 +4269,12 @@ function renderStaffInputPage(sid){
       </div>
     </div>
 
-    <!-- 공유 메모장 위젯 -->
+    <!-- 직원 전체 공지 위젯 -->
     <div id="si-shared-memo-wrap-${sid}" style="margin-bottom:12px">
       <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;overflow:hidden">
         <div style="padding:10px 16px;border-bottom:1px solid #fde68a;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleStaffSharedMemo('${sid}')">
           <span style="font-size:14px;font-weight:800;color:#854d0e;display:flex;align-items:center;gap:6px">
-            📋 공유 메모
+            📢 직원 전체 공지
             <span id="si-shared-memo-badge-${sid}" style="font-size:12px;font-weight:700;color:#fff;background:#ef4444;padding:1px 7px;border-radius:10px;display:none"></span>
           </span>
           <div style="display:flex;align-items:center;gap:8px">
@@ -4506,6 +4609,7 @@ function deleteCall(cid,sid,ds){
 // ═══════════════════════════════════
 let _callType='in',_callDegree=3,_callBids=new Set(),_callBid=null,_callPttypes=new Set(['신환']),_callPttype='신환',_callMedium='phone',_callBookingType='당일';
 let _togetherCount=1;
+let _togetherMap={shin:0,gu:0,rem:0};
 let _outPurpose='예약안내', _outResult='통화성공';
 const _procSel={};
 let _editCallId=null, _editCallDate=null;
@@ -4711,7 +4815,13 @@ function openCallModal(sid){
   });
   // 동행 버튼 초기화
   _togetherCount=1;
-  setTogetherCount(1);
+  _togetherMap={shin:0,gu:0,rem:0};
+  ['shin','gu','rem'].forEach(t=>{
+    const el=document.getElementById('together-'+t);
+    if(el) el.textContent='0';
+  });
+  const hint=document.getElementById('together-hint');
+  if(hint) hint.style.display='none';
   document.getElementById('modal-branch-pills').innerHTML=activeBranches().map(b=>{
     return `<div class="br-pill" id="bpill-${b.id}" onclick="selectBranch('${b.id}')">${b.name}</div>`;
   }).join('');
@@ -4917,21 +5027,30 @@ function selectResidualBranch(type){
   const hint=document.getElementById('branch-required-hint');
   if(hint) hint.style.display='none';
 }
-function setTogetherCount(n){
-  _togetherCount=n;
-  [1,2,3,4].forEach(i=>{
-    const btn=document.getElementById('together-btn-'+i);
-    if(!btn) return;
-    const isAct=(i===n);
-    btn.style.background=isAct?'var(--accent)':'var(--s2)';
-    btn.style.color=isAct?'#fff':'var(--text2)';
-    btn.style.borderColor=isAct?'var(--accent)':'var(--border)';
-  });
+// _togetherCount, _togetherMap 위에서 선언됨
+
+function adjustTogether(type, delta){
+  _togetherMap[type]=Math.max(0,(_togetherMap[type]||0)+delta);
+  const el=document.getElementById('together-'+type);
+  if(el) el.textContent=_togetherMap[type];
+  const total=_togetherMap.shin+_togetherMap.gu+_togetherMap.rem;
   const hint=document.getElementById('together-hint');
   if(hint){
-    hint.style.display=n>1?'inline':'none';
-    hint.textContent=`→ 저장 시 콜 ${n}개 자동 생성`;
+    if(total>0){
+      const parts=[];
+      if(_togetherMap.shin) parts.push(`신환 ${_togetherMap.shin}명`);
+      if(_togetherMap.gu) parts.push(`구환 ${_togetherMap.gu}명`);
+      if(_togetherMap.rem) parts.push(`잔여 ${_togetherMap.rem}명`);
+      hint.textContent=`→ ${parts.join(' + ')} 총 ${total}건 생성`;
+      hint.style.display='inline';
+    } else {
+      hint.style.display='none';
+    }
   }
+}
+
+function setTogetherCount(n){ // 하위 호환용 (미사용)
+  _togetherCount=n;
 }
 
 function selectBranch(bid){
@@ -5269,18 +5388,45 @@ function confirmCall(){
     if(!S.calls[ds]) S.calls[ds]=[];
     const bidsArr2=[..._callBids];
     const targetBids = bidsArr2.length>1 ? bidsArr2 : [primaryBid];
-    // 복수 지점 × 동행 인원 조합으로 콜 생성
     const t=nowTime();
-    for(const tbid of targetBids){
-      for(let ti=0;ti<_togetherCount;ti++){
-        const togetherNote = _togetherCount>1 ? `[동행${_togetherCount}명${ti>0?' '+( ti+1)+'번째':''}]` : '';
-        const baseMemo = callData.memo||'';
-        const finalMemo = togetherNote ? (baseMemo ? togetherNote+' '+baseMemo : togetherNote) : baseMemo;
-        S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:t,...callData,bid:tbid,bids:undefined,memo:finalMemo});
+
+    const togetherTotal = _togetherMap.shin+_togetherMap.gu+_togetherMap.rem;
+
+    if(togetherTotal > 0){
+      // 유형별 동행: 현재 콜 먼저 저장 후 동행 콜 추가
+      const ptypeMap = {shin:'신환', gu:'구환(신규상담)', rem:'잔여시술'};
+      const labelMap = {shin:'신환', gu:'구환', rem:'잔여시술'};
+      const baseMemo = callData.memo||'';
+      const totalAll = togetherTotal;
+
+      for(const tbid of targetBids){
+        // 현재 콜 (기본 pttype 유지)
+        const note0=`[동행${totalAll+1}명 1번]`;
+        const memo0=baseMemo ? note0+' '+baseMemo : note0;
+        S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:t,...callData,bid:tbid,bids:undefined,memo:memo0});
+
+        // 동행 콜들 (유형별)
+        let idx=2;
+        for(const [key,count] of Object.entries(_togetherMap)){
+          if(!count) continue;
+          for(let k=0;k<count;k++){
+            const note=`[동행${totalAll+1}명 ${idx}번 ${labelMap[key]}]`;
+            const memo=baseMemo ? note+' '+baseMemo : note;
+            S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:t,...callData,
+              bid:tbid,bids:undefined,pttype:ptypeMap[key],memo});
+            idx++;
+          }
+        }
       }
+      const totalSaved = targetBids.length * (togetherTotal+1);
+      toastMsg=`✅ ${totalSaved}건 저장됨 (동행: ${['shin','gu','rem'].filter(k=>_togetherMap[k]).map(k=>`${{shin:'신환',gu:'구환',rem:'잔여시술'}[k]} ${_togetherMap[k]}명`).join('+')})`;
+    } else {
+      // 기존 방식 (동행 없음)
+      for(const tbid of targetBids){
+        S.calls[ds].push({id:uid(),sid:_curSid,date:ds,time:t,...callData,bid:tbid,bids:undefined});
+      }
+      if(targetBids.length>1) toastMsg=`✅ ${targetBids.length}건 저장됨 (지점 ${targetBids.length}개)`;
     }
-    const totalSaved = targetBids.length * _togetherCount;
-    if(totalSaved>1) toastMsg=`✅ ${totalSaved}건 저장됨 (지점 ${targetBids.length}개 × 동행 ${_togetherCount}명)`;
   }
   const _savedDate = _editCallDate || _curDate || todayStr();
   scheduleSyncPush(_savedDate);
@@ -5296,6 +5442,7 @@ function confirmCall(){
     else if(pid==='channel') renderChannelPage();
   else if(pid==='noappt') renderNoapptPage();
   else if(pid==='shared-memo') renderSharedMemoPage();
+  else if(pid==='team-memo') renderTeamMemoPage();
   else if(pid==='trend'){
     renderTrend(); renderDailyProcTable(); renderDpProcPresets(); renderTrendProcPresets();
     // Firebase에서 최신 즐겨찾기 pull
@@ -7585,7 +7732,57 @@ function openRoiAdCostModal() {
   const modal = document.getElementById('modal-roi-cost');
   if(!modal) return;
   renderRoiLogForm();
+  renderRoiNotice();
   modal.classList.add('open');
+}
+
+const ROI_RATE_MAP = {
+  '전능_단문': 16.5,
+  '전능_장문': 30.8,
+  '알뜰_단문': 9.02,
+  '알뜰_장문': 27.06
+};
+
+const ROI_NOTICE_KEY = 'mclinic_roi_notice';
+const ROI_NOTICE_DEFAULT = '전능: 단문 16.5원 / 장문 30.8원\n알뜰: 단문 9.02원 / 장문 27.06원';
+
+function getRoiNotice(){
+  return localStorage.getItem(ROI_NOTICE_KEY) || ROI_NOTICE_DEFAULT;
+}
+
+function renderRoiNotice(){
+  const view = document.getElementById('roi-notice-view');
+  const input = document.getElementById('roi-notice-input');
+  if(view) view.textContent = getRoiNotice();
+  if(input) input.value = getRoiNotice();
+}
+
+function toggleRoiNoticeEdit(){
+  const view = document.getElementById('roi-notice-view');
+  const edit = document.getElementById('roi-notice-edit');
+  const btn = document.getElementById('roi-notice-edit-btn');
+  if(!view||!edit) return;
+  const isEdit = edit.style.display !== 'none';
+  view.style.display = isEdit ? '' : 'none';
+  edit.style.display = isEdit ? 'none' : '';
+  if(btn) btn.textContent = isEdit ? '✏️ 수정' : '';
+}
+
+function saveRoiNotice(){
+  const val = document.getElementById('roi-notice-input')?.value||'';
+  localStorage.setItem(ROI_NOTICE_KEY, val);
+  renderRoiNotice();
+  toggleRoiNoticeEdit();
+  toast('✅ 요금 안내 저장됨');
+}
+
+function calcRoiSendCost(){ /* 이전 버전 호환 */ }
+function applyRoiCalc(){ /* 이전 버전 호환 */ }
+
+function updateRoiAmountPreview(){
+  const val = +document.getElementById('roi-new-amount')?.value||0;
+  const el = document.getElementById('roi-amount-preview');
+  if(el) el.textContent = val ? val.toLocaleString()+'원' : '';
 }
 
 function renderRoiLogForm() {
@@ -7604,6 +7801,23 @@ function renderRoiLogForm() {
             style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box;font-family:'DM Mono',monospace">
         </div>
         <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">발송 시간</label>
+          <input type="time" id="roi-new-sendtime"
+            style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">발송 건수</label>
+          <input type="number" id="roi-send-count" min="0" step="100" placeholder="예: 5000"
+            style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">금액 (원)</label>
+          <input type="number" id="roi-new-amount" min="0" step="1000" placeholder="예: 1000000"
+            style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;box-sizing:border-box"
+            oninput="updateRoiAmountPreview()">
+          <span id="roi-amount-preview" style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:2px;display:block"></span>
+        </div>
+        <div>
           <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">지점</label>
           <select id="roi-new-bid" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
             <option value="all">전체 공통</option>
@@ -7617,17 +7831,30 @@ function renderRoiLogForm() {
           </select>
         </div>
         <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">금액 (원)</label>
-          <input type="number" id="roi-new-amount" min="0" step="10000" placeholder="예: 1000000"
-            style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;box-sizing:border-box"
-            oninput="document.getElementById('roi-amount-preview').textContent=this.value?Number(this.value).toLocaleString()+'원':''">
-          <span id="roi-amount-preview" style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:2px;display:block"></span>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">담당자</label>
+          <select id="roi-new-staff" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
+            <option value="">미지정</option>
+            ${(S.staff||[]).filter(s=>!s.retired).map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">발송 상태</label>
+          <select id="roi-new-status" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
+            <option value="예약발송">📅 예약발송</option>
+            <option value="발송완료">✅ 발송완료</option>
+            <option value="발송취소">❌ 발송취소</option>
+          </select>
         </div>
       </div>
       <div style="margin-bottom:8px">
         <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">메모 (선택)</label>
         <input type="text" id="roi-new-memo" placeholder="예: 3월 상반기 문자 발송 1차"
           style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">문자 내용 (선택 · 직원들이 볼 수 있어요)</label>
+        <textarea id="roi-new-msgcontent" rows="3" placeholder="발송된 문자 내용을 붙여넣으세요..."
+          style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);font-size:12px;box-sizing:border-box;resize:vertical;font-family:'Noto Sans KR',sans-serif;line-height:1.5"></textarea>
       </div>
       <button onclick="addRoiLogAndSave()" style="width:100%;padding:8px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer">💾 저장</button>
     </div>
@@ -7636,18 +7863,26 @@ function renderRoiLogForm() {
     <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📋 입력 내역 (최근 순)</div>
     ${logs.length===0
       ? `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">입력된 광고비가 없습니다</div>`
-      : `<div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto">
+      : `<div style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto">
           ${logs.map(log=>{
             const ch=S.channels.find(c=>c.id===log.chId)||{name:log.chId,icon:'📡'};
             const br=S.branches.find(b=>b.id===log.bid);
             const fmt=n=>n>=10000?(n/10000).toFixed(0)+'만원':n.toLocaleString()+'원';
-            return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
-              <span style="font-size:10px;color:var(--text3);min-width:70px;font-family:'DM Mono',monospace">${log.date}</span>
-              <span style="font-size:11px;font-weight:600;flex:1">${getChDisplayName(ch)}</span>
-              <span style="font-size:10px;color:#059669">${br?br.name+'점':'공통'}</span>
-              <span style="font-size:12px;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
-              ${log.memo?`<span style="font-size:9px;color:var(--text3);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${log.memo}</span>`:''}
-              <button onclick="deleteRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer;flex-shrink:0">✕</button>
+            const statusClr=log.sendStatus==='발송완료'?'#059669':log.sendStatus==='발송취소'?'#ef4444':'#f59e0b';
+            const statusBg=log.sendStatus==='발송완료'?'#f0fdf4':log.sendStatus==='발송취소'?'#fff5f5':'#fffbeb';
+            return `<div style="padding:10px 12px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+                <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${log.date}${log.sendTime?' '+log.sendTime:''}</span>
+                <span style="font-size:11px;font-weight:700">${getChDisplayName(ch)}</span>
+                <span style="font-size:10px;color:#059669">${br?br.name+'점':'공통'}</span>
+                ${log.staff?`<span style="font-size:10px;color:#2563eb;font-weight:600">👤 ${log.staff}</span>`:''}
+                ${log.sendStatus?`<span style="font-size:10px;font-weight:700;color:${statusClr};background:${statusBg};padding:1px 6px;border-radius:8px">${log.sendStatus}</span>`:''}
+                <span style="margin-left:auto;font-size:12px;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
+                <button onclick="deleteRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">✕</button>
+              </div>
+              ${log.sendCount?`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">📨 발송 ${log.sendCount.toLocaleString()}건</div>`:''}
+              ${log.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:4px">📌 ${log.memo}</div>`:''}
+              ${log.msgContent?`<div style="font-size:11px;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;white-space:pre-wrap;line-height:1.55;margin-top:4px;cursor:pointer" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'" style="max-height:60px;overflow:hidden">💬 ${escHtml(log.msgContent)}</div>`:''}
             </div>`;
           }).join('')}
         </div>`}`;
@@ -7659,14 +7894,21 @@ function addRoiLog() {
   const chId   = document.getElementById('roi-new-chid')?.value;
   const amount = +document.getElementById('roi-new-amount')?.value||0;
   const memo   = document.getElementById('roi-new-memo')?.value.trim()||'';
+  const staff  = document.getElementById('roi-new-staff')?.value.trim()||'';
+  const sendStatus = document.getElementById('roi-new-status')?.value||'발송완료';
+  const msgContent = document.getElementById('roi-new-msgcontent')?.value.trim()||'';
+  const sendCount = +document.getElementById('roi-send-count')?.value||0;
+  const sendTime = document.getElementById('roi-new-sendtime')?.value||'';
   if(!date||!chId||amount<=0){ toast('⚠️ 날짜·채널·금액을 입력해주세요'); return; }
   if(!S.roiLogs) S.roiLogs=[];
-  S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo});
+  S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime});
   S.roiLogs.sort((a,b)=>b.date.localeCompare(a.date));
   autoSave(); markConfigDirty(); syncPush(false);
-  // 금액 초기화, 메모 초기화
   const amtEl=document.getElementById('roi-new-amount'); if(amtEl) amtEl.value='';
   const memoEl=document.getElementById('roi-new-memo'); if(memoEl) memoEl.value='';
+  const msgEl=document.getElementById('roi-new-msgcontent'); if(msgEl) msgEl.value='';
+  const cntEl=document.getElementById('roi-send-count'); if(cntEl) cntEl.value='';
+  const stEl=document.getElementById('roi-new-sendtime'); if(stEl) stEl.value='';
   renderRoiLogForm();
   toast('✅ 광고비 추가됨');
 }
@@ -7693,14 +7935,21 @@ function addRoiLogAndSave(){
   const chId   = document.getElementById('roi-new-chid')?.value;
   const amount = +document.getElementById('roi-new-amount')?.value||0;
   const memo   = document.getElementById('roi-new-memo')?.value.trim()||'';
+  const staff  = document.getElementById('roi-new-staff')?.value.trim()||'';
+  const sendStatus = document.getElementById('roi-new-status')?.value||'발송완료';
+  const msgContent = document.getElementById('roi-new-msgcontent')?.value.trim()||'';
+  const sendCount = +document.getElementById('roi-send-count')?.value||0;
+  const sendTime = document.getElementById('roi-new-sendtime')?.value||'';
   if(!date||!chId||amount<=0){ toast('⚠️ 날짜·채널·금액을 입력해주세요'); return; }
   if(!S.roiLogs) S.roiLogs=[];
-  S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo});
+  S.roiLogs.push({id:uid(), date, chId, bid:bid||'all', amount, memo, staff, sendStatus, msgContent, sendCount, sendTime});
   S.roiLogs.sort((a,b)=>b.date.localeCompare(a.date));
   autoSave(); markConfigDirty(); syncPush(false);
-  // 입력 초기화
   const amtEl=document.getElementById('roi-new-amount'); if(amtEl) amtEl.value='';
   const memoEl=document.getElementById('roi-new-memo'); if(memoEl) memoEl.value='';
+  const msgEl=document.getElementById('roi-new-msgcontent'); if(msgEl) msgEl.value='';
+  const cntEl=document.getElementById('roi-send-count'); if(cntEl) cntEl.value='';
+  const stEl=document.getElementById('roi-new-sendtime'); if(stEl) stEl.value='';
   renderRoiLogForm();
   renderRoi();
   toast('✅ 광고비 저장됨');
@@ -8038,15 +8287,21 @@ function renderRoi() {
                     <span style="font-size:24px;font-weight:700;color:#f59e0b">${fmt(s.adCost)}</span>
                   </div>
                   <!-- 입력 내역 리스트 -->
-                  <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">
+                  <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
                     ${s.logs.sort((a,b)=>a.date.localeCompare(b.date)).map(log=>{
                       const br=S.branches.find(b=>b.id===log.bid);
-                      return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s2);border-radius:6px;font-size:11px">
-                        <span style="color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap">${log.date.slice(5)}</span>
-                        <span style="color:#059669;font-weight:600;white-space:nowrap">${br?br.name:'공통'}</span>
-                        ${log.memo?`<span style="color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${log.memo}</span>`:'<span style="flex:1"></span>'}
-                        <span style="font-weight:800;color:#f59e0b;white-space:nowrap;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
-                        <button onclick="deleteRoiLog('${log.id}')" style="padding:1px 5px;border-radius:4px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:9px;cursor:pointer;flex-shrink:0">✕</button>
+                      const sClr=log.sendStatus==='발송완료'?'#059669':log.sendStatus==='발송취소'?'#ef4444':'#f59e0b';
+                      return `<div style="padding:6px 8px;background:var(--s2);border-radius:6px;font-size:11px">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                          <span style="color:var(--text3);font-family:'DM Mono',monospace">${log.date.slice(5)}</span>
+                          <span style="color:#059669;font-weight:600">${br?br.name:'공통'}</span>
+                          ${log.staff?`<span style="color:#2563eb;font-weight:600">👤 ${log.staff}</span>`:''}
+                          ${log.sendStatus?`<span style="color:${sClr};font-weight:700">${log.sendStatus}</span>`:''}
+                          <span style="margin-left:auto;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
+                          <button onclick="deleteRoiLog('${log.id}')" style="padding:1px 5px;border-radius:4px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:9px;cursor:pointer">✕</button>
+                        </div>
+                        ${log.memo?`<div style="color:var(--text2);margin-top:3px">📌 ${log.memo}</div>`:''}
+                        ${log.msgContent?`<div style="color:var(--text);background:#fff;border:1px solid var(--border);border-radius:5px;padding:4px 7px;margin-top:4px;white-space:pre-wrap;line-height:1.5;max-height:50px;overflow:hidden;cursor:pointer" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'50px':'none'">💬 ${escHtml(log.msgContent)}</div>`:''}
                       </div>`;
                     }).join('')}
                   </div>
@@ -8488,7 +8743,7 @@ function renderStaffSharedMemoList(sid){
   }
 
   if(!memos.length){
-    el.innerHTML=`<div style="padding:14px;text-align:center;font-size:12px;color:var(--text3)">공유 메모 없음</div>`;
+    el.innerHTML=`<div style="padding:14px;text-align:center;font-size:12px;color:var(--text3)">공지 없음</div>`;
     return;
   }
   el.innerHTML = memos.map(m=>{
@@ -8534,6 +8789,92 @@ function renderAllStaffSharedMemos(){
 function toggleSidebarMemo(){ /* deprecated */ }
 function renderSidebarMemoList(){ renderAllStaffSharedMemos(); }
 
+// ── 공유 메모장 (직원 개인 메모 모아보기) ──
+let _teamMemoSelectedStaff = new Set();
+
+async function renderTeamMemoPage(){
+  const filterEl = document.getElementById('team-memo-staff-filter');
+  const activeStaff = (S.staff||[]).filter(s=>!s.retired);
+  if(filterEl){
+    filterEl.innerHTML = [
+      `<button onclick="tmStaffFilter('')" id="tm-staff-all" style="padding:4px 12px;border-radius:14px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer">전체</button>`,
+      ...activeStaff.map(s=>`<button onclick="tmStaffFilter('${s.id}')" id="tm-staff-${s.id}" style="padding:4px 12px;border-radius:14px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">${s.name}</button>`)
+    ].join('');
+  }
+  const el = document.getElementById('team-memo-list');
+  if(el) el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">⏳ 불러오는 중...</div>';
+  if(_syncUrl){
+    try{
+      const res = await fetch(`${_syncUrl.replace(/\/+$/,'')}/personalMemos.json`);
+      const data = await res.json();
+      if(data && typeof data === 'object'){
+        Object.entries(data).forEach(([sid,memoMap])=>{
+          if(memoMap && typeof memoMap === 'object')
+            _siMemoCache[sid]=Object.values(memoMap).filter(Boolean).sort((a,b)=>(b.ts||0)-(a.ts||0));
+        });
+      }
+    }catch(e){}
+  }
+  renderTeamMemoList();
+}
+
+function tmStaffFilter(sid){
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  const setBtn=(id,active)=>{
+    const b=document.getElementById(id); if(!b) return;
+    b.style.background=active?'var(--accent)':'var(--s2)';
+    b.style.color=active?'#fff':'var(--text2)';
+    b.style.borderColor=active?'var(--accent)':'var(--border)';
+  };
+  if(!sid){
+    _teamMemoSelectedStaff=new Set();
+    setBtn('tm-staff-all',true);
+    activeStaff.forEach(s=>setBtn('tm-staff-'+s.id,false));
+  } else {
+    if(_teamMemoSelectedStaff.has(sid)) _teamMemoSelectedStaff.delete(sid);
+    else _teamMemoSelectedStaff.add(sid);
+    setBtn('tm-staff-all',_teamMemoSelectedStaff.size===0);
+    activeStaff.forEach(s=>setBtn('tm-staff-'+s.id,_teamMemoSelectedStaff.has(s.id)));
+  }
+  renderTeamMemoList();
+}
+
+function renderTeamMemoList(){
+  const el=document.getElementById('team-memo-list'); if(!el) return;
+  const q=(document.getElementById('team-memo-search')?.value||'').toLowerCase();
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  const targets=_teamMemoSelectedStaff.size>0 ? activeStaff.filter(s=>_teamMemoSelectedStaff.has(s.id)) : activeStaff;
+  const sections=targets.map(s=>{
+    let memos=(_siMemoCache[s.id]||[]);
+    const dateFrom=document.getElementById('team-memo-date-from')?.value;
+    const dateTo=document.getElementById('team-memo-date-to')?.value;
+    if(q) memos=memos.filter(m=>`${m.title||''} ${m.content||''} ${(m.tags||[]).join(' ')}`.toLowerCase().includes(q));
+    if(dateFrom) memos=memos.filter(m=>m.ts>=new Date(dateFrom).getTime());
+    if(dateTo) memos=memos.filter(m=>m.ts<=new Date(dateTo+'T23:59:59').getTime());
+    if(!memos.length) return '';
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px;font-weight:800;color:var(--text)">📝 ${s.name}</span>
+        <span style="font-size:11px;color:var(--text3);background:var(--s1);padding:1px 8px;border-radius:8px">${memos.length}건</span>
+      </div>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        ${memos.map(m=>{
+          const dt=m.ts?new Date(m.ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
+          return `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 12px">
+            ${m.title?`<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px">${escHtml(m.title)}</div>`:''}
+            <div style="font-size:12px;color:var(--text2);line-height:1.55;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+            <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+              ${dt?`<span style="font-size:10px;color:var(--text3)">${dt}</span>`:''}
+              ${(m.tags||[]).map(t=>`<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:6px">#${t}</span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).filter(Boolean);
+  el.innerHTML=sections.length ? sections.join('') : `<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">${q?'검색 결과가 없습니다':'메모가 없습니다'}</div>`;
+}
+
 function renderSharedMemoPage(){
   renderSharedMemoBranchFilter();
   renderSharedMemoList();
@@ -8569,6 +8910,11 @@ function renderSharedMemoList(){
   let memos=getSharedMemos();
   if(_sharedMemoBranch) memos=memos.filter(m=>m.bid===_sharedMemoBranch);
   if(_sharedMemoFilter==='active') memos=memos.filter(m=>m.status!=='done');
+  // 날짜 필터
+  const dateFrom=document.getElementById('smemo-date-from')?.value;
+  const dateTo=document.getElementById('smemo-date-to')?.value;
+  if(dateFrom) memos=memos.filter(m=>m.createdAt>=new Date(dateFrom).getTime());
+  if(dateTo) memos=memos.filter(m=>m.createdAt<=new Date(dateTo+'T23:59:59').getTime());
   // 진행중 먼저, 완료 뒤로, 각각 최신순
   const active=memos.filter(m=>m.status!=='done').sort((a,b)=>b.createdAt-a.createdAt);
   const done=memos.filter(m=>m.status==='done').sort((a,b)=>b.updatedAt-a.updatedAt);
@@ -8614,24 +8960,38 @@ function renderSharedMemoList(){
   }).join('');
 }
 
+function populateSmemoAuthorSel(selectedName){
+  const sel=document.getElementById('smemo-author-sel'); if(!sel) return;
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  sel.innerHTML=`<option value="">-- 작성자 선택 --</option>`
+    +activeStaff.map(s=>`<option value="${s.name}" ${s.name===selectedName?'selected':''}>${s.name}</option>`).join('');
+  // 현재 로그인 직원 자동 선택
+  if(!selectedName){
+    const me=S.staff.find(s=>s.id===(_currentUser?.sid||''));
+    if(me) sel.value=me.name;
+  }
+}
+
 function openSharedMemoForm(){
   document.getElementById('smemo-edit-id').value='';
-  document.getElementById('smemo-modal-title').textContent='📋 메모 추가';
+  document.getElementById('smemo-modal-title').textContent='📢 공지 추가';
   document.getElementById('smemo-content').value='';
   document.querySelector('input[name="smemo_status"][value="active"]').checked=true;
   updateSmemoStatusStyle();
   renderSmemoBranchPills('');
+  populateSmemoAuthorSel('');
   document.getElementById('modal-shared-memo').classList.add('open');
 }
 
 function editSharedMemo(id){
   const memo=getSharedMemos().find(m=>m.id===id); if(!memo) return;
   document.getElementById('smemo-edit-id').value=id;
-  document.getElementById('smemo-modal-title').textContent='📋 메모 편집';
+  document.getElementById('smemo-modal-title').textContent='📢 공지 편집';
   document.getElementById('smemo-content').value=memo.content||'';
   document.querySelector(`input[name="smemo_status"][value="${memo.status||'active'}"]`).checked=true;
   updateSmemoStatusStyle();
   renderSmemoBranchPills(memo.bid||'');
+  populateSmemoAuthorSel(memo.author||'');
   document.getElementById('modal-shared-memo').classList.add('open');
 }
 
@@ -8675,24 +9035,27 @@ function updateSmemoStatusStyle(){
 function saveSharedMemo(){
   const bid=getSelectedSmemoBranch();
   if(!bid){ toast('⚠️ 지점을 선택해주세요'); return; }
+  const author=document.getElementById('smemo-author-sel')?.value||'';
+  if(!author){ toast('⚠️ 작성자를 선택해주세요'); return; }
   const content=document.getElementById('smemo-content').value.trim();
-  if(!content){ toast('⚠️ 문의 내용을 입력해주세요'); return; }
+  if(!content){ toast('⚠️ 공지 내용을 입력해주세요'); return; }
   const status=document.querySelector('input[name="smemo_status"]:checked').value;
   const editId=document.getElementById('smemo-edit-id').value;
   const memos=getSharedMemos();
   const now=Date.now();
-  const me=S.staff.find(s=>s.id===(_currentUser?.sid||''));
   if(editId){
     const idx=memos.findIndex(m=>m.id===editId);
-    if(idx>=0) memos[idx]={...memos[idx],bid,content,status,updatedAt:now};
+    if(idx>=0) memos[idx]={...memos[idx],bid,content,status,author,updatedAt:now};
   } else {
-    memos.unshift({id:'sm_'+now,bid,content,status,author:me?me.name:'',createdAt:now,updatedAt:now});
+    memos.unshift({id:'sm_'+now,bid,content,status,author,createdAt:now,updatedAt:now});
   }
   saveSharedMemos(memos);
   closeModal('modal-shared-memo');
   renderSharedMemoList();
   try{renderAllStaffSharedMemos();}catch(e){}
-  toast('💾 메모 저장됨');
+  // 콜 모달 패널이 열려있으면 갱신
+  if(_snpActiveTab==='teamnotice') snpRenderTeamNotice();
+  toast('💾 공지 저장됨');
 }
 
 function toggleSharedMemoStatus(id){
@@ -14644,29 +15007,348 @@ function snpSwitchTab(tab){
   const noteList=document.getElementById('snp-list');
   const faqList=document.getElementById('faq-list');
   const landingList=document.getElementById('snp-landing-list');
+  const adlogList=document.getElementById('snp-adlog-list');
+  const teamnoticeList=document.getElementById('snp-teamnotice-list');
+  const teammemoList=document.getElementById('snp-teammemo-list');
+
   const noteTab=document.getElementById('snp-tab-notes');
   const faqTab=document.getElementById('snp-tab-faq');
   const landingTab=document.getElementById('snp-tab-landing');
+  const adlogTab=document.getElementById('snp-tab-adlog');
+  const teamnoticeTab=document.getElementById('snp-tab-teamnotice');
+  const teammemoTab=document.getElementById('snp-tab-teammemo');
+
   [noteHeader,faqHeader,landingHeader].forEach(el=>{if(el)el.style.display='none';});
-  [noteList,faqList,landingList].forEach(el=>{if(el)el.style.display='none';});
-  [noteTab,faqTab,landingTab].forEach(el=>{if(el){el.style.background='transparent';el.style.color='rgba(255,255,255,.7)';el.style.fontWeight='600';}});
+  [noteList,faqList,landingList,adlogList,teamnoticeList,teammemoList].forEach(el=>{if(el)el.style.display='none';});
+  [noteTab,faqTab,landingTab,adlogTab,teamnoticeTab,teammemoTab].forEach(el=>{
+    if(el){el.style.background='transparent';el.style.color='rgba(255,255,255,.6)';el.style.fontWeight='600';}
+  });
+
+  const activateTab=el=>{ if(el){el.style.background='rgba(255,255,255,.15)';el.style.color='#fff';el.style.fontWeight='800';} };
+
   if(tab==='notes'){
     if(noteHeader)noteHeader.style.display='';
     if(noteList)noteList.style.display='flex';
-    if(noteTab){noteTab.style.background='rgba(255,255,255,.15)';noteTab.style.color='#fff';noteTab.style.fontWeight='800';}
+    activateTab(noteTab);
     snpRender(document.getElementById('snp-search')?.value||'');
   } else if(tab==='faq'){
     if(faqHeader)faqHeader.style.display='';
     if(faqList)faqList.style.display='flex';
-    if(faqTab){faqTab.style.background='rgba(255,255,255,.15)';faqTab.style.color='#fff';faqTab.style.fontWeight='800';}
+    activateTab(faqTab);
     if(typeof faqRenderCatTabs==='function') faqRenderCatTabs();
     if(typeof faqRender==='function') faqRender(document.getElementById('snp-faq-search')?.value||'');
   } else if(tab==='landing'){
     if(landingHeader)landingHeader.style.display='';
     if(landingList)landingList.style.display='flex';
-    if(landingTab){landingTab.style.background='rgba(255,255,255,.15)';landingTab.style.color='#fff';landingTab.style.fontWeight='800';}
+    activateTab(landingTab);
     if(typeof snpRenderLanding==='function') snpRenderLanding('');
+  } else if(tab==='adlog'){
+    if(adlogList){adlogList.style.display='flex';}
+    activateTab(adlogTab);
+    snpRenderAdlog();
+  } else if(tab==='teamnotice'){
+    if(teamnoticeList)teamnoticeList.style.display='flex';
+    activateTab(teamnoticeTab);
+    snpRenderTeamNotice();
+  } else if(tab==='teammemo'){
+    if(teammemoList)teammemoList.style.display='flex';
+    activateTab(teammemoTab);
+    snpRenderTeamMemo();
   }
+}
+
+// ── 전체 공지 패널 ──
+function snpRenderTeamNotice(){
+  const el=document.getElementById('snp-teamnotice-list'); if(!el) return;
+  let memos=getSharedMemos();
+  const q=(el.dataset.q||'').toLowerCase();
+  if(q) memos=memos.filter(m=>`${m.content||''} ${m.author||''}`.toLowerCase().includes(q));
+  const active=memos.filter(m=>m.status!=='done').sort((a,b)=>b.createdAt-a.createdAt);
+  const done=memos.filter(m=>m.status==='done').sort((a,b)=>b.updatedAt-a.updatedAt);
+  const sorted=[...active,...done];
+  const fmt=n=>{const d=new Date(n);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+  el.innerHTML=`
+    <div style="padding:8px;background:#1e40af;border-bottom:1px solid rgba(255,255,255,.2);display:flex;gap:6px">
+      <input value="${el.dataset.q||''}" placeholder="🔍 공지 검색..." oninput="snpTeamNoticeSearch(this.value)"
+        style="flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none" class="snp-search-input">
+      <button onclick="openSharedMemoForm()" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+    </div>
+    <div style="padding:6px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:calc(100% - 44px)">
+      ${!sorted.length?'<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">공지 없음</div>':
+        sorted.map(m=>{
+          const br=S.branches.find(b=>b.id===m.bid);
+          const isDone=m.status==='done';
+          return `<div style="background:${isDone?'#f1f5f9':'#fff'};border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+              ${br?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+              <span style="font-size:10px;color:${isDone?'#059669':'#d97706'};font-weight:700">${isDone?'✅ 완료':'⏳ 진행중'}</span>
+              <span style="font-size:10px;color:#94a3b8">${fmt(m.createdAt)}${m.author?' · '+m.author:''}</span>
+              <div style="margin-left:auto;display:flex;gap:4px">
+                <button onclick="toggleSharedMemoStatus('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
+                <button onclick="snpEditSharedMemo('${m.id}')" style="padding:2px 6px;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">✏️</button>
+                <button onclick="deleteSharedMemo('${m.id}');snpRenderTeamNotice()" style="padding:2px 6px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">🗑</button>
+              </div>
+            </div>
+            <div style="font-size:12px;color:${isDone?'#94a3b8':'#334155'};line-height:1.55;white-space:pre-wrap;${isDone?'text-decoration:line-through':''}">${escHtml(m.content||'')}</div>
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+
+function snpTeamNoticeSearch(q){
+  const el=document.getElementById('snp-teamnotice-list'); if(!el) return;
+  el.dataset.q=q;
+  snpRenderTeamNotice();
+}
+
+function snpEditSharedMemo(id){
+  editSharedMemo(id);
+  // 저장 후 패널도 갱신하도록 후크
+  const origSave=window._origSaveSharedMemo||saveSharedMemo;
+}
+
+// ── 공유 메모장 패널 ──
+async function snpRenderTeamMemo(){
+  const el=document.getElementById('snp-teammemo-list'); if(!el) return;
+  if(!el.dataset.initialized){
+    el.dataset.initialized='1';
+    el.dataset.q='';
+  }
+  el.innerHTML=`
+    <div style="padding:8px;background:#1e40af;border-bottom:1px solid rgba(255,255,255,.2)">
+      <div style="display:flex;gap:5px">
+        <input value="${el.dataset.q||''}" placeholder="🔍 메모 검색..." oninput="snpTeamMemoSearch(this.value)"
+          style="flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.2);color:#fff;outline:none">
+        <button onclick="snpOpenSiMemoForm()" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>
+      </div>
+    </div>
+    <div id="snp-teammemo-items" style="padding:6px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:5px">
+      <div style="text-align:center;padding:12px;color:#94a3b8;font-size:12px">⏳ 불러오는 중...</div>
+    </div>`;
+  if(_syncUrl){
+    try{
+      const res=await fetch(`${_syncUrl.replace(/\/+$/,'')}/personalMemos.json`);
+      const data=await res.json();
+      if(data&&typeof data==='object'){
+        Object.entries(data).forEach(([sid,memoMap])=>{
+          if(memoMap&&typeof memoMap==='object')
+            _siMemoCache[sid]=Object.values(memoMap).filter(Boolean).sort((a,b)=>(b.ts||0)-(a.ts||0));
+        });
+      }
+    }catch(e){}
+  }
+  snpTeamMemoRenderItems(el.dataset.q||'');
+}
+
+function snpTeamMemoSearch(q){
+  const el=document.getElementById('snp-teammemo-list'); if(!el) return;
+  el.dataset.q=q;
+  snpTeamMemoRenderItems(q);
+}
+
+function snpOpenSiMemoForm(sid, memoId){
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  const editMemo=sid&&memoId?(_siMemoCache[sid]||[]).find(m=>m.id===memoId):null;
+  const defaultSid=sid||_currentUser?.sid||'';
+  const formHtml=`
+    <div id="snp-simemo-form" style="background:#fff;border:1.5px solid #2563eb;border-radius:10px;padding:10px;margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700;color:#2563eb;margin-bottom:8px">${editMemo?'✏️ 메모 수정':'📝 메모 추가'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px">
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">직원 *</div>
+          <select id="snp-simemo-sid" style="width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box" ${editMemo?'disabled':''}>
+            <option value="">선택</option>
+            ${activeStaff.map(s=>`<option value="${s.id}" ${s.id===defaultSid?'selected':''}>${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">지점</div>
+          <select id="snp-simemo-bid" style="width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box">
+            <option value="">없음</option>
+            ${(S.branches||[]).map(b=>`<option value="${b.id}" ${(editMemo?.bid||'')===b.id?'selected':''}>${b.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">날짜</div>
+          <input type="date" id="snp-simemo-date" value="${editMemo?.date||todayStr()}" style="width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">상태</div>
+          <select id="snp-simemo-status" style="width:100%;padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box">
+            <option value="active" ${(editMemo?.status||'active')==='active'?'selected':''}>⏳ 진행중</option>
+            <option value="done" ${editMemo?.status==='done'?'selected':''}>✅ 완료</option>
+          </select>
+        </div>
+      </div>
+      <input id="snp-simemo-title" placeholder="제목 (선택)" value="${editMemo?.title||''}"
+        style="width:100%;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box;margin-bottom:4px">
+      <textarea id="snp-simemo-content" rows="3" placeholder="내용 *"
+        style="width:100%;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;box-sizing:border-box;resize:vertical;font-family:inherit;line-height:1.5">${editMemo?.content||''}</textarea>
+      <div style="display:flex;gap:5px;margin-top:6px">
+        <button onclick="snpSaveSiMemo('${sid||''}','${memoId||''}')" style="flex:1;padding:5px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:700;cursor:pointer">💾 저장</button>
+        <button onclick="document.getElementById('snp-simemo-form')?.remove()" style="padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:11px;cursor:pointer">취소</button>
+      </div>
+    </div>`;
+  document.getElementById('snp-simemo-form')?.remove();
+  const items=document.getElementById('snp-teammemo-items');
+  if(items) items.insertAdjacentHTML('afterbegin',formHtml);
+  document.getElementById('snp-simemo-content')?.focus();
+}
+
+async function snpSaveSiMemo(editSid,editMemoId){
+  const sid=editSid||document.getElementById('snp-simemo-sid')?.value;
+  if(!sid){toast('⚠️ 직원을 선택해주세요');return;}
+  const content=document.getElementById('snp-simemo-content')?.value.trim()||'';
+  if(!content){toast('⚠️ 내용을 입력해주세요');return;}
+  const title=document.getElementById('snp-simemo-title')?.value.trim()||'';
+  const bid=document.getElementById('snp-simemo-bid')?.value||'';
+  const date=document.getElementById('snp-simemo-date')?.value||'';
+  const status=document.getElementById('snp-simemo-status')?.value||'active';
+  const id=editMemoId||uid();
+  const memo={id,title,content,bid,date,status,tags:[],ts:Date.now()};
+  if(!_siMemoCache[sid]) _siMemoCache[sid]=[];
+  if(editMemoId){const i=_siMemoCache[sid].findIndex(x=>x.id===id);if(i>=0)_siMemoCache[sid][i]=memo;else _siMemoCache[sid].unshift(memo);}
+  else _siMemoCache[sid].unshift(memo);
+  if(_syncUrl){
+    const path=`${_syncUrl.replace(/\/+$/,'')}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${id}.json`;
+    try{await fetch(path,{method:'PUT',body:JSON.stringify(memo),headers:{'Content-Type':'application/json'}});}catch(e){}
+  }
+  document.getElementById('snp-simemo-form')?.remove();
+  snpTeamMemoRenderItems(document.getElementById('snp-teammemo-list')?.dataset.q||'');
+  renderSiMemos(sid);
+  toast('✅ 메모 저장됨');
+}
+
+async function snpDeleteSiMemo(sid,memoId){
+  if(!confirm('삭제할까요?')) return;
+  _siMemoCache[sid]=(_siMemoCache[sid]||[]).filter(m=>m.id!==memoId);
+  if(_syncUrl){
+    const path=`${_syncUrl.replace(/\/+$/,'')}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${memoId}.json`;
+    try{await fetch(path,{method:'DELETE'});}catch(e){}
+  }
+  snpTeamMemoRenderItems(document.getElementById('snp-teammemo-list')?.dataset.q||'');
+  renderSiMemos(sid);
+  toast('🗑 삭제됨');
+}
+
+async function snpToggleSiMemoStatus(sid,memoId){
+  const memos=_siMemoCache[sid]||[];const idx=memos.findIndex(x=>x.id===memoId);if(idx<0)return;
+  memos[idx].status=memos[idx].status==='done'?'active':'done';
+  memos[idx].ts=Date.now();
+  if(_syncUrl){
+    const path=`${_syncUrl.replace(/\/+$/,'')}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${memoId}.json`;
+    try{await fetch(path,{method:'PUT',body:JSON.stringify(memos[idx]),headers:{'Content-Type':'application/json'}});}catch(e){}
+  }
+  snpTeamMemoRenderItems(document.getElementById('snp-teammemo-list')?.dataset.q||'');
+  renderSiMemos(sid);
+}
+
+function snpTeamMemoRenderItems(q){
+  const el=document.getElementById('snp-teammemo-items'); if(!el) return;
+  const activeStaff=(S.staff||[]).filter(s=>!s.retired);
+  const sections=activeStaff.map(s=>{
+    let memos=(_siMemoCache[s.id]||[]);
+    if(q) memos=memos.filter(m=>`${m.title||''} ${m.content||''}`.toLowerCase().includes(q.toLowerCase()));
+    if(!memos.length) return '';
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:4px">
+      <div style="padding:5px 10px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;font-weight:700;color:#0f172a">📝 ${s.name}</span>
+        <span style="font-size:10px;color:#94a3b8;background:#fff;padding:1px 6px;border-radius:6px">${memos.length}건</span>
+        <button onclick="snpOpenSiMemoForm('${s.id}')" style="margin-left:auto;padding:2px 7px;border-radius:5px;border:none;background:#2563eb;color:#fff;font-size:10px;font-weight:700;cursor:pointer">+ 추가</button>
+      </div>
+      <div style="padding:5px;display:flex;flex-direction:column;gap:4px">
+        ${memos.map(m=>{
+          const br=S.branches.find(b=>b.id===m.bid);
+          const isDone=m.status==='done';
+          return `<div style="padding:6px 8px;background:${isDone?'#f8fafc':'#fff'};border:1px solid #e2e8f0;border-radius:6px">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px;align-items:center">
+              ${br?`<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+              ${m.date?`<span style="font-size:10px;color:#94a3b8">${m.date}</span>`:''}
+              <span style="font-size:10px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅':'⏳'}</span>
+              <div style="margin-left:auto;display:flex;gap:3px">
+                <button onclick="snpToggleSiMemoStatus('${s.id}','${m.id}')" style="padding:2px 5px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
+                <button onclick="snpOpenSiMemoForm('${s.id}','${m.id}')" style="padding:2px 5px;border-radius:4px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:10px;cursor:pointer">✏️</button>
+                <button onclick="snpDeleteSiMemo('${s.id}','${m.id}')" style="padding:2px 5px;border-radius:4px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer">🗑</button>
+              </div>
+            </div>
+            ${m.title?`<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:2px">${escHtml(m.title)}</div>`:''}
+            <div style="font-size:11px;color:#64748b;line-height:1.5;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).filter(Boolean);
+  el.innerHTML=sections.length?sections.join(''):'<div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px">메모 없음</div>';
+}
+
+function snpRenderAdlog(){
+  const el=document.getElementById('snp-adlog-list'); if(!el) return;
+  const logs=(S.roiLogs||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+
+  // 필터 UI
+  const months=[...new Set(logs.map(l=>l.date.slice(0,7)))].sort((a,b)=>b.localeCompare(a));
+  const selMonth=el.dataset.month||'';
+  const selBid=el.dataset.bid||'';
+
+  el.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e2e8f0">
+      <select onchange="snpAdlogFilter(this.value,'${selBid}')" style="flex:1;min-width:80px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;color:#334155">
+        <option value="">전체 월</option>
+        ${months.map(m=>`<option value="${m}" ${m===selMonth?'selected':''}>${m}</option>`).join('')}
+      </select>
+      <select onchange="snpAdlogFilter('${selMonth}',this.value)" style="flex:1;min-width:80px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;background:#f8fafc;color:#334155">
+        <option value="">전체 지점</option>
+        <option value="all" ${'all'===selBid?'selected':''}>공통</option>
+        ${(S.branches||[]).map(b=>`<option value="${b.id}" ${b.id===selBid?'selected':''}>${b.name}</option>`).join('')}
+      </select>
+    </div>
+    <div id="snp-adlog-items"></div>`;
+
+  // 필터 적용해서 렌더
+  snpAdlogRenderItems(selMonth, selBid);
+}
+
+function snpAdlogFilter(month, bid){
+  const el=document.getElementById('snp-adlog-list'); if(!el) return;
+  el.dataset.month=month;
+  el.dataset.bid=bid;
+  snpRenderAdlog();
+}
+
+function snpAdlogRenderItems(selMonth, selBid){
+  const itemEl=document.getElementById('snp-adlog-items'); if(!itemEl) return;
+  let logs=(S.roiLogs||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if(selMonth) logs=logs.filter(l=>l.date.startsWith(selMonth));
+  if(selBid) logs=logs.filter(l=>l.bid===selBid);
+
+  if(!logs.length){
+    itemEl.innerHTML='<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">해당 조건의 광고 내역이 없습니다</div>';
+    return;
+  }
+  const fmt=n=>n>=10000?(n/10000).toFixed(0)+'만원':n.toLocaleString()+'원';
+  const statusClr=s=>s==='발송완료'?'#059669':s==='발송취소'?'#ef4444':'#f59e0b';
+  const statusBg=s=>s==='발송완료'?'#f0fdf4':s==='발송취소'?'#fff5f5':'#fffbeb';
+  itemEl.innerHTML=logs.map(log=>{
+    const ch=S.channels.find(c=>c.id===log.chId)||{name:log.chId,icon:'📡'};
+    const br=S.branches.find(b=>b.id===log.bid);
+    const sc=statusClr(log.sendStatus); const sb=statusBg(log.sendStatus);
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
+        <span style="font-size:15px">${ch.icon||'📡'}</span>
+        <span style="font-size:12px;font-weight:700;color:#0f172a">${ch.name||log.chId}</span>
+        <span style="font-size:11px;color:#2563eb">${log.date}${log.sendTime?' '+log.sendTime:''}</span>
+        ${log.sendStatus?`<span style="font-size:10px;font-weight:700;color:${sc};background:${sb};padding:1px 7px;border-radius:8px">${log.sendStatus}</span>`:''}
+        <span style="margin-left:auto;font-size:12px;font-weight:800;color:#f59e0b">${fmt(log.amount)}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-bottom:${log.msgContent?'6px':'0'}">
+        ${br?`<span>📍 ${br.name}점</span>`:'<span>📍 공통</span>'}
+        ${log.staff?`<span>👤 ${log.staff}</span>`:''}
+        ${log.sendCount?`<span>📨 ${log.sendCount.toLocaleString()}건</span>`:''}
+        ${log.memo?`<span>📌 ${log.memo}</span>`:''}
+      </div>
+      ${log.msgContent?`<div style="font-size:12px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:7px 10px;white-space:pre-wrap;line-height:1.6;max-height:120px;overflow-y:auto">${escHtml(log.msgContent)}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // ── VOC 페이지 ──
@@ -15095,6 +15777,21 @@ function copyLandingUrl(url){
 
 // ── 개인 메모장(직원 입력 페이지) ──
 let _siMemoCache={};
+
+// 개인 메모 변경 후 모든 관련 뷰 동기화
+function syncSiMemoViews(sid){
+  // 1. 직원 개인 페이지
+  renderSiMemos(sid);
+  // 2. 공유메모장 페이지 (열려있으면)
+  const teamMemoPage=document.getElementById('page-team-memo');
+  if(teamMemoPage&&teamMemoPage.classList.contains('act')){
+    renderTeamMemoList();
+  }
+  // 3. 콜 모달 공유메모 패널 (열려있으면)
+  if(_snpActiveTab==='teammemo'){
+    snpTeamMemoRenderItems(document.getElementById('snp-teammemo-list')?.dataset.q||'');
+  }
+}
 let _siMemoEditId=null;
 let _siMemoTargetSid=null;
 function loadSiMemos(sid){
@@ -15115,23 +15812,65 @@ function renderSiMemos(sid){
   const cnt=document.getElementById(`si-memo-count-${sid}`);
   if(cnt) cnt.textContent=memos.length+'건';
   if(!memos.length){ el.innerHTML='<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">메모가 없습니다. + 추가를 눌러보세요</div>'; return; }
-  el.innerHTML=memos.map(m=>`<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-      <div style="flex:1;min-width:0">
-        ${m.title?`<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.title)}</div>`:''}
-        <div style="font-size:13px;color:var(--text2);line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.content||'')}</div>
+  el.innerHTML=memos.map(m=>{
+    const br=S.branches.find(b=>b.id===m.bid);
+    const isDone=m.status==='done';
+    const dt=m.date||'';
+    return `<div style="background:${isDone?'var(--s2)':'#fff'};border:1px solid var(--border);border-radius:8px;padding:10px 14px;opacity:${isDone?.7:1}">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+            ${br?`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:7px;background:${bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+            ${dt?`<span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${dt}</span>`:''}
+            <span style="font-size:10px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
+          </div>
+          ${m.title?`<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:3px;${isDone?'text-decoration:line-through;':''}">${escHtml(m.title)}</div>`:''}
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+          ${(m.tags||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${m.tags.map(t=>`<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:6px">#${t}</span>`).join('')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <button onclick="toggleSiMemoStatus('${sid}','${m.id}')" style="border:none;background:${isDone?'var(--s2)':'#fefce8'};color:${isDone?'var(--text3)':'#854d0e'};border:1px solid ${isDone?'var(--border)':'#fde68a'};border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">${isDone?'↩':'✅'}</button>
+          <button onclick="openSiMemoEdit('${sid}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">수정</button>
+          <button onclick="deleteSiMemo('${sid}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">삭제</button>
+        </div>
       </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button onclick="openSiMemoEdit('${sid}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer">수정</button>
-        <button onclick="deleteSiMemo('${sid}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer">삭제</button>
-      </div>
-    </div>
-  </div>`).join('');
+    </div>`;
+  }).join('');
 }
+
+function populateSimemoBranchSel(selectedBid){
+  const sel=document.getElementById('simemo-bid-inp'); if(!sel) return;
+  sel.innerHTML=`<option value="">지점 없음</option>`
+    +(S.branches||[]).map(b=>`<option value="${b.id}" ${b.id===selectedBid?'selected':''}>${b.name}</option>`).join('');
+}
+
+function updateSimemoStatusStyle(){
+  const active=document.querySelector('input[name="simemo_status"][value="active"]')?.checked;
+  const lblA=document.getElementById('simemo-lbl-active');
+  const lblD=document.getElementById('simemo-lbl-done');
+  if(lblA){ lblA.style.borderColor=active?'#d97706':'var(--border)'; lblA.style.background=active?'#fefce8':'var(--s2)'; lblA.style.color=active?'#854d0e':'var(--text2)'; }
+  if(lblD){ lblD.style.borderColor=!active?'#059669':'var(--border)'; lblD.style.background=!active?'#f0fdf4':'var(--s2)'; lblD.style.color=!active?'#166534':'var(--text2)'; }
+}
+
+async function toggleSiMemoStatus(sid,id){
+  const memos=_siMemoCache[sid]||[]; const idx=memos.findIndex(x=>x.id===id); if(idx<0) return;
+  memos[idx].status=memos[idx].status==='done'?'active':'done';
+  memos[idx].ts=Date.now();
+  if(_syncUrl){
+    const path=`${_syncUrl.replace(/\/+$/,'')}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${id}.json`;
+    try{ await fetch(path,{method:'PUT',body:JSON.stringify(memos[idx]),headers:{'Content-Type':'application/json'}}); }catch(e){}
+  }
+  syncSiMemoViews(sid);
+}
+
 function openSiMemoAdd(sid){
   _siMemoEditId=null; _siMemoTargetSid=sid;
   const t=document.getElementById('simemo-modal-title'); if(t) t.textContent='📝 메모 추가';
   ['simemo-title-inp','simemo-content-inp','simemo-tags-inp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const dateEl=document.getElementById('simemo-date-inp'); if(dateEl) dateEl.value=todayStr();
+  document.querySelector('input[name="simemo_status"][value="active"]').checked=true;
+  updateSimemoStatusStyle();
+  populateSimemoBranchSel('');
   document.getElementById('modal-simemo')?.classList.add('open');
   setTimeout(()=>document.getElementById('simemo-title-inp')?.focus(),100);
 }
@@ -15142,6 +15881,12 @@ function openSiMemoEdit(sid,id){
   const ti=document.getElementById('simemo-title-inp'); if(ti) ti.value=m.title||'';
   const ci=document.getElementById('simemo-content-inp'); if(ci) ci.value=m.content||'';
   const tg=document.getElementById('simemo-tags-inp'); if(tg) tg.value=(m.tags||[]).join(', ');
+  const dateEl=document.getElementById('simemo-date-inp'); if(dateEl) dateEl.value=m.date||'';
+  const statusVal=m.status||'active';
+  const radioEl=document.querySelector(`input[name="simemo_status"][value="${statusVal}"]`);
+  if(radioEl) radioEl.checked=true;
+  updateSimemoStatusStyle();
+  populateSimemoBranchSel(m.bid||'');
   document.getElementById('modal-simemo')?.classList.add('open');
 }
 async function saveSiMemo(){
@@ -15149,18 +15894,20 @@ async function saveSiMemo(){
   const title=document.getElementById('simemo-title-inp')?.value.trim()||'';
   const content=document.getElementById('simemo-content-inp')?.value.trim()||'';
   const tags=document.getElementById('simemo-tags-inp')?.value.split(',').map(t=>t.trim()).filter(Boolean)||[];
+  const bid=document.getElementById('simemo-bid-inp')?.value||'';
+  const date=document.getElementById('simemo-date-inp')?.value||'';
+  const status=document.querySelector('input[name="simemo_status"]:checked')?.value||'active';
   const id=_siMemoEditId||uid();
-  const memo={id,title,content,tags,ts:Date.now()};
+  const memo={id,title,content,tags,bid,date,status,ts:Date.now()};
   if(!_siMemoCache[sid]) _siMemoCache[sid]=[];
   if(_siMemoEditId){ const i=_siMemoCache[sid].findIndex(x=>x.id===id); if(i>=0) _siMemoCache[sid][i]=memo; else _siMemoCache[sid].unshift(memo); }
   else _siMemoCache[sid].unshift(memo);
-  // Firebase 저장
   if(_syncUrl){
-    const path=`${_syncUrl}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${id}.json`;
+    const path=`${_syncUrl.replace(/\/+$/,'')}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${id}.json`;
     try{ await fetch(path,{method:'PUT',body:JSON.stringify(memo),headers:{'Content-Type':'application/json'}}); }catch(e){}
   }
   closeModal('modal-simemo');
-  renderSiMemos(sid);
+  syncSiMemoViews(sid);
   toast('✅ 메모 저장됨');
 }
 async function deleteSiMemo(sid,id){
@@ -15170,7 +15917,7 @@ async function deleteSiMemo(sid,id){
     const path=`${_syncUrl}/personalMemos/${sid.replace(/[.#$\[\]]/g,'_')}/${id}.json`;
     try{ await fetch(path,{method:'DELETE'}); }catch(e){}
   }
-  renderSiMemos(sid);
+  syncSiMemoViews(sid);
   toast('🗑 삭제됨');
 }
 
