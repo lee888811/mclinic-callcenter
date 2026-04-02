@@ -2527,11 +2527,11 @@ td:first-child{text-align:left;padding-left:13px}
       <div id="booking-type-section" style="margin-top:10px;padding:10px 12px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:8px">
         <label style="font-size:12px;font-weight:700;color:#2563eb;display:block;margin-bottom:8px">📅 예약 유형</label>
         <div style="display:flex;gap:8px">
-          <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--accent);background:rgba(37,99,235,.08);cursor:pointer;font-size:13px;font-weight:700;color:var(--accent)">
-            <input type="radio" name="booking_type" value="당일" checked style="accent-color:var(--accent)"> ⚡ 당일 예약
+          <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid #7c3aed;background:rgba(124,58,237,.08);cursor:pointer;font-size:13px;font-weight:700;color:#7c3aed">
+            <input type="radio" name="booking_type" value="추후" checked style="accent-color:#7c3aed"> 📅 추후 예약
           </label>
-          <label id="bklbl-future" onclick="selectBookingType('추후')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
-            <input type="radio" name="booking_type" value="추후" style="accent-color:#7c3aed"> 📆 추후 예약
+          <label id="bklbl-today" onclick="selectBookingType('당일')" style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--text2)">
+            <input type="radio" name="booking_type" value="당일" style="accent-color:var(--accent)"> ⚡ 당일 예약
           </label>
         </div>
       </div>
@@ -4665,7 +4665,7 @@ function deleteCall(cid,sid,ds){
 // ═══════════════════════════════════
 // CALL MODAL
 // ═══════════════════════════════════
-let _callType='in',_callDegree=3,_callBids=new Set(),_callBid=null,_callPttypes=new Set(['신환']),_callPttype='신환',_callMedium='phone',_callBookingType='당일';
+let _callType='in',_callDegree=3,_callBids=new Set(),_callBid=null,_callPttypes=new Set(['신환']),_callPttype='신환',_callMedium='phone',_callBookingType='추후';
 let _togetherCount=1;
 let _togetherMap={shin:0,gu:0,rem:0};
 let _outPurpose='예약안내', _outResult='통화성공';
@@ -4828,7 +4828,7 @@ function openCallModal(sid){
   const adEl2=document.getElementById('ctab-ad');
   if(missEl2) missEl2.className='call-tab';
   if(adEl2) adEl2.className='call-tab';
-  _callBid=null; _callBids=new Set(); _callPttypes=new Set(['신환']); _callPttype='신환'; _callBookingType='당일';
+  _callBid=null; _callBids=new Set(); _callPttypes=new Set(['신환']); _callPttype='신환'; _callBookingType='추후';
   // 환자구분 초기화 (라디오)
   document.querySelectorAll('input[name="pttype_single"]').forEach(r=>{
     r.checked=(r.value==='신환');
@@ -4836,10 +4836,10 @@ function openCallModal(sid){
   // 스타일 초기화
   const firstRadio=document.querySelector('input[name="pttype_single"][value="신환"]');
   if(firstRadio) selectPttype(firstRadio);
-  // 예약유형 초기화
-  const bkRadio=document.querySelector('input[name="booking_type"][value="당일"]');
+  // 예약유형 초기화 - 기본값: 추후예약
+  const bkRadio=document.querySelector('input[name="booking_type"][value="추후"]');
   if(bkRadio) bkRadio.checked=true;
-  selectBookingType('당일');
+  selectBookingType('추후');
   document.querySelectorAll('input[name=booked]').forEach(r=>r.checked=(r.value==='1'));
   ['today','cancel','noappt'].forEach(f=>{const el=document.getElementById('cf-'+f);if(el)el.value='';});
   const cr=document.getElementById('cf-cancel-reason');if(cr)cr.value='';
@@ -5177,14 +5177,23 @@ function selectNoapptReason(btn, reason){
 
 function selectBookingType(type){
   _callBookingType=type;
-  ['당일','추후','미예약'].forEach(t=>{
-    const lbl=document.getElementById('bklbl-'+{당일:'today',추후:'future',미예약:'none'}[t]);
-    if(!lbl) return;
-    const isAct=t===type;
-    lbl.style.borderColor=isAct?'var(--accent)':'var(--border)';
-    lbl.style.background=isAct?'rgba(37,99,235,.08)':'var(--s2)';
-    lbl.style.color=isAct?'var(--accent)':'var(--text2)';
-  });
+  const todayLbl=document.getElementById('bklbl-today');
+  const futureLbl=document.getElementById('bklbl-future');
+  if(todayLbl){
+    const act=type==='당일';
+    todayLbl.style.borderColor=act?'var(--accent)':'var(--border)';
+    todayLbl.style.background=act?'rgba(37,99,235,.08)':'var(--s2)';
+    todayLbl.style.color=act?'var(--accent)':'var(--text2)';
+  }
+  if(futureLbl){
+    const act=type==='추후';
+    futureLbl.style.borderColor=act?'#7c3aed':'var(--border)';
+    futureLbl.style.background=act?'rgba(124,58,237,.08)':'var(--s2)';
+    futureLbl.style.color=act?'#7c3aed':'var(--text2)';
+  }
+  // 추후예약 날짜 입력란 표시/숨김
+  const dateWrap=document.getElementById('booking-date-wrap');
+  if(dateWrap) dateWrap.style.display=type==='추후'?'block':'none';
 }
 
 function filterProcGrid(q){
@@ -12508,106 +12517,122 @@ function switchDpTab(mode){
 function renderDpChart(){
   const chartEl = document.getElementById('daily-proc-chart');
   if(!chartEl) return;
-  const tableEl = document.getElementById('daily-proc-table');
-  const tbl = tableEl?.querySelector('table');
-  if(!tbl){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">먼저 기간과 시술을 선택해주세요.</div>'; return; }
 
-  // 표에서 데이터 추출
-  const rows = [...tbl.querySelectorAll('tbody tr')];
-  const headers = [...tbl.querySelectorAll('thead th')].map(th=>th.textContent.trim());
-  // 합계행에서 지점별/시술별 합계 구성
-  const sumRows = rows.filter(r=>r.querySelector('td')?.getAttribute('rowspan')==='1'||true);
+  // 직접 데이터에서 계산 (DOM 파싱 방식 제거)
+  const {from, to} = (_dpPeriod==='custom' && _dpCustomFrom && _dpCustomTo)
+    ? {from:_dpCustomFrom, to:_dpCustomTo}
+    : getPeriodDates(_dpPeriod||'today');
+  const dates = getDateRange(from, to).filter(d=>(S.calls[d]||[]).some(c=>c.type!=='out'));
+  if(!dates.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">해당 기간 데이터 없음</div>'; return; }
 
-  // 표 구조: 날짜 | 지점 | 구분(신환/구환) | 시술... | 합계
-  // 시술명 컬럼 인덱스 찾기 (3번째부터 합계 전까지)
-  const procStart = 3; // 날짜, 지점, 구분 다음
-  const procCols = headers.slice(procStart, headers.length - 1);
-  if(!procCols.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">시술을 선택해주세요.</div>'; return; }
+  const branches = _selectedBids ? activeBranches().filter(b=>_selectedBids.has(b.id)) : activeBranches();
+  if(!branches.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">지점을 선택해주세요.</div>'; return; }
 
-  // 합계 행에서 지점별 데이터 추출
-  const branchData = {}; // {지점명: {시술명: 합계}}
-  let curBranch = '';
-  rows.forEach(r=>{
-    const cells = [...r.querySelectorAll('td')];
-    if(!cells.length) return;
-    // 지점명 cell (rowspan 있음)
-    const brCell = cells.find(c=>parseInt(c.getAttribute('rowspan')||'1')>1);
-    if(brCell) curBranch = brCell.textContent.trim();
-    if(!curBranch) return;
-    // 구분 확인 (신환/구환/합계)
-    const divCell = cells.find(c=>['신환','구환','잔여','합계'].includes(c.textContent.trim()));
-    if(!divCell) return;
-    const div = divCell.textContent.trim();
-    if(!branchData[curBranch]) branchData[curBranch] = {신환:{}, 구환:{}, 잔여:{}};
-    // 시술별 수치 추출
-    const dataCells = cells.slice(cells.indexOf(divCell)+1);
-    procCols.forEach((proc, i)=>{
-      const val = parseInt(dataCells[i]?.textContent.replace(/-/g,'').trim()||'0')||0;
-      if(['신환','구환','잔여'].includes(div)){
-        branchData[curBranch][div][proc] = (branchData[curBranch][div][proc]||0) + val;
-      }
+  // 사용된 시술 컬럼 결정 (renderDailyProcTable과 동일 로직)
+  const getPtCalls = ds => {
+    let c = getAnalysisCalls(ds);
+    if(_pmPttype!=='all') c = c.filter(x=>x.pttype===_pmPttype);
+    return c;
+  };
+  const usedPids = new Set();
+  dates.forEach(ds=>getPtCalls(ds).forEach(c=>{
+    if(c.procs) Object.entries(c.procs).forEach(([pid,n])=>{
+      if(n>0){ usedPids.add(pid); if(pid.includes(':')) usedPids.add(pid.split(':')[0]); }
+    });
+  }));
+
+  // 컬럼 결정
+  let cols;
+  if(_selectedSubs && _selectedSubs.size>0){
+    cols=[..._selectedSubs].map(key=>{
+      const [pid,idxStr]=key.split(':'); const idx=parseInt(idxStr);
+      const p=S.procedures.find(x=>x.id===pid); const sub=p?.subs?.[idx];
+      return sub?{id:key, name:sub.name, parentId:pid, subIdx:idx, isSub:true}:null;
+    }).filter(Boolean);
+  } else if(_selectedPids && _selectedPids.size>0){
+    const expandedPids=new Set(_selectedPids);
+    if(_selectedSubs) _selectedSubs.forEach(k=>{ if(k.includes(':')) expandedPids.add(k.split(':')[0]); });
+    cols=[];
+    [...expandedPids].forEach(pid=>{
+      const p=S.procedures.find(x=>x.id===pid); if(!p) return;
+      if(p.subs?.length>0) p.subs.forEach((s,i)=>cols.push({id:`${pid}:${i}`,name:s.name,parentId:pid,subIdx:i,isSub:true}));
+      else cols.push({id:p.id,name:p.name,isSub:false});
+    });
+  } else {
+    cols=S.procedures.filter(p=>usedPids.has(p.id)).map(p=>({id:p.id,name:p.name,isSub:false}));
+  }
+  if(!cols.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">시술을 선택해주세요.</div>'; return; }
+
+  // 지점별 시술별 합계
+  const branchData = {};
+  branches.forEach(b=>{ branchData[b.id]={name:b.name, vals:cols.map(()=>0)}; });
+  dates.forEach(ds=>{
+    const calls=getPtCalls(ds);
+    calls.forEach(c=>{
+      if(!c.procs||!c.bid||!branchData[c.bid]) return;
+      const isShin=!c.pttype||c.pttype.includes('신환');
+      Object.entries(c.procs).forEach(([pid,n])=>{
+        if(!n) return;
+        const isSub=pid.includes(':');
+        const [parentId,subIdxStr]=isSub?pid.split(':'):[pid,null];
+        const subIdx=subIdxStr!==null?parseInt(subIdxStr):null;
+        cols.forEach((col,ci)=>{
+          let match=false;
+          if(col.isSub){ if(isSub&&col.parentId===parentId&&col.subIdx===subIdx) match=true; else if(!isSub&&col.parentId===pid) match=true; }
+          else { if(!isSub&&col.id===pid) match=true; else if(isSub&&col.id===parentId) match=true; }
+          if(match) branchData[c.bid].vals[ci]=(branchData[c.bid].vals[ci]||0)+n;
+        });
+      });
     });
   });
 
-  const branches = Object.keys(branchData);
-  if(!branches.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">데이터 없음</div>'; return; }
+  const data=branches.map(b=>branchData[b.id]).filter(d=>d.vals.some(v=>v>0));
+  if(!data.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">예약 데이터 없음</div>'; return; }
 
-  // 시술별 전체 합계로 정렬 (상위 10개)
-  const procTotals = {};
-  procCols.forEach(p=>{
-    procTotals[p] = branches.reduce((a,b)=>a+Object.values(branchData[b]).reduce((s,d)=>s+(d[p]||0),0), 0);
-  });
-  const topProcs = procCols.filter(p=>procTotals[p]>0).sort((a,b)=>procTotals[b]-procTotals[a]).slice(0,12);
-  if(!topProcs.length){ chartEl.innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">예약 데이터 없음</div>'; return; }
+  // 시술별 전체 합계 기준으로 상위 12개만
+  const procTotals=cols.map((_,ci)=>data.reduce((a,d)=>a+d.vals[ci],0));
+  const topIdxs=[...procTotals.keys()].filter(i=>procTotals[i]>0).sort((a,b)=>procTotals[b]-procTotals[a]).slice(0,12);
+  const topCols=topIdxs.map(i=>cols[i]);
+  const topData=data.map(d=>({name:d.name, vals:topIdxs.map(i=>d.vals[i])}));
+  const nBr=topData.length, nP=topCols.length;
 
   const PCOLS=['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1','#14b8a6','#f59e0b'];
-  const W=Math.max(500, branches.length*topProcs.length*22+80);
+  const W=Math.max(500, nBr*nP*22+80);
   const H=240, PL=44, PB=50, PT=16, PR=16;
   const iH=H-PT-PB, iW=W-PL-PR;
-  const nBr=branches.length, nP=topProcs.length;
   const groupW=iW/nBr;
-  const gap=2, barW=Math.min(20, Math.max(6, (groupW*0.85)/nP - gap));
+  const gap=2, barW=Math.min(20, Math.max(6,(groupW*0.85)/nP-gap));
   const groupX=i=>PL+groupW*i+groupW/2-(barW*nP+gap*(nP-1))/2;
   const barX=(i,pi)=>groupX(i)+pi*(barW+gap);
-
-  // 각 지점별 시술별 합계
-  const data = branches.map(br=>({
-    name: br,
-    vals: topProcs.map(p=>Object.values(branchData[br]).reduce((s,d)=>s+(d[p]||0),0))
-  }));
-  const maxV = Math.max(1, ...data.flatMap(d=>d.vals));
+  const maxV=Math.max(1,...topData.flatMap(d=>d.vals));
   const barY=v=>PT+iH-(v/maxV)*iH;
 
-  let grid='', bars='', vals='', xlbls='', legend='';
+  let grid='',bars='',vals='',xlbls='',legend='';
   [0,0.25,0.5,0.75,1].forEach(f=>{
     const yy=(PT+iH-f*iH).toFixed(1);
     const v=Math.round(maxV*f);
     grid+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="${f===0||f===1?1.5:0.6}" stroke-dasharray="${f===0||f===1?'':'4,3'}"/>`;
     if(f===0||f===0.5||f===1) grid+=`<text x="${PL-5}" y="${yy}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--text3)">${v}</text>`;
   });
-  data.forEach((d,i)=>{
-    topProcs.forEach((p,pi)=>{
-      const v=d.vals[pi];
-      const x=barX(i,pi).toFixed(1);
-      const y=barY(v).toFixed(1);
-      const h=Math.max(0,(v/maxV)*iH).toFixed(1);
+  topData.forEach((d,i)=>{
+    topCols.forEach((col,pi)=>{
+      const v=d.vals[pi]; if(v<=0) return;
+      const x=barX(i,pi).toFixed(1), y=barY(v).toFixed(1), h=Math.max(0,(v/maxV)*iH).toFixed(1);
       const cl=PCOLS[pi%PCOLS.length];
-      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${cl}" opacity="0.85" rx="2"><title>${d.name} ${p}: ${v}건</title></rect>`;
-      if(v>0) vals+=`<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${cl}">${v}</text>`;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${cl}" opacity="0.85" rx="2"><title>${d.name} ${col.name}: ${v}건</title></rect>`;
+      vals+=`<text x="${(+x+barW/2).toFixed(1)}" y="${(+y-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${cl}">${v}</text>`;
     });
     const cx=(groupX(i)+groupW/2).toFixed(1);
     xlbls+=`<text x="${cx}" y="${H-PB+14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${d.name}</text>`;
   });
-  // 범례
-  const legCols=Math.min(topProcs.length, 4);
-  topProcs.forEach((p,pi)=>{
+  const legCols=Math.min(topCols.length,4);
+  topCols.forEach((col,pi)=>{
     const lx=PL+(pi%legCols)*((W-PL-PR)/legCols);
     const ly=H-PB+28+(Math.floor(pi/legCols)*14);
     legend+=`<rect x="${lx}" y="${ly-7}" width="10" height="10" fill="${PCOLS[pi%PCOLS.length]}" rx="2" opacity="0.85"/>`;
-    legend+=`<text x="${lx+13}" y="${ly+1}" font-size="9" fill="var(--text2)" dominant-baseline="middle">${p}</text>`;
+    legend+=`<text x="${lx+13}" y="${ly+1}" font-size="9" fill="var(--text2)" dominant-baseline="middle">${col.name}</text>`;
   });
-
-  const legRows=Math.ceil(topProcs.length/legCols);
+  const legRows=Math.ceil(topCols.length/legCols);
   const totalH=H+legRows*14;
   chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${totalH}" style="width:100%;min-width:400px;overflow:visible;font-family:'DM Mono',monospace">
     ${grid}${bars}${vals}${xlbls}${legend}
