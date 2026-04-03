@@ -1789,6 +1789,40 @@ td:first-child{text-align:left;padding-left:13px}
 </div><!-- /app-wrap -->
 
 <!-- Modal: 특근 보상휴가 관리 -->
+<!-- Modal: 예약 현황 달력 직접 예약 추가/수정 -->
+<div class="modal" id="modal-bcal-add" style="z-index:720">
+  <div class="mbox" style="width:420px">
+    <div class="mt" id="bcal-add-title">📆 예약 추가 (병원 직접)</div>
+    <input type="hidden" id="bcal-add-id">
+    <div class="ml">지점</div>
+    <select id="bcal-add-bid" class="minp" style="margin-top:4px"></select>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="flex:1">
+        <div class="ml">예약 날짜 <span style="color:#ef4444">*</span></div>
+        <input type="date" id="bcal-add-date" class="minp" style="margin-top:4px">
+      </div>
+      <div style="flex:1">
+        <div class="ml">예약 시간</div>
+        <input type="time" id="bcal-add-time" class="minp" style="margin-top:4px">
+      </div>
+    </div>
+    <div class="ml" style="margin-top:10px">시술명 <span style="color:#ef4444">*</span></div>
+    <input type="text" id="bcal-add-proc" class="minp" style="margin-top:4px" placeholder="예: 울쎄라, 써마지, 세르프">
+    <div class="ml" style="margin-top:10px">환자 구분</div>
+    <select id="bcal-add-pttype" class="minp" style="margin-top:4px">
+      <option value="신환">신환</option>
+      <option value="구환(신규상담)">구환(신규상담)</option>
+      <option value="잔여시술">잔여시술</option>
+    </select>
+    <div class="ml" style="margin-top:10px">메모 (선택)</div>
+    <textarea id="bcal-add-memo" rows="3" class="minp" style="margin-top:4px;resize:none" placeholder="특이사항..."></textarea>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-bcal-add')">취소</button>
+      <button class="btn btn-p" onclick="saveBcalDirectAppt()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: 미예약 수정 -->
 <div class="modal" id="modal-noappt-edit" style="z-index:720">
   <div class="mbox" style="width:540px">
@@ -2967,6 +3001,7 @@ try{
     if(saved.calls) S.calls=saved.calls;
     if(saved.notes) S.notes=saved.notes;
     if(saved.faqs) S.faqs=saved.faqs;
+    if(saved.directAppts) S.directAppts=saved.directAppts;
     if(saved.roles&&saved.roles.length>0) S.roles=saved.roles;
     if(saved.incentive) S.incentive=saved.incentive;
     if(saved.perfGoals) S.perfGoals=saved.perfGoals;
@@ -3646,6 +3681,7 @@ async function syncPush(showToast=false){
         perfGoals:S.perfGoals||{},
         notes:S.notes||[],
         faqs:S.faqs||[],
+        directAppts:S.directAppts||[],
         roiCosts:S.roiCosts||{},
         roiLogs:S.roiLogs||[],
         _deletedIds:S._deletedIds||[],savedAt:_localSavedAt,
@@ -3700,6 +3736,7 @@ async function syncPull(){
       if(data.perfGoals) S.perfGoals=data.perfGoals;
       if(Array.isArray(data.notes)&&data.notes.length) S.notes=data.notes;
       if(Array.isArray(data.faqs)) S.faqs=data.faqs;
+      if(Array.isArray(data.directAppts)) S.directAppts=data.directAppts;
       if(data.roiCosts&&typeof data.roiCosts==='object') S.roiCosts=data.roiCosts;
       if(Array.isArray(data.roiLogs)) S.roiLogs=data.roiLogs;
       if(data.sheetUrls && typeof data.sheetUrls==='object'){
@@ -9211,32 +9248,32 @@ function renderTeamMemoList(){
     if(dateTo) memos=memos.filter(m=>m.ts<=new Date(dateTo+'T23:59:59').getTime());
     if(_teamMemoBranch) memos=memos.filter(m=>(m.bid||'')=== _teamMemoBranch);
     if(!memos.length) return '';
-    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px;font-weight:800;color:var(--text)">📝 ${s.name}</span>
-        <span style="font-size:11px;color:var(--text3);background:var(--s1);padding:1px 8px;border-radius:8px">${memos.length}건</span>
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="padding:14px 18px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px;font-weight:800;color:var(--text)">📝 ${s.name}</span>
+        <span style="font-size:16px;color:var(--text3);background:var(--s1);padding:2px 10px;border-radius:8px">${memos.length}건</span>
       </div>
-      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+      <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
         ${memos.map(m=>{
           const br=S.branches.find(b=>b.id===m.bid)||(m.bid==='etc'?{name:'기타'}:null);
           const isDone=m.status==='done';
           const dt=m.ts?new Date(m.ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):m.date||'';
-          return `<div style="background:${isDone?'var(--s2)':'#fff'};border:1px solid var(--border);border-radius:8px;padding:9px 12px;opacity:${isDone?0.7:1}">
-            <div style="display:flex;align-items:flex-start;gap:8px">
+          return `<div style="background:${isDone?'var(--s2)':'#fff'};border:1px solid var(--border);border-radius:10px;padding:12px 16px;opacity:${isDone?0.7:1}">
+            <div style="display:flex;align-items:flex-start;gap:10px">
               <div style="flex:1;min-width:0">
-                <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
-                  ${br?`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:7px;background:${m.bid==='etc'?'#64748b':bclr(m.bid)};color:#fff">${br.name}</span>`:''}
-                  ${dt?`<span style="font-size:10px;color:var(--text3)">${dt}</span>`:''}
-                  <span style="font-size:10px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+                  ${br?`<span style="font-size:15px;font-weight:700;padding:2px 10px;border-radius:8px;background:${m.bid==='etc'?'#64748b':bclr(m.bid)};color:#fff">${br.name}</span>`:''}
+                  ${dt?`<span style="font-size:15px;color:var(--text3)">${dt}</span>`:''}
+                  <span style="font-size:15px;font-weight:700;color:${isDone?'#059669':'#d97706'}">${isDone?'✅ 완료':'⏳ 진행중'}</span>
                 </div>
-                ${m.title?`<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;${isDone?'text-decoration:line-through':''}}">${escHtml(m.title)}</div>`:''}
-                <div style="font-size:12px;color:var(--text2);line-height:1.55;white-space:pre-wrap">${escHtml(m.content||'')}</div>
-                ${(m.tags||[]).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${m.tags.map(t=>`<span style="font-size:10px;background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:6px">#${t}</span>`).join('')}</div>`:''}
+                ${m.title?`<div style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:4px;${isDone?'text-decoration:line-through':''}">${escHtml(m.title)}</div>`:''}
+                <div style="font-size:18px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${escHtml(m.content||'')}</div>
+                ${(m.tags||[]).length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${m.tags.map(t=>`<span style="font-size:14px;background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:6px">#${t}</span>`).join('')}</div>`:''}
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-                <button onclick="toggleSiMemoStatus('${s.id}','${m.id}')" style="border:none;background:${isDone?'var(--s2)':'#fefce8'};color:${isDone?'var(--text3)':'#854d0e'};border:1px solid ${isDone?'var(--border)':'#fde68a'};border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">${isDone?'↩':'✅'}</button>
-                <button onclick="openSiMemoEdit('${s.id}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">✏️</button>
-                <button onclick="deleteSiMemo('${s.id}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer">🗑</button>
+              <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+                <button onclick="toggleSiMemoStatus('${s.id}','${m.id}')" style="border:none;background:${isDone?'var(--s2)':'#fefce8'};color:${isDone?'var(--text3)':'#854d0e'};border:1px solid ${isDone?'var(--border)':'#fde68a'};border-radius:7px;padding:5px 10px;font-size:14px;cursor:pointer">${isDone?'↩':'✅'}</button>
+                <button onclick="openSiMemoEdit('${s.id}','${m.id}')" style="border:none;background:var(--s2);color:var(--text2);border-radius:7px;padding:5px 10px;font-size:14px;cursor:pointer">✏️</button>
+                <button onclick="deleteSiMemo('${s.id}','${m.id}')" style="border:none;background:#fee2e2;color:#dc2626;border-radius:7px;padding:5px 10px;font-size:14px;cursor:pointer">🗑</button>
               </div>
             </div>
           </div>`;
@@ -9244,7 +9281,7 @@ function renderTeamMemoList(){
       </div>
     </div>`;
   }).filter(Boolean);
-  el.innerHTML=sections.length ? sections.join('') : `<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">${q?'검색 결과가 없습니다':'메모가 없습니다'}</div>`;
+  el.innerHTML=sections.length ? sections.join('') : `<div style="text-align:center;padding:32px;color:var(--text3);font-size:22px">${q?'검색 결과가 없습니다':'메모가 없습니다'}</div>`;
 }
 
 function renderSharedMemoPage(){
@@ -16043,6 +16080,21 @@ function renderBookingCal(){
     });
   });
 
+  // 병원 직접 예약도 포함
+  (S.directAppts||[]).forEach(a=>{
+    if(!a.date||a.date<from||a.date>to) return;
+    if(filterBids.size>0&&!filterBids.has(a.bid)) return;
+    const nameMatch=BOOKING_REQUIRED_PROCS.length===0||BOOKING_REQUIRED_PROCS.some(req=>(a.procName||'').includes(req));
+    if(filterPids.size>0&&!nameMatch) return;
+    bookings.push({
+      date:a.date, time:a.time||'',
+      pid:'direct', procName:a.procName||'직접예약',
+      bid:a.bid, brName:S.branches.find(b=>b.id===a.bid)?.name||'',
+      pttype:a.pttype||'', memo:a.memo||'',
+      isDirect:true, directId:a.id
+    });
+  });
+
   // 날짜별 그룹
   const byDate={};
   dates.forEach(ds=>{byDate[ds]=[];});
@@ -16157,11 +16209,103 @@ function renderBookingCal(){
     </div>`;
   }).join('');
 
+  // 지점별로 분리된 섹션 생성
+  const activeBrs_list = filterBids.size>0
+    ? activeBranches().filter(b=>filterBids.has(b.id))
+    : activeBranches();
+
+  // 지점별 섹션 HTML 생성
+  const branchSections = activeBrs_list.map(br=>{
+    const bc = bclr(br.id);
+    const brBookings = bookings.filter(b=>b.bid===br.id);
+    // 날짜별 그룹 (이 지점만)
+    const brByDate={};
+    dates.forEach(ds=>{brByDate[ds]=[];});
+    brBookings.forEach(b=>{if(brByDate[b.date]!==undefined) brByDate[b.date].push(b);});
+    const brTotal = brBookings.length;
+
+    // 지점 내 주별 테이블
+    const brTablesHtml = weeks.map(week=>{
+      const nonNull=week.filter(Boolean);
+      const wFrom=nonNull[0]||'', wTo=nonNull[nonNull.length-1]||'';
+      const wCnt=nonNull.reduce((a,ds)=>a+(brByDate[ds]?.length||0),0);
+
+      const headers=week.map(ds=>{
+        if(!ds) return `<th style="${thB}"></th>`;
+        const {label,day,isSun,isSat,isToday}=fmtDate(ds);
+        const clr=isSun?'#ef4444':isSat?'#2563eb':'var(--text)';
+        const bg=isToday?'background:#fef9c3':isSun?'background:#fff5f5':isSat?'background:#eff6ff':'';
+        const todayMark=isToday?'<div style="font-size:14px;color:#d97706;font-weight:800">오늘</div>':'';
+        const cnt=brByDate[ds]?.length||0;
+        return `<th style="${thB};${bg};color:${clr}">
+          ${todayMark}
+          <div style="font-size:24px;font-weight:${isToday?900:700}">${label}</div>
+          <div style="font-size:20px;font-weight:600;color:${isSun?'#ef4444':isSat?'#3b82f6':'var(--text3)'}">${day}</div>
+          ${cnt>0?`<div style="margin-top:4px;font-size:18px;font-weight:800;color:#2563eb;background:#dbeafe;padding:3px 10px;border-radius:12px;display:inline-block">${cnt}</div>`:''}
+          <button onclick="openBcalAddModal('${br.id}','${ds}')"
+            style="display:block;margin:6px auto 0;padding:3px 10px;border-radius:8px;border:1.5px dashed ${bc};background:transparent;color:${bc};font-size:14px;font-weight:700;cursor:pointer">＋</button>
+        </th>`;
+      }).join('');
+
+      const cells=week.map(ds=>{
+        if(!ds) return `<td style="${tdB};background:var(--s1)"></td>`;
+        const {isSun,isSat,isToday}=fmtDate(ds);
+        const bg=isToday?'background:#fefce8;':isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
+        const items=(brByDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+        if(!items.length) return `<td style="${tdB};${bg}text-align:center;color:var(--text3);font-size:22px">-</td>`;
+        // 단일 지점이므로 시간+시술만 나열
+        const rows=items.map(b=>{
+          const timeStr=b.time?`<span style="font-size:22px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
+          const isDirect=b.isDirect;
+          return `<div style="background:#fff;border:1px solid ${bc}33;border-left:6px solid ${isDirect?'#f59e0b':bc};border-radius:10px;padding:10px 12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+              <div style="flex:1">
+                ${isDirect?'<span style="font-size:13px;background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:5px;font-weight:700">병원직접</span><br>':''}
+                ${timeStr}<span style="font-size:20px;font-weight:700;color:var(--text)">${b.procName}</span>
+                <span style="color:var(--text3);font-size:17px"> ${b.pttype||''}</span>
+                ${b.memo?`<div style="font-size:17px;color:#b45309;margin-top:3px">📝 ${escHtml(b.memo)}</div>`:''}
+              </div>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                ${isDirect
+                  ? `<button onclick="bcalEditDirectAppt('${b.directId}')" style="padding:4px 10px;border-radius:6px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:14px;cursor:pointer">✏️</button>
+                     <button onclick="bcalDeleteDirectAppt('${b.directId}')" style="padding:4px 10px;border-radius:6px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:14px;cursor:pointer">🗑</button>`
+                  : `<button onclick="bcalEditCall('${b.callId}','${b.callDate}')" style="padding:4px 10px;border-radius:6px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:14px;cursor:pointer">✏️</button>
+                     <button onclick="bcalDeleteCall('${b.callId}','${b.callDate}')" style="padding:4px 10px;border-radius:6px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:14px;cursor:pointer">🗑</button>`
+                }
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+        return `<td style="${tdB};${bg}">${rows}</td>`;
+      }).join('');
+
+      return `<div style="margin-bottom:12px">
+        <div style="font-size:16px;font-weight:700;color:var(--text2);margin-bottom:6px;padding:4px 12px;background:var(--s2);border-radius:6px;display:inline-block">
+          📅 ${wFrom} ~ ${wTo} · ${wCnt}건
+        </div>
+        <table style="border-collapse:collapse;width:100%;table-layout:fixed">
+          <thead><tr>${headers}</tr></thead>
+          <tbody><tr>${cells}</tr></tbody>
+        </table>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:28px;border:2px solid ${bc}44;border-radius:14px;overflow:hidden">
+      <div style="padding:12px 18px;background:${bc}18;border-bottom:2px solid ${bc}33;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px;font-weight:900;color:${bc}">🏥 미클리닉 ${br.name}점</span>
+        <span style="font-size:17px;font-weight:700;color:${bc};background:${bc}22;padding:2px 10px;border-radius:10px">${brTotal}건</span>
+        <button onclick="openBcalAddModal('${br.id}','')"
+          style="margin-left:auto;padding:6px 16px;border-radius:10px;border:2px solid ${bc};background:#fff;color:${bc};font-size:15px;font-weight:700;cursor:pointer">＋ 예약 추가</button>
+      </div>
+      <div style="padding:14px">${brTablesHtml}</div>
+    </div>`;
+  }).join('');
+
   wrap.innerHTML=`
-    <div style="font-size:16px;color:var(--text3);margin-bottom:12px">
+    <div style="font-size:16px;color:var(--text3);margin-bottom:14px">
       📅 ${from} ~ ${to} &nbsp;|&nbsp; 예약 총 <strong style="color:var(--accent)">${totalCnt}건</strong>
     </div>
-    <div id="booking-cal-table-wrap">${tablesHtml}</div>`;
+    <div id="booking-cal-table-wrap">${branchSections}</div>`;
 }
 
 function copyBookingCalImage(){
@@ -16235,6 +16379,65 @@ function renderMarketingTable(){
 }
 
 // ── 상담기록 수정 ──
+function openBcalAddModal(bid, date){
+  document.getElementById('bcal-add-id').value='';
+  document.getElementById('bcal-add-title').textContent='📆 예약 추가 (병원 직접)';
+  // 지점 드롭다운
+  const sel=document.getElementById('bcal-add-bid');
+  sel.innerHTML=activeBranches().map(b=>`<option value="${b.id}"${b.id===bid?' selected':''}>${b.name}</option>`).join('');
+  document.getElementById('bcal-add-date').value=date||todayStr();
+  document.getElementById('bcal-add-time').value='';
+  document.getElementById('bcal-add-proc').value='';
+  document.getElementById('bcal-add-pttype').value='신환';
+  document.getElementById('bcal-add-memo').value='';
+  document.getElementById('modal-bcal-add').classList.add('open');
+}
+
+function bcalEditDirectAppt(id){
+  const a=(S.directAppts||[]).find(x=>x.id===id); if(!a) return;
+  document.getElementById('bcal-add-id').value=id;
+  document.getElementById('bcal-add-title').textContent='📆 예약 수정 (병원 직접)';
+  const sel=document.getElementById('bcal-add-bid');
+  sel.innerHTML=activeBranches().map(b=>`<option value="${b.id}"${b.id===a.bid?' selected':''}>${b.name}</option>`).join('');
+  document.getElementById('bcal-add-date').value=a.date||'';
+  document.getElementById('bcal-add-time').value=a.time||'';
+  document.getElementById('bcal-add-proc').value=a.procName||'';
+  document.getElementById('bcal-add-pttype').value=a.pttype||'신환';
+  document.getElementById('bcal-add-memo').value=a.memo||'';
+  document.getElementById('modal-bcal-add').classList.add('open');
+}
+
+function saveBcalDirectAppt(){
+  const id=document.getElementById('bcal-add-id').value;
+  const bid=document.getElementById('bcal-add-bid').value;
+  const date=document.getElementById('bcal-add-date').value;
+  const time=document.getElementById('bcal-add-time').value;
+  const procName=document.getElementById('bcal-add-proc').value.trim();
+  const pttype=document.getElementById('bcal-add-pttype').value;
+  const memo=document.getElementById('bcal-add-memo').value.trim();
+  if(!date){toast('⚠️ 예약 날짜를 입력해주세요');return;}
+  if(!procName){toast('⚠️ 시술명을 입력해주세요');return;}
+  if(!S.directAppts) S.directAppts=[];
+  if(id){
+    const idx=S.directAppts.findIndex(a=>a.id===id);
+    if(idx>=0) S.directAppts[idx]={...S.directAppts[idx],bid,date,time,procName,pttype,memo};
+  } else {
+    S.directAppts.push({id:'da_'+Date.now(),bid,date,time,procName,pttype,memo,createdAt:Date.now()});
+  }
+  autoSave(); syncPush(false);
+  closeModal('modal-bcal-add');
+  renderBookingCal();
+  toast('✅ 예약 저장됨');
+}
+
+function bcalDeleteDirectAppt(id){
+  if(!confirm('이 예약을 삭제할까요?')) return;
+  S.directAppts=(S.directAppts||[]).filter(a=>a.id!==id);
+  autoSave(); syncPush(false);
+  renderBookingCal();
+  toast('🗑 삭제됨');
+}
+
 function bcalEditCall(callId, ds){
   const c=(S.calls[ds]||[]).find(x=>x.id===callId);
   if(!c){ toast('⚠️ 기록을 찾을 수 없습니다'); return; }
