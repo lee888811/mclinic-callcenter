@@ -5952,6 +5952,12 @@ function renderCEO(){
   const {from,to}=getPeriodDates(_ceoPeriod,'ceo-date-from','ceo-date-to');
   document.getElementById('ceo-date-label').textContent=periodLabel(from,to);
   const allCalls=getAnalysisCallsForRange(from,to);
+
+  // 데이터가 없고 Firebase URL이 설정돼 있으면 syncPull 후 재렌더
+  const totalInRange=getDateRange(from,to).reduce((a,ds)=>a+(S.calls[ds]?.length||0),0);
+  if(totalInRange===0 && _syncUrl && !_isSyncing){
+    syncPull().then(()=>renderCEO());
+  }
   const sum=getSummaryForRange(from,to);
 
   // delta: compare to same-length prior period
