@@ -791,6 +791,9 @@ td:first-child{text-align:left;padding-left:13px}
     <div class="page" id="page-noappt">
       <div class="ph">
         <div><div class="pt">⏳ 미예약 현황</div><div class="ps">지점별 미예약 목록 · 아웃콜 대상 관리</div></div>
+        <div class="pbtns">
+          <button class="btn btn-g btn-sm" onclick="copyNoapptImage()">📸 이미지 복사</button>
+        </div>
       </div>
       <div class="card" style="margin-bottom:12px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1808,17 +1811,68 @@ td:first-child{text-align:left;padding-left:13px}
     </div>
     <div class="ml" style="margin-top:10px">시술명 <span style="color:#ef4444">*</span></div>
     <input type="text" id="bcal-add-proc" class="minp" style="margin-top:4px" placeholder="예: 울쎄라, 써마지, 세르프">
-    <div class="ml" style="margin-top:10px">환자 구분</div>
+    <div class="ml" style="margin-top:10px">상태</div>
     <select id="bcal-add-pttype" class="minp" style="margin-top:4px">
       <option value="신환">신환</option>
       <option value="구환(신규상담)">구환(신규상담)</option>
       <option value="잔여시술">잔여시술</option>
+      <option value="예약취소" style="color:#dc2626">❌ 예약취소</option>
     </select>
     <div class="ml" style="margin-top:10px">메모 (선택)</div>
     <textarea id="bcal-add-memo" rows="3" class="minp" style="margin-top:4px;resize:none" placeholder="특이사항..."></textarea>
     <div class="mbtns">
       <button class="btn btn-g" onclick="closeModal('modal-bcal-add')">취소</button>
       <button class="btn btn-p" onclick="saveBcalDirectAppt()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 기타콜 추가/수정 -->
+<div class="modal" id="modal-etc-call" style="z-index:720">
+  <div class="mbox" style="width:460px">
+    <div class="mt" id="etc-call-title">📋 기타콜 추가</div>
+    <input type="hidden" id="etc-call-id">
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <div style="flex:1">
+        <div class="ml">날짜 <span style="color:#ef4444">*</span></div>
+        <input type="date" id="etc-call-date" class="minp" style="margin-top:4px">
+      </div>
+      <div style="flex:1">
+        <div class="ml">시간</div>
+        <input type="time" id="etc-call-time" class="minp" style="margin-top:4px">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="flex:1">
+        <div class="ml">고객명</div>
+        <input type="text" id="etc-call-name" class="minp" style="margin-top:4px" placeholder="이름">
+      </div>
+      <div style="flex:1">
+        <div class="ml">연락처</div>
+        <input type="text" id="etc-call-phone" class="minp" style="margin-top:4px" placeholder="010-0000-0000">
+      </div>
+    </div>
+    <div class="ml" style="margin-top:10px">유입경로</div>
+    <input type="text" id="etc-call-source" class="minp" style="margin-top:4px" placeholder="예: 궁청담, 의원, 지인소개 등">
+    <div class="ml" style="margin-top:10px">메모</div>
+    <textarea id="etc-call-memo" rows="3" class="minp" style="margin-top:4px;resize:none" placeholder="상담 내용, 관심 시술 등..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="flex:1">
+        <div class="ml">매출 여부</div>
+        <select id="etc-call-hasSale" class="minp" style="margin-top:4px">
+          <option value="-">- 미확인</option>
+          <option value="Y">✅ 매출O</option>
+          <option value="N">❌ 매출X</option>
+        </select>
+      </div>
+      <div style="flex:2">
+        <div class="ml">매출 메모</div>
+        <input type="text" id="etc-call-saleNote" class="minp" style="margin-top:4px" placeholder="예: 강남 4/10 울쎄라 예약">
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('modal-etc-call')">취소</button>
+      <button class="btn btn-p" onclick="saveEtcCall()">💾 저장</button>
     </div>
   </div>
 </div>
@@ -3002,6 +3056,7 @@ try{
     if(saved.notes) S.notes=saved.notes;
     if(saved.faqs) S.faqs=saved.faqs;
     if(saved.directAppts) S.directAppts=saved.directAppts;
+    if(saved.etcCalls) S.etcCalls=saved.etcCalls;
     if(saved.roles&&saved.roles.length>0) S.roles=saved.roles;
     if(saved.incentive) S.incentive=saved.incentive;
     if(saved.perfGoals) S.perfGoals=saved.perfGoals;
@@ -3682,6 +3737,7 @@ async function syncPush(showToast=false){
         notes:S.notes||[],
         faqs:S.faqs||[],
         directAppts:S.directAppts||[],
+        etcCalls:S.etcCalls||[],
         roiCosts:S.roiCosts||{},
         roiLogs:S.roiLogs||[],
         _deletedIds:S._deletedIds||[],savedAt:_localSavedAt,
@@ -3737,6 +3793,7 @@ async function syncPull(){
       if(Array.isArray(data.notes)&&data.notes.length) S.notes=data.notes;
       if(Array.isArray(data.faqs)) S.faqs=data.faqs;
       if(Array.isArray(data.directAppts)) S.directAppts=data.directAppts;
+      if(Array.isArray(data.etcCalls)) S.etcCalls=data.etcCalls;
       if(data.roiCosts&&typeof data.roiCosts==='object') S.roiCosts=data.roiCosts;
       if(Array.isArray(data.roiLogs)) S.roiLogs=data.roiLogs;
       if(data.sheetUrls && typeof data.sheetUrls==='object'){
@@ -5465,7 +5522,7 @@ function checkBookingDateRequired(){
   }
 }
 function confirmCall(){
-  const isSimpleType=(_callType==='miss'||_callType==='ad'||_callType==='absence1'||_callType==='absence2');
+  const isSimpleType=(_callType==='miss'||_callType==='ad'||_callType==='out'||_callType==='absence1'||_callType==='absence2');
   if(_callBids.size===0 && !isSimpleType){
     toast('⚠️ 지점을 선택해주세요');
     const hint=document.getElementById('branch-required-hint');
@@ -5510,7 +5567,7 @@ function confirmCall(){
       return;
     }
   }
-  if(isShinGu && hasBooking){
+  if(isShinGu && hasBooking && !isSimpleType){
     const hasProc = Object.values(_procSel).some(n=>n>0);
     if(!hasProc){
       toast('⚠️ 신환/구환 예약 시 시술을 선택해주세요');
@@ -9503,6 +9560,33 @@ function deleteSharedMemo(id){
   toast('🗑 삭제됨');
 }
 
+function copyNoapptImage(){
+  if(typeof html2canvas==='undefined'){toast('⚠️ 이미지 복사 불가');return;}
+  const content=document.getElementById('noappt-content');
+  if(!content){toast('⚠️ 내용이 없습니다');return;}
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:20px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:700px';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:18px;font-weight:800;color:#0f172a;margin-bottom:14px';
+  // 기간 정보 가져오기
+  const periodBtn=document.querySelector('[id^="noappt-period-btn-"].act');
+  const periodLabel=periodBtn?.textContent||'';
+  title.textContent=`⏳ 미예약 현황 — ${periodLabel}`;
+  wrapper.appendChild(title);
+  wrapper.appendChild(content.cloneNode(true));
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false}).then(canvas=>{
+    document.body.removeChild(wrapper);
+    canvas.toBlob(blob=>{
+      if(!blob){toast('❌ 이미지 생성 실패');return;}
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>toast('📋 미예약 현황 이미지 복사됨!')).catch(()=>{
+        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='미예약현황.png';a.click();
+        toast('💾 이미지 저장됨');
+      });
+    });
+  });
+}
+
 function renderNoapptPage(){
   const el=document.getElementById('noappt-content');
   if(!el) return;
@@ -10003,11 +10087,16 @@ function renderClosingReport(){
         ${b.name}점${hasCalls?'':' (데이터 없음)'}
       </div>`;
     }).join('');
-    tabsEl.innerHTML=allTab+branchTabs;
+    const etcTab=`<div onclick="selectCrBranch('etc')" style="padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid ${_crBid==='etc'?'#7c3aed':'var(--border)'};background:${_crBid==='etc'?'#7c3aed':'var(--s1)'};color:${_crBid==='etc'?'#fff':'var(--text2)'}">
+      📋 기타콜
+    </div>`;
+    tabsEl.innerHTML=allTab+branchTabs+etcTab;
   }
 
   if(_crBid==='all'){
     renderClosingReportAll(calls, dateLabel);
+  } else if(_crBid==='etc'){
+    renderEtcCallReport(ds, dateLabel);
   } else {
     renderClosingReportForBranch(ds, _crBid, calls, dateLabel);
   }
@@ -10017,6 +10106,195 @@ function selectCrBranch(bid){
   _crBid=bid;
   renderClosingReport();
 }
+
+// ── 기타콜 ──────────────────────────────────────
+function getEtcCalls(){
+  if(!S.etcCalls) S.etcCalls=[];
+  return S.etcCalls;
+}
+
+function renderEtcCallReport(ds, dateLabel){
+  const container=document.getElementById('closing-report-content');
+  const from=document.getElementById('cr-from')?.value||ds;
+  const to=document.getElementById('cr-date')?.value||ds;
+  const all=getEtcCalls().filter(e=>e.date>=from&&e.date<=to);
+
+  const totalCnt=all.length;
+  const hasSale=all.filter(e=>e.hasSale==='Y').length;
+  const noSale=all.filter(e=>e.hasSale==='N').length;
+  const pending=all.filter(e=>!e.hasSale||e.hasSale==='-').length;
+
+  const rows=all.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')).map(e=>`
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 10px;font-size:13px;white-space:nowrap">${e.date||''}</td>
+      <td style="padding:8px 10px;font-size:13px;white-space:nowrap">${e.time||''}</td>
+      <td style="padding:8px 10px;font-size:13px;font-weight:700">${escHtml(e.name||'')}</td>
+      <td style="padding:8px 10px;font-size:13px;font-family:'DM Mono',monospace">${escHtml(e.phone||'')}</td>
+      <td style="padding:8px 10px;font-size:13px">${escHtml(e.source||'')}</td>
+      <td style="padding:8px 10px;font-size:13px">${escHtml(e.memo||'')}</td>
+      <td style="padding:8px 10px;text-align:center">
+        <select onchange="updateEtcSale('${e.id}',this.value)" style="padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:${e.hasSale==='Y'?'#dcfce7':e.hasSale==='N'?'#fee2e2':'var(--s2)'};font-size:12px;font-weight:700;cursor:pointer">
+          <option value="-" ${!e.hasSale||e.hasSale==='-'?'selected':''}>-</option>
+          <option value="Y" ${e.hasSale==='Y'?'selected':''}>✅ 매출O</option>
+          <option value="N" ${e.hasSale==='N'?'selected':''}>❌ 매출X</option>
+        </select>
+      </td>
+      <td style="padding:8px 10px;font-size:13px">${escHtml(e.saleNote||'')}</td>
+      <td style="padding:8px 6px;text-align:center;white-space:nowrap">
+        <button onclick="openEtcCallEdit('${e.id}')" style="padding:3px 8px;border-radius:5px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:11px;cursor:pointer">✏️</button>
+        <button onclick="deleteEtcCall('${e.id}')" style="padding:3px 8px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:11px;cursor:pointer">🗑</button>
+      </td>
+    </tr>`).join('');
+
+  container.innerHTML=`
+    <div style="margin-bottom:14px">
+      <div class="card" style="margin-bottom:12px">
+        <div class="ch2" style="margin-bottom:10px">
+          <span class="slbl" style="margin:0">📋 기타콜 현황</span>
+          <span style="font-size:13px;color:var(--text3);margin-left:4px">${dateLabel||from+' ~ '+to}</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button onclick="copyEtcCallImage()" class="btn btn-g btn-sm">📸 이미지 복사</button>
+            <button onclick="openEtcCallAdd()" class="btn btn-p btn-sm">＋ 기타콜 추가</button>
+          </div>
+        </div>
+        <!-- 요약 -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="background:#f1f5f9;border-radius:8px;padding:8px 16px;text-align:center">
+            <div style="font-size:11px;color:var(--text3)">총 건수</div>
+            <div style="font-size:22px;font-weight:800;color:#0f172a">${totalCnt}</div>
+          </div>
+          <div style="background:#dcfce7;border-radius:8px;padding:8px 16px;text-align:center">
+            <div style="font-size:11px;color:#15803d">매출 O</div>
+            <div style="font-size:22px;font-weight:800;color:#15803d">${hasSale}</div>
+          </div>
+          <div style="background:#fee2e2;border-radius:8px;padding:8px 16px;text-align:center">
+            <div style="font-size:11px;color:#dc2626">매출 X</div>
+            <div style="font-size:22px;font-weight:800;color:#dc2626">${noSale}</div>
+          </div>
+          <div style="background:#fef9c3;border-radius:8px;padding:8px 16px;text-align:center">
+            <div style="font-size:11px;color:#854d0e">확인 중</div>
+            <div style="font-size:22px;font-weight:800;color:#854d0e">${pending}</div>
+          </div>
+        </div>
+        <!-- 테이블 -->
+        <div id="etc-call-table-wrap" style="overflow-x:auto">
+          ${totalCnt===0
+            ? `<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">해당 기간 기타콜이 없습니다</div>`
+            : `<table style="border-collapse:collapse;width:100%;min-width:600px">
+                <thead><tr style="background:var(--s2);font-size:12px;color:var(--text2)">
+                  <th style="padding:8px 10px;text-align:left;white-space:nowrap">날짜</th>
+                  <th style="padding:8px 10px;text-align:left;white-space:nowrap">시간</th>
+                  <th style="padding:8px 10px;text-align:left">고객명</th>
+                  <th style="padding:8px 10px;text-align:left">연락처</th>
+                  <th style="padding:8px 10px;text-align:left">유입경로</th>
+                  <th style="padding:8px 10px;text-align:left">메모</th>
+                  <th style="padding:8px 10px;text-align:center;white-space:nowrap">매출여부</th>
+                  <th style="padding:8px 10px;text-align:left">매출메모</th>
+                  <th style="padding:8px 10px;text-align:center">관리</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+              </table>`
+          }
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateEtcSale(id, val){
+  const e=getEtcCalls().find(x=>x.id===id); if(!e) return;
+  e.hasSale=val;
+  autoSave(); syncPush(false);
+  toast(val==='Y'?'✅ 매출O':val==='N'?'❌ 매출X':'- 미확인');
+}
+
+function openEtcCallAdd(){
+  document.getElementById('etc-call-id').value='';
+  document.getElementById('etc-call-title').textContent='📋 기타콜 추가';
+  document.getElementById('etc-call-date').value=document.getElementById('cr-date')?.value||todayStr();
+  document.getElementById('etc-call-time').value='';
+  document.getElementById('etc-call-name').value='';
+  document.getElementById('etc-call-phone').value='';
+  document.getElementById('etc-call-source').value='';
+  document.getElementById('etc-call-memo').value='';
+  document.getElementById('etc-call-hasSale').value='-';
+  document.getElementById('etc-call-saleNote').value='';
+  document.getElementById('modal-etc-call').classList.add('open');
+}
+
+function openEtcCallEdit(id){
+  const e=getEtcCalls().find(x=>x.id===id); if(!e) return;
+  document.getElementById('etc-call-id').value=id;
+  document.getElementById('etc-call-title').textContent='📋 기타콜 수정';
+  document.getElementById('etc-call-date').value=e.date||'';
+  document.getElementById('etc-call-time').value=e.time||'';
+  document.getElementById('etc-call-name').value=e.name||'';
+  document.getElementById('etc-call-phone').value=e.phone||'';
+  document.getElementById('etc-call-source').value=e.source||'';
+  document.getElementById('etc-call-memo').value=e.memo||'';
+  document.getElementById('etc-call-hasSale').value=e.hasSale||'-';
+  document.getElementById('etc-call-saleNote').value=e.saleNote||'';
+  document.getElementById('modal-etc-call').classList.add('open');
+}
+
+function saveEtcCall(){
+  const id=document.getElementById('etc-call-id').value;
+  const data={
+    date:document.getElementById('etc-call-date').value,
+    time:document.getElementById('etc-call-time').value,
+    name:document.getElementById('etc-call-name').value.trim(),
+    phone:document.getElementById('etc-call-phone').value.trim(),
+    source:document.getElementById('etc-call-source').value.trim(),
+    memo:document.getElementById('etc-call-memo').value.trim(),
+    hasSale:document.getElementById('etc-call-hasSale').value,
+    saleNote:document.getElementById('etc-call-saleNote').value.trim(),
+  };
+  if(!data.date){toast('⚠️ 날짜를 입력해주세요');return;}
+  if(!S.etcCalls) S.etcCalls=[];
+  if(id){
+    const idx=S.etcCalls.findIndex(x=>x.id===id);
+    if(idx>=0) S.etcCalls[idx]={...S.etcCalls[idx],...data};
+  } else {
+    S.etcCalls.push({id:'ec_'+Date.now(),...data,createdAt:Date.now()});
+  }
+  autoSave(); syncPush(false);
+  closeModal('modal-etc-call');
+  renderClosingReport();
+  toast('✅ 기타콜 저장됨');
+}
+
+function deleteEtcCall(id){
+  if(!confirm('이 기타콜 기록을 삭제할까요?')) return;
+  S.etcCalls=(S.etcCalls||[]).filter(x=>x.id!==id);
+  autoSave(); syncPush(false);
+  renderClosingReport();
+  toast('🗑 삭제됨');
+}
+
+function copyEtcCallImage(){
+  if(typeof html2canvas==='undefined'){toast('⚠️ 이미지 복사 불가');return;}
+  const wrap=document.getElementById('etc-call-table-wrap');
+  if(!wrap){toast('⚠️ 데이터 없음');return;}
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:20px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:600px';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:16px;font-weight:800;color:#0f172a;margin-bottom:12px';
+  title.textContent='📋 기타콜 현황';
+  wrapper.appendChild(title);
+  wrapper.appendChild(wrap.cloneNode(true));
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false}).then(canvas=>{
+    document.body.removeChild(wrapper);
+    canvas.toBlob(blob=>{
+      if(!blob){toast('❌ 이미지 생성 실패');return;}
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>toast('📋 기타콜 이미지 복사됨!')).catch(()=>{
+        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='기타콜현황.png';a.click();
+        toast('💾 이미지 저장됨');
+      });
+    });
+  });
+}
+
+
 
 function renderClosingReportAll(allCalls, dateLabelStr){
   const container=document.getElementById('closing-report-content');
@@ -10075,7 +10353,7 @@ function renderClosingReportAll(allCalls, dateLabelStr){
       else pCntGu[key]=(pCntGu[key]||0)+n;
     });
   });
-  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([key,n])=>{
+  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).map(([key,n])=>{
     return {name:pNameMapAll[key]||key, n, shin:pCntShin[key]||0, gu:pCntGu[key]||0};
   }).filter(Boolean);
 
@@ -10209,11 +10487,11 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   });
   txt+=D+'\n';
 
-  // 5. 예약 시술 (간결: 시술명+건수만, TOP10)
+  // 5. 예약 시술 (전체)
   if(topProcs.length){
     txt+='\n💉 예약 시술\n';
-    topProcs.slice(0,10).forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name} ${p.n}건\n`; });
-    txt+='└ '+topProcs.slice(0,10).map(p=>`${p.name}${p.n}`).join('  ')+'\n';
+    topProcs.forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name} ${p.n}건\n`; });
+    txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
     txt+=D+'\n';
   }
 
@@ -10467,7 +10745,7 @@ function renderClosingReportForBranch(ds, bid, allCallsOverride, dateLabelOverri
       else if(c.pttype==='구환(신규상담)'||c.pttype==='구환') pCntGu[key]=(pCntGu[key]||0)+n;
     });
   });
-  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1]).slice(0,15)
+  const topProcs=Object.entries(pCntAll).sort((a,b)=>b[1]-a[1])
     .map(([key,n])=>{
       return {name:pNameMap[key]||key, n, shin:pCntShin[key]||0, gu:pCntGu[key]||0, rem:pCntRem[key]||0};
     }).filter(Boolean);
@@ -16063,11 +16341,21 @@ function renderBookingCal(){
     (calls||[]).forEach(c=>{
       if(!c.bookingDate) return;
       if(c.bookingDate<from||c.bookingDate>to) return;
+      if(c.pttype==='예약취소') return; // 예약취소는 달력에서 제외
       if(filterBids.size>0&&!filterBids.has(c.bid)) return;
       const procs=Object.entries(c.procs||{}).filter(([,n])=>n>0);
-      if(filterPids.size>0&&!procs.some(([pid])=>pidMatches(pid))) return;
+      // 시술 필터: filterPids 선택 있으면 해당 시술만, 없으면 BOOKING_REQUIRED_PROCS 기반
+      let usedProcs;
+      if(filterPids.size>0){
+        usedProcs=procs.filter(([pid])=>pidMatches(pid));
+      } else {
+        // 전체(필터 없음): BOOKING_REQUIRED_PROCS에 해당하는 시술만
+        usedProcs=BOOKING_REQUIRED_PROCS.length>0
+          ? procs.filter(([pid])=>BOOKING_REQUIRED_PROCS.some(req=>(getProcName(pid)||'').includes(req)))
+          : procs;
+      }
+      if(!usedProcs.length) return;
       const br=S.branches.find(b=>b.id===c.bid);
-      const usedProcs=filterPids.size>0?procs.filter(([pid])=>pidMatches(pid)):procs;
       usedProcs.forEach(([pid])=>{
         bookings.push({
           date:c.bookingDate, time:c.bookingTime||'',
@@ -16083,9 +16371,13 @@ function renderBookingCal(){
   // 병원 직접 예약도 포함
   (S.directAppts||[]).forEach(a=>{
     if(!a.date||a.date<from||a.date>to) return;
+    if(a.pttype==='예약취소') return; // 취소된 직접예약 제외
     if(filterBids.size>0&&!filterBids.has(a.bid)) return;
-    const nameMatch=BOOKING_REQUIRED_PROCS.length===0||BOOKING_REQUIRED_PROCS.some(req=>(a.procName||'').includes(req));
-    if(filterPids.size>0&&!nameMatch) return;
+    // filterPids 있으면 시술명 매칭, 없으면 BOOKING_REQUIRED_PROCS 기반
+    if(filterPids.size>0){
+      const nameMatch=BOOKING_REQUIRED_PROCS.some(req=>(a.procName||'').includes(req));
+      if(!nameMatch) return;
+    }
     bookings.push({
       date:a.date, time:a.time||'',
       pid:'direct', procName:a.procName||'직접예약',
@@ -16251,17 +16543,33 @@ function renderBookingCal(){
         if(!ds) return `<td style="${tdB};background:var(--s1)"></td>`;
         const {isSun,isSat,isToday}=fmtDate(ds);
         const bg=isToday?'background:#fefce8;':isSun?'background:#fff5f5;':isSat?'background:#f0f9ff;':'';
-        const items=(brByDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
-        if(!items.length) return `<td style="${tdB};${bg}text-align:center;color:var(--text3);font-size:22px">-</td>`;
-        // 단일 지점이므로 시간+시술만 나열
+        const rawItems=(brByDate[ds]||[]).slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+        if(!rawItems.length) return `<td style="${tdB};${bg}text-align:center;color:var(--text3);font-size:22px">-</td>`;
+
+        // 같은 callId(또는 directId)+time인 항목을 하나로 묶기
+        const grouped=[];
+        const seen=new Map();
+        rawItems.forEach(b=>{
+          const key=(b.isDirect?(b.directId||''):(b.callId||''))+'|'+(b.time||'');
+          if(seen.has(key)){
+            const g=seen.get(key);
+            g.procNames.push(b.procName);
+          } else {
+            const g={...b, procNames:[b.procName]};
+            seen.set(key,g);
+            grouped.push(g);
+          }
+        });
+        const items=grouped;
+
         const rows=items.map(b=>{
           const timeStr=b.time?`<span style="font-size:22px;color:#7c3aed;font-weight:800;font-family:'DM Mono',monospace">${b.time}</span> `:'';
           const isDirect=b.isDirect;
+          const procDisplay=(b.procNames||[b.procName]).join(' + ');
           return `<div style="background:#fff;border:1px solid ${bc}33;border-left:6px solid ${isDirect?'#f59e0b':bc};border-radius:10px;padding:10px 12px;margin-bottom:8px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
               <div style="flex:1">
-                ${isDirect?'':''}
-                ${timeStr}<span style="font-size:20px;font-weight:700;color:var(--text)">${b.procName}</span>
+                ${timeStr}<span style="font-size:20px;font-weight:700;color:var(--text)">${procDisplay}</span>
                 <span style="color:var(--text3);font-size:17px"> ${b.pttype||''}</span>
                 ${b.memo?`<div style="font-size:17px;color:#b45309;margin-top:3px">📝 ${escHtml(b.memo)}</div>`:''}
               </div>
