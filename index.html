@@ -10687,7 +10687,6 @@ function renderClosingReportAll(allCalls, dateLabelStr){
   if(topProcs.length){
     txt+='\n💉 예약 시술\n';
     topProcs.forEach((p,i)=>{ txt+=`  ${i+1}. ${p.name} ${p.n}건\n`; });
-    txt+='└ '+topProcs.map(p=>`${p.name}${p.n}`).join('  ')+'\n';
     txt+=D+'\n';
   }
 
@@ -11011,8 +11010,7 @@ ${chatChData.length?`
 ${chatChData.map(ch=>{const parts=[];if(ch.shin)parts.push(`신환 ${ch.shin}`);if(ch.gu)parts.push(`구환 ${ch.gu}`);if(ch.rem)parts.push(`잔여 ${ch.rem}`);if(ch.gen)parts.push(`일반 ${ch.gen}`);if(ch.cancel)parts.push(`취소 ${ch.cancel}`);if(ch.noappt)parts.push(`미예약 ${ch.noappt}`);if(ch.absence)parts.push(`부재 ${ch.absence}`);return `  ▪ ${ch.icon} ${ch.name}  ${ch.total}건${parts.length?`  (${parts.join(' · ')})`:''}`;}).join('\n')}`:''}
 ${topProcs.length?`
 💉 예약 시술 현황 ${topProcs.length}
-${procLines}
-└ ${procSummaryLine}`:''}${vocSection}
+${procLines}`:''}${vocSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 이상 보고드립니다. 🙏`;
 
