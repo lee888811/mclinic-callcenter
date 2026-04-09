@@ -3635,6 +3635,8 @@ function loadSyncSettings(){
   updateSyncUI();
   if(_syncUrl){
     startSyncPoll();
+    // 앱 시작 시 즉시 syncPull 실행 (데이터 최신화)
+    syncPull();
     // 앱 시작 시 즐겨찾기 즉시 pull
     const base=_syncUrl.replace(/\/+$/,'');
     fbFetch(base+'/mclinic/dpProcPresets.json').then(r=>r.json()).then(data=>{
@@ -4389,6 +4391,12 @@ function renderStaffInputPage(sid){
   const period=getStaffPeriod(sid);
   const {from,to}=getStaffPeriodDates(sid);
   const allCalls=getCallsForRange(from,to).filter(c=>c.sid===sid);
+
+  // 데이터가 없고 Firebase 연결됐으면 자동 pull
+  const totalInRange=getDateRange(from,to).reduce((a,ds)=>a+(S.calls[ds]?.length||0),0);
+  if(totalInRange===0 && _syncUrl && !_isSyncing){
+    syncPull().then(()=>renderStaffInputPage(sid));
+  }
   const calls=allCalls; // 전체 (오발신/광고 포함)
   const analysisCalls=calls.filter(c=>c.type!=='miss'&&c.type!=='ad'); // 분석용
 
