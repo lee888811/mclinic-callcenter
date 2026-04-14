@@ -17277,20 +17277,17 @@ function copyBrDailyTableImage(){
 }
 
 function copyVocText(){
-  const vocs=getFilteredVocs();
-  if(!vocs.length){toast('⚠️ VOC 데이터가 없습니다');return;}
-  const statusColors={'접수':'[접수]','처리중':'[처리중]','완료':'[완료]'};
+  const vocs=getFilteredVocs().filter(v=>v.status!=='완료');
+  if(!vocs.length){toast('⚠️ 복사할 VOC가 없습니다 (완료 제외)');return;}
   const lines=vocs.map(v=>{
     const brName=S.branches.find(b=>b.id===v.bid)?.name||'';
-    const staffName=S.staff.find(s=>s.id===v.sid)?.name||'';
-    const status=statusColors[v.status]||'';
+    const statusLabel=v.status==='처리중'?'[처리중]':'[접수]';
     const typeLabel=v.type==='컴플레인'?'🔴 컴플레인':'🟢 긍정';
-    const header=[typeLabel, status, v.date||'', brName, staffName].filter(Boolean).join(' · ');
+    const header=[typeLabel, statusLabel, v.date||'', brName].filter(Boolean).join(' · ');
     return `${header}\n${v.content||''}\n${'─'.repeat(30)}`;
   }).join('\n');
   const total=`💬 VOC 보고서 (${vocs.length}건)\n${'━'.repeat(30)}\n`+lines;
-  navigator.clipboard.writeText(total).then(()=>toast('📝 텍스트 복사됨! 카톡에 붙여넣기 하세요')).catch(()=>{
-    // 폴백: textarea로 복사
+  navigator.clipboard.writeText(total).then(()=>toast('📝 텍스트 복사됨! (완료 제외)')).catch(()=>{
     const ta=document.createElement('textarea');
     ta.value=total; ta.style.position='fixed'; ta.style.opacity='0';
     document.body.appendChild(ta); ta.select();
