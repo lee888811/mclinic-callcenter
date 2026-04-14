@@ -17225,29 +17225,54 @@ function deleteVoc(callId, ds){
 }
 
 function copyBrDailyTableImage(){
-  if(typeof html2canvas==='undefined'){toast('⚠️ 이미지 복사 불가');return;}
-  const tableWrap=document.getElementById('br-daily-table-wrap');
-  if(!tableWrap){toast('⚠️ 테이블을 찾을 수 없습니다');return;}
+  if(typeof html2canvas==='undefined'){
+    const scr=document.createElement('script');
+    scr.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    scr.onload=()=>{ setTimeout(copyBrDailyTableImage,300); };
+    scr.onerror=()=>toast('⚠️ 이미지 복사 기능을 사용할 수 없습니다');
+    document.head.appendChild(scr);
+    toast('⏳ 잠시 후 다시 눌러주세요...');
+    return;
+  }
+  // 날짜×지점별 콜 현황 컨테이너
+  const tableWrap=document.getElementById('br-daily-table-wrap')
+    || document.getElementById('branch-call-table');
+  if(!tableWrap){toast('⚠️ 테이블을 찾을 수 없습니다. 먼저 데이터를 조회해주세요.');return;}
+
+  toast('📸 캡처 중...');
+  const from=document.getElementById('br-from')?.value||'';
+  const to=document.getElementById('br-date')?.value||'';
+
   const wrapper=document.createElement('div');
-  wrapper.style.cssText='background:#fff;padding:20px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:600px';
+  wrapper.style.cssText='background:#fff;padding:20px;display:inline-block;font-family:Noto Sans KR,sans-serif';
   const title=document.createElement('div');
-  title.style.cssText='font-size:16px;font-weight:800;color:#0f172a;margin-bottom:12px';
-  // 현재 기간 표시
-  const fromEl=document.getElementById('br-from'), toEl=document.getElementById('br-to');
-  const from=fromEl?.value||'', to=toEl?.value||'';
+  title.style.cssText='font-size:15px;font-weight:800;color:#0f172a;margin-bottom:12px';
   title.textContent=`🏥 날짜×지점별 콜 현황${from&&to?' ('+from+' ~ '+to+')':''}`;
   wrapper.appendChild(title);
-  wrapper.appendChild(tableWrap.cloneNode(true));
+  const clone=tableWrap.cloneNode(true);
+  clone.style.overflow='visible';
+  // 복사된 버튼 제거
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
-  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false}).then(canvas=>{
+
+  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false,allowTaint:true}).then(canvas=>{
     document.body.removeChild(wrapper);
     canvas.toBlob(blob=>{
       if(!blob){toast('❌ 이미지 생성 실패');return;}
-      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>toast('📋 이미지 복사됨!')).catch(()=>{
-        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='날짜별지점콜현황.png';a.click();
-        toast('💾 이미지 저장됨');
-      });
-    });
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
+        .then(()=>toast('📋 이미지 복사됨! 카톡에 붙여넣기 하세요'))
+        .catch(()=>{
+          const a=document.createElement('a');
+          a.href=URL.createObjectURL(blob);
+          a.download='날짜별지점콜현황.png';
+          a.click();
+          toast('💾 이미지 저장됨');
+        });
+    },'image/png');
+  }).catch(err=>{
+    if(document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    toast('❌ 캡처 실패: '+err.message);
   });
 }
 
