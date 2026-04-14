@@ -920,6 +920,7 @@ td:first-child{text-align:left;padding-left:13px}
           <span class="slbl">📋 VOC 목록</span>
           <span id="voc-count" style="font-size:14px;color:var(--text3)"></span>
           <div style="display:flex;gap:8px;margin-left:auto">
+            <button onclick="copyVocText()" style="padding:6px 14px;border-radius:8px;border:1px solid #7c3aed;background:#f5f3ff;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer">📝 텍스트 복사</button>
             <button onclick="copyVocImage()" style="padding:6px 14px;border-radius:8px;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer">📸 이미지 복사</button>
             <button onclick="exportVocExcel()" style="padding:6px 14px;border-radius:8px;border:1px solid #16a34a;background:#dcfce7;color:#16a34a;font-size:13px;font-weight:700;cursor:pointer">📥 엑셀 다운로드</button>
           </div>
@@ -13696,8 +13697,9 @@ function renderBranchCallTable(from, to){
     <div style="display:flex;align-items:center;margin-bottom:8px;margin-top:4px;gap:6px;flex-wrap:wrap">
       <div class="slbl" style="margin:0">🏥 날짜×지점별 콜 현황</div>
       ${excelNote}
+      <button onclick="copyBrDailyTableImage()" style="margin-left:auto;padding:5px 14px;border-radius:8px;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:700;cursor:pointer">📸 이미지 복사</button>
     </div>
-    <div style="overflow-x:auto">
+    <div id="br-daily-table-wrap" style="overflow-x:auto">
     <table style="border-collapse:collapse;font-size:11px;min-width:400px">
       <thead>
         <tr style="background:var(--s2)">
@@ -17220,6 +17222,73 @@ function deleteVoc(callId, ds){
     renderVocList();
     toast('🗑 VOC 삭제됨');
   }, '삭제', '#ef4444');
+}
+
+function copyBrDailyTableImage(){
+  if(typeof html2canvas==='undefined'){toast('⚠️ 이미지 복사 불가');return;}
+  const tableWrap=document.getElementById('br-daily-table-wrap');
+  if(!tableWrap){toast('⚠️ 테이블을 찾을 수 없습니다');return;}
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:20px;display:inline-block;font-family:Noto Sans KR,sans-serif;min-width:600px';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:16px;font-weight:800;color:#0f172a;margin-bottom:12px';
+  // 현재 기간 표시
+  const fromEl=document.getElementById('br-from'), toEl=document.getElementById('br-to');
+  const from=fromEl?.value||'', to=toEl?.value||'';
+  title.textContent=`🏥 날짜×지점별 콜 현황${from&&to?' ('+from+' ~ '+to+')':''}`;
+  wrapper.appendChild(title);
+  wrapper.appendChild(tableWrap.cloneNode(true));
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{scale:2,backgroundColor:'#fff',useCORS:true,logging:false}).then(canvas=>{
+    document.body.removeChild(wrapper);
+    canvas.toBlob(blob=>{
+      if(!blob){toast('❌ 이미지 생성 실패');return;}
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>toast('📋 이미지 복사됨!')).catch(()=>{
+        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='날짜별지점콜현황.png';a.click();
+        toast('💾 이미지 저장됨');
+      });
+    });
+  });
+}
+
+function copyVocText(){
+  const vocs=getFilteredVocs();
+  if(!vocs.length){toast('⚠️ VOC 데이터가 없습니다');return;}
+  const statusColors={'접수':'[접수]','처리중':'[처리중]','완료':'[완료]'};
+  const lines=vocs.map(v=>{
+    const brName=S.branches.find(b=>b.id===v.bid)?.name||'';
+    const staffName=S.staff.find(s=>s.id===v.sid)?.name||'';
+    const status=statusColors[v.status]||'';
+    const typeLabel=v.type==='컴플레인'?'🔴 컴플레인':'🟢 긍정';
+    const header=[typeLabel, status, v.date||'', brName, staffName].filter(Boolean).join(' · ');
+    return `${header}\n${v.content||''}\n${'─'.repeat(30)}`;
+  }).join('\n');
+  const total=`💬 VOC 보고서 (${vocs.length}건)\n${'━'.repeat(30)}\n`+lines;
+  navigator.clipboard.writeText(total).then(()=>toast('📝 텍스트 복사됨! 카톡에 붙여넣기 하세요')).catch(()=>{
+    // 폴백: textarea로 복사
+    const ta=document.createElement('textarea');
+    ta.value=total; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('📝 텍스트 복사됨!');
+  });
+}
+
+function getFilteredVocs(){
+  // renderVocList와 동일한 필터 적용
+  const bid=document.getElementById('voc-filter-bid')?.value||'';
+  const type=document.getElementById('voc-filter-type')?.value||'';
+  const status=document.getElementById('voc-filter-status')?.value||'';
+  const from=document.getElementById('voc-filter-from')?.value||'';
+  const to=document.getElementById('voc-filter-to')?.value||'';
+  return getAllVocs().filter(v=>{
+    if(bid&&v.bid!==bid) return false;
+    if(type&&v.type!==type) return false;
+    if(status&&v.status!==status) return false;
+    if(from&&(v.date||'')<from) return false;
+    if(to&&(v.date||'')>to) return false;
+    return true;
+  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 }
 
 function copyVocImage(){
