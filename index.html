@@ -3997,7 +3997,24 @@ async function syncNotesPull(){
       if(Array.isArray(data2)&&data2.length) S.faqs=data2;
       else if(data2&&typeof data2==='object') S.faqs=Object.values(data2).filter(Boolean);
     }
-  }catch(e){ /* 노트 동기화 실패는 조용히 무시 */ }
+    // roiLogs 별도 pull (localStorage 용량 초과로 유실될 수 있어 별도 보장)
+    const r3=await fbFetch(base+'/mclinic/roiLogs.json');
+    if(r3.ok){
+      const data3=await r3.json();
+      if(Array.isArray(data3)&&data3.length){
+        S.roiLogs=data3;
+        // 현재 ROI 페이지가 열려있으면 즉시 갱신
+        const roiPage=document.getElementById('page-roi');
+        if(roiPage?.classList.contains('act')) try{renderRoi();}catch(e){}
+      }
+    }
+    // roiCosts 별도 pull
+    const r4=await fbFetch(base+'/mclinic/roiCosts.json');
+    if(r4.ok){
+      const data4=await r4.json();
+      if(data4&&typeof data4==='object'&&Object.keys(data4).length) S.roiCosts=data4;
+    }
+  }catch(e){ /* 조용히 무시 */ }
 }
 
 function mergeRemoteData(remote){
@@ -8570,6 +8587,12 @@ function renderCmpChart(){
 }
 
 function renderRoi() {
+  // roiLogs가 비어있고 Firebase 연결된 경우 즉시 pull
+  if((!S.roiLogs||S.roiLogs.length===0) && _syncUrl && !_isSyncing){
+    syncPull().then(()=>renderRoi());
+    return;
+  }
+
   const {from, to, label} = getRoiRange();
   const lbl = document.getElementById('roi-period-lbl');
   if(lbl) lbl.textContent = label;
