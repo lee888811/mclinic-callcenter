@@ -3963,6 +3963,7 @@ async function syncPull(){
     try{localStorage.setItem('mclinic_sync_last',_lastSyncedAt);}catch(e){}
     syncNotesPull();
     updateSyncUI('ok');
+    try{ renderSidebar(); }catch(e){}
     const actPage=document.querySelector('.page.act');
     if(actPage){const pid=actPage.id.replace('page-','');try{go(pid,document.querySelector(`.si[data-page="${pid}"]`),true);}catch(e){}}
   }catch(err){
