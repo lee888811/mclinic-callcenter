@@ -8587,12 +8587,23 @@ function renderCmpChart(){
 }
 
 function renderRoi() {
-  // roiLogs가 비어있고 Firebase 연결된 경우 즉시 pull
-  if((!S.roiLogs||S.roiLogs.length===0) && _syncUrl && !_isSyncing){
-    syncPull().then(()=>renderRoi());
+  // roiLogs가 비어있으면 Firebase에서 직접 roiLogs만 가져와서 렌더
+  if((!S.roiLogs||S.roiLogs.length===0) && _syncUrl){
+    const base=_syncUrl.replace(/\/+$/,'');
+    fbFetch(base+'/mclinic/roiLogs.json').then(r=>r.json()).then(data=>{
+      if(Array.isArray(data)&&data.length){
+        S.roiLogs=data;
+        renderRoi(); // 데이터 받은 후 재렌더
+      } else {
+        _renderRoiContent(); // 데이터 없어도 빈 화면 렌더
+      }
+    }).catch(()=>_renderRoiContent());
     return;
   }
+  _renderRoiContent();
+}
 
+function _renderRoiContent() {
   const {from, to, label} = getRoiRange();
   const lbl = document.getElementById('roi-period-lbl');
   if(lbl) lbl.textContent = label;
