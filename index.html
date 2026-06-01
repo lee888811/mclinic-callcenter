@@ -8931,16 +8931,37 @@ function renderRoiMonthlySummary(){
   const maxTotal=Math.max(...months.map(m=>monthMap[m].total));
   const totalAll=logs.reduce((a,l)=>a+(l.amount||0),0);
   const totalSendAll=logs.reduce((a,l)=>a+(+l.sendCount||0),0);
+  // 채널 → 문자/카톡/기타 분류
+  const catOf=log=>{
+    const ch=S.channels.find(c=>c.id===log.chId);
+    const nm=((ch&&ch.name)||log.chId||'')+'';
+    if(/카카오|카톡|kakao/i.test(nm)) return 'kakao';
+    if(/대표|문자|sms/i.test(nm)) return 'sms';
+    return 'etc';
+  };
+  const catMeta={
+    sms:{label:'문자 발송',icon:'📩',clr:'#2563eb',bg:'#eff6ff'},
+    kakao:{label:'카톡 발송',icon:'💬',clr:'#d97706',bg:'#fffbeb'},
+    etc:{label:'기타',icon:'📡',clr:'#64748b',bg:'#f1f5f9'}
+  };
 
   el.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:12px">
       ${months.map(mk=>{
         const d=monthMap[mk];
         const barPct=maxTotal>0?Math.round(d.total/maxTotal*100):0;
-        const chBreakdown=Object.entries(d.byChannel).map(([chId,amt])=>{
-          const ch=S.channels.find(c=>c.id===chId)||{name:chId,icon:'📡'};
-          return `<span style="font-size:11px;color:var(--text2)">${ch.icon||''} ${ch.name} <strong>${fmt(amt)}</strong></span>`;
-        }).join('<span style="color:var(--text3);margin:0 4px">·</span>');
+        // 문자/카톡/기타 카테고리별 집계
+        const catAgg={};
+        d.logs.forEach(l=>{ const c=catOf(l); if(!catAgg[c]) catAgg[c]={amt:0,cnt:0,send:0,logs:[]}; catAgg[c].amt+=l.amount||0; catAgg[c].cnt++; catAgg[c].send+=(+l.sendCount||0); catAgg[c].logs.push(l); });
+        const catOrder=['sms','kakao','etc'].filter(c=>catAgg[c]);
+        const catBoxes=catOrder.map(c=>{
+          const m=catMeta[c], a=catAgg[c];
+          return `<div style="flex:1;min-width:130px;background:${m.bg};border:1px solid ${m.clr}33;border-radius:9px;padding:8px 12px">
+            <div style="font-size:11px;font-weight:700;color:${m.clr};margin-bottom:3px">${m.icon} ${m.label}</div>
+            <div style="font-size:18px;font-weight:900;color:${m.clr};font-family:'DM Mono',monospace">${fmt(a.amt)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.cnt}건${a.send?` · 📨 ${a.send.toLocaleString()}건`:''}</div>
+          </div>`;
+        }).join('');
         const totalSendCount=d.logs.reduce((a,l)=>a+(+l.sendCount||0),0);
         const byStatus={};
         d.logs.forEach(l=>{ const s=l.sendStatus||'미지정'; byStatus[s]=(byStatus[s]||0)+1; });
@@ -8959,25 +8980,54 @@ function renderRoiMonthlySummary(){
           <div style="height:7px;background:var(--s3);border-radius:4px;margin-bottom:10px;overflow:hidden">
             <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px"></div>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">${chBreakdown}</div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            ${d.logs.sort((a,b)=>a.date.localeCompare(b.date)).map(log=>{
-              const ch=S.channels.find(c=>c.id===log.chId)||{name:log.chId,icon:'📡'};
-              const br=S.branches.find(b=>b.id===log.bid);
-              const sc=log.sendStatus==='발송완료'?'#059669':log.sendStatus==='발송취소'?'#ef4444':'#f59e0b';
-              return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s2);border:1px solid var(--border);border-radius:7px;flex-wrap:wrap">
-                <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${log.date}${log.sendTime?' '+log.sendTime:''}</span>
-                <span style="font-size:11px">${ch.icon||''} ${ch.name}</span>
-                <span style="font-size:11px;color:#059669">${br?br.name:'전지점'}</span>
-                ${log.staff?`<span style="font-size:11px;color:#2563eb">👤 ${log.staff}</span>`:''}
-                ${log.sendStatus?`<span style="font-size:10px;font-weight:700;color:${sc}">${log.sendStatus}</span>`:''}
-                ${log.sendCount?`<span style="font-size:11px;color:var(--text3)">📨 ${(+log.sendCount).toLocaleString()}건</span>`:''}
-                ${log.memo?`<span style="font-size:11px;color:var(--text2)">📌 ${log.memo}</span>`:''}
-                <span style="margin-left:auto;font-size:12px;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</span>
-                <button onclick="editRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:10px;cursor:pointer;flex-shrink:0">✏️ 수정</button>
-                <button onclick="deleteRoiLog('${log.id}')" style="padding:2px 7px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:10px;cursor:pointer;flex-shrink:0">🗑 삭제</button>
-              </div>`;
-            }).join('')}
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">${catBoxes}</div>
+          <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
+              <thead>
+                <tr style="background:var(--s3)">
+                  <th style="padding:7px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">날짜</th>
+                  <th style="padding:7px 8px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">시간</th>
+                  <th style="padding:7px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">채널</th>
+                  <th style="padding:7px 8px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">지점</th>
+                  <th style="padding:7px 8px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">담당자</th>
+                  <th style="padding:7px 8px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">상태</th>
+                  <th style="padding:7px 10px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">발송건수</th>
+                  <th style="padding:7px 10px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">금액</th>
+                  <th style="padding:7px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);white-space:normal;min-width:130px">메모</th>
+                  <th style="padding:7px 8px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${catOrder.map(c=>{
+                  const m=catMeta[c];
+                  const rows=catAgg[c].logs.slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.sendTime||'').localeCompare(b.sendTime||''));
+                  const band=`<tr><td colspan="10" style="padding:6px 10px;background:${m.bg};color:${m.clr};font-weight:800;font-size:11px;border-top:2px solid ${m.clr}33;border-bottom:1px solid var(--border)">${m.icon} ${m.label} · ${catAgg[c].cnt}건 · ${fmt(catAgg[c].amt)}${catAgg[c].send?` · 📨 ${catAgg[c].send.toLocaleString()}건`:''}</td></tr>`;
+                  const trs=rows.map((log,i)=>{
+                    const ch=S.channels.find(x=>x.id===log.chId)||{name:log.chId,icon:'📡'};
+                    const br=S.branches.find(b=>b.id===log.bid);
+                    const sc=log.sendStatus==='발송완료'?'#059669':log.sendStatus==='발송취소'?'#ef4444':'#f59e0b';
+                    const sbg=log.sendStatus==='발송완료'?'#f0fdf4':log.sendStatus==='발송취소'?'#fff5f5':'#fffbeb';
+                    const rowBg=i%2?'var(--s2)':'var(--s1)';
+                    return `<tr style="background:${rowBg};border-bottom:1px solid var(--border)">
+                      <td style="padding:6px 10px;color:var(--text2);font-family:'DM Mono',monospace">${log.date}</td>
+                      <td style="padding:6px 8px;color:var(--text3);font-family:'DM Mono',monospace">${log.sendTime||'-'}</td>
+                      <td style="padding:6px 10px;color:var(--text)">${ch.icon||''} ${ch.name}</td>
+                      <td style="padding:6px 8px;color:#059669;font-weight:600">${br?br.name:'전지점'}</td>
+                      <td style="padding:6px 8px;color:#2563eb">${log.staff?'👤 '+log.staff:'-'}</td>
+                      <td style="padding:6px 8px;text-align:center">${log.sendStatus?`<span style="font-size:11px;font-weight:700;color:${sc};background:${sbg};padding:2px 8px;border-radius:8px">${log.sendStatus}</span>`:'-'}</td>
+                      <td style="padding:6px 10px;text-align:right;color:var(--text2);font-family:'DM Mono',monospace">${log.sendCount?(+log.sendCount).toLocaleString():'-'}</td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(log.amount)}</td>
+                      <td style="padding:6px 10px;color:var(--text2);white-space:normal;min-width:130px">${log.memo||'-'}</td>
+                      <td style="padding:6px 8px;text-align:center;white-space:nowrap">
+                        <button onclick="editRoiLog('${log.id}')" title="수정" style="padding:3px 8px;border-radius:5px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;font-size:11px;cursor:pointer">✏️</button>
+                        <button onclick="deleteRoiLog('${log.id}')" title="삭제" style="padding:3px 8px;border-radius:5px;border:1px solid #fee2e2;background:#fff5f5;color:#ef4444;font-size:11px;cursor:pointer">🗑</button>
+                      </td>
+                    </tr>`;
+                  }).join('');
+                  return band+trs;
+                }).join('')}
+              </tbody>
+            </table>
           </div>
         </div>`;
       }).join('')}
