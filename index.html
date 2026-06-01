@@ -8962,7 +8962,50 @@ function renderRoiMonthlySummary(){
             <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.cnt}건${a.send?` · 📨 ${a.send.toLocaleString()}건`:''}</div>
           </div>`;
         }).join('');
-        const totalSendCount=d.logs.reduce((a,l)=>a+(+l.sendCount||0),0);
+        // 지점별 집계 (문자/카톡 분리)
+        const anyEtc=catOrder.includes('etc');
+        const brAgg={};
+        d.logs.forEach(l=>{
+          const key=l.bid||'all';
+          if(!brAgg[key]) brAgg[key]={sms:0,kakao:0,etc:0,total:0,send:0};
+          brAgg[key][catOf(l)]+=(l.amount||0);
+          brAgg[key].total+=(l.amount||0);
+          brAgg[key].send+=(+l.sendCount||0);
+        });
+        const brName=key=>{ if(key==='all') return '전지점'; const b=S.branches.find(x=>x.id===key); return b?b.name:'전지점'; };
+        const brKeys=Object.keys(brAgg).sort((a,b)=>{
+          if(a==='all') return 1; if(b==='all') return -1;
+          const ia=S.branches.findIndex(x=>x.id===a), ib=S.branches.findIndex(x=>x.id===b);
+          return (ia<0?999:ia)-(ib<0?999:ib);
+        });
+        const brHeadTh='padding:7px 10px;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)';
+        const brRows=brKeys.map((key,i)=>{
+          const a=brAgg[key], rowBg=i%2?'var(--s2)':'var(--s1)';
+          return `<tr style="background:${rowBg};border-bottom:1px solid var(--border)">
+            <td style="padding:6px 10px;font-weight:700;color:#059669">${brName(key)}</td>
+            <td style="padding:6px 10px;text-align:right;color:#2563eb;font-family:'DM Mono',monospace">${a.sms?fmt(a.sms):'-'}</td>
+            <td style="padding:6px 10px;text-align:right;color:#d97706;font-family:'DM Mono',monospace">${a.kakao?fmt(a.kakao):'-'}</td>
+            ${anyEtc?`<td style="padding:6px 10px;text-align:right;color:#64748b;font-family:'DM Mono',monospace">${a.etc?fmt(a.etc):'-'}</td>`:''}
+            <td style="padding:6px 10px;text-align:right;font-weight:800;color:#f59e0b;font-family:'DM Mono',monospace">${fmt(a.total)}</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--text3);font-family:'DM Mono',monospace">${a.send?a.send.toLocaleString():'-'}</td>
+          </tr>`;
+        }).join('');
+        const brTable=`<div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:6px">🏥 지점별 집계</div>
+          <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
+              <thead><tr style="background:var(--s3)">
+                <th style="${brHeadTh};text-align:left">지점</th>
+                <th style="${brHeadTh};text-align:right">📩 문자</th>
+                <th style="${brHeadTh};text-align:right">💬 카톡</th>
+                ${anyEtc?`<th style="${brHeadTh};text-align:right">📡 기타</th>`:''}
+                <th style="${brHeadTh};text-align:right">합계</th>
+                <th style="${brHeadTh};text-align:right">발송건수</th>
+              </tr></thead>
+              <tbody>${brRows}</tbody>
+            </table>
+          </div>
+        </div>`;
         const byStatus={};
         d.logs.forEach(l=>{ const s=l.sendStatus||'미지정'; byStatus[s]=(byStatus[s]||0)+1; });
         const statusClr={발송완료:'#059669',발송취소:'#ef4444',예약발송:'#f59e0b'};
@@ -8981,6 +9024,7 @@ function renderRoiMonthlySummary(){
             <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:4px"></div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">${catBoxes}</div>
+          ${brTable}
           <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
             <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
               <thead>
