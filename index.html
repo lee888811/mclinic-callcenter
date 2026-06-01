@@ -8962,6 +8962,7 @@ function renderRoiMonthlySummary(){
             <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.cnt}건${a.send?` · 📨 ${a.send.toLocaleString()}건`:''}</div>
           </div>`;
         }).join('');
+        const totalSendCount=d.logs.reduce((a,l)=>a+(+l.sendCount||0),0);
         // 지점별 집계 (문자/카톡 분리)
         const anyEtc=catOrder.includes('etc');
         const brAgg={};
